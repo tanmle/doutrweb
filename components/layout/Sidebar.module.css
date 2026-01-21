@@ -1,0 +1,50 @@
+.sidebarWrapper {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebarHeader {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    padding: 0 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.logo {
+    font-weight: 700;
+    font-size: 1.25rem;
+    background: linear-gradient(to right, #6366f1, #ec4899);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.nav {
+    padding: 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.navItem {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    color: var(--muted-foreground);
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.navItem:hover,
+.navItem.active {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--foreground);
+}
+
+.navItem.active {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--primary);
+}

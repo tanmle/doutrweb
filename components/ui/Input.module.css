@@ -1,0 +1,28 @@
+.inputWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+}
+
+.input {
+    background: #1a1a1a;
+    border: 1px solid var(--input);
+    color: var(--foreground);
+    padding: 0.625rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    transition: all 0.2s;
+    outline: none;
+}
+
+.input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
