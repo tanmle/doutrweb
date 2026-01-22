@@ -1,0 +1,387 @@
+/* ============================================
+   Admin Components Shared Styles
+   ============================================ */
+
+/* Tab Navigation */
+.tabNavigation {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Tab Content Headers */
+.tabHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.tabTitle {
+    margin: 0;
+}
+
+/* Tables */
+.tableContainer {
+    overflow-x: auto;
+}
+
+.adminTable {
+    width: 100%;
+    text-align: left;
+    border-collapse: collapse;
+}
+
+.adminTable thead tr {
+    color: var(--muted-foreground);
+    border-bottom: 1px solid var(--border);
+}
+
+.adminTable th {
+    padding: 0.75rem;
+}
+
+.adminTable tbody tr {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.adminTable td {
+    padding: 0.75rem;
+}
+
+.tableActions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.tableActionsSmall {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+/* Role Badge */
+.roleBadgeContainer {
+    position: relative;
+    display: inline-block;
+}
+
+.roleBadge {
+    text-transform: capitalize;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+
+.roleBadgeAdmin {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.roleBadgeLeader {
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+}
+
+.roleBadgeMember {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.leaderCount {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #6366f1;
+    color: white;
+    font-size: 0.65rem;
+    padding: 0 0.4rem;
+    border-radius: 10px;
+    font-weight: 600;
+    border: 2px solid var(--card-bg);
+    z-index: 1;
+}
+
+/* Fee Filters */
+.feeFiltersContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.feeFiltersHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.feeFiltersSection {
+    min-width: 220px;
+    flex: 1 1 240px;
+}
+
+.feeFiltersTitle {
+    margin-bottom: 0.75rem;
+}
+
+.filterButtons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.filterControls {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    margin-top: 1rem;
+}
+
+.filterField {
+    min-width: 150px;
+    flex: 1 1 180px;
+}
+
+.filterLabel {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+    margin-bottom: 0.5rem;
+}
+
+.filterSelect {
+    font-size: 0.75rem;
+    width: 100%;
+}
+
+.filterDateInput {
+    font-size: 0.75rem;
+    width: 100%;
+    padding: 0.5rem;
+    background: #1a1a1a;
+    border: 1px solid var(--border);
+    color: white;
+    border-radius: var(--radius-md);
+}
+
+/* Fee Table Total Row */
+.totalRow {
+    background-color: rgba(99, 102, 241, 0.05);
+    font-weight: bold;
+}
+
+.totalLabel {
+    padding: 1rem 0.75rem;
+}
+
+.totalPrice {
+    padding: 1rem 0.75rem;
+    color: var(--primary);
+}
+
+.emptyState {
+    padding: 2rem;
+    text-align: center;
+    color: var(--muted-foreground);
+}
+
+/* Configuration Tab */
+.configContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.configHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.configTitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.configGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+}
+
+.configSectionTitle {
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.configSectionTitleCompany {
+    color: var(--primary);
+}
+
+.configSectionTitleSelf {
+    color: #10b981;
+}
+
+.configTableContainer {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+.configTable {
+    width: 100%;
+    text-align: left;
+    border-collapse: collapse;
+}
+
+.configTable thead tr {
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+}
+
+.configTable thead th {
+    padding: 0.75rem;
+}
+
+.configTable tbody tr {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.configTable tbody td {
+    padding: 0.75rem;
+}
+
+.configLevelCell {
+    font-weight: 500;
+}
+
+.configInputCell {
+    padding: 0.5rem;
+}
+
+.configInput {
+    width: 100%;
+    background: transparent;
+    border: 1px solid transparent;
+    color: inherit;
+    padding: 0.25rem;
+}
+
+.configPercentContainer {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.configPercentInput {
+    width: 60px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: inherit;
+    padding: 0.25rem;
+}
+
+/* Form Fields */
+.formLabel {
+    display: block;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    color: var(--muted-foreground);
+}
+
+.formSelect {
+    width: 100%;
+}
+
+.userEditInfo {
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+}
+
+.userEditInfoText {
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+}
+
+.passwordNote {
+    font-size: 0.7rem;
+    color: #ef4444;
+}
+
+.mutedText {
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+}
+
+/* Page Header */
+.pageHeader {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
+}
+
+/* Responsive Styles */
+@media (max-width: 640px) {
+    .adminTable thead {
+        display: none;
+    }
+
+    .adminTable,
+    .adminTable tbody,
+    .adminTable tr,
+    .adminTable td {
+        display: block;
+        width: 100%;
+    }
+
+    .adminTable tr {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 0.5rem 0.25rem;
+        margin-bottom: 0.75rem;
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .adminTable td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .adminTable td:last-child {
+        border-bottom: none;
+    }
+
+    .adminTable td::before {
+        content: attr(data-label);
+        color: var(--muted-foreground);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .totalRow td:not(.totalLabel):not(.totalPrice) {
+        display: none;
+    }
+}
