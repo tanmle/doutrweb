@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
+import { useToast } from '@/components/ui/ToastProvider';
 import { createClient } from '@/utils/supabase/client';
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -30,6 +31,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
@@ -175,10 +177,10 @@ export default function DashboardLayout({
         confirmPassword: ''
       }));
       setAvatarFile(null);
-      alert('Profile updated successfully!');
+      toast.success('Profile updated successfully!');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      alert('Error: ' + message);
+      toast.error('Error: ' + message);
     } finally {
       setUpdating(false);
     }
@@ -204,14 +206,20 @@ export default function DashboardLayout({
           <header className={styles.header}>
             <div className="md:hidden" style={{ marginRight: '1rem' }}>
               {/* Simple Hamburger Icon */}
-              <Button variant="ghost" onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden">
+              <Button
+                variant="ghost"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="md:hidden"
+                aria-label="Open navigation menu"
+              >
                 ☰
               </Button>
             </div>
             <h2 style={{ fontWeight: 600 }}>Overview</h2>
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div 
-                style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginRight: '0.5rem', cursor: 'pointer', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s' }}
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginRight: '0.5rem', cursor: 'pointer', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s', background: 'transparent', border: 'none' }}
                 onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 onClick={() => setIsEditProfileOpen(true)}
@@ -221,7 +229,7 @@ export default function DashboardLayout({
                   Welcome, <strong style={{ color: 'var(--foreground)' }}>{profile?.full_name || 'User'}</strong>
                 </span>
                 <Avatar src={profile?.avatar_url} name={profile?.full_name} size={32} />
-              </div>
+              </button>
               <div style={{ height: '20px', width: '1px', background: 'var(--border)' }}></div>
               <Button variant="ghost" onClick={handleLogout} style={{ fontSize: '0.875rem' }}>Logout</Button>
             </div>
@@ -240,6 +248,7 @@ export default function DashboardLayout({
               <button 
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
+                aria-label="Upload profile photo"
                 style={{ 
                   position: 'absolute', 
                   bottom: 0, 

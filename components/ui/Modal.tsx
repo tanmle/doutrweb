@@ -20,11 +20,22 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
   if (!isOpen) return null;
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <div
+      className={styles.overlay}
+      onClick={onClose}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onClose();
+        }
+      }}
+    >
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <h2 className={styles.title}>{title}</h2>
-          <button className={styles.closeBtn} onClick={onClose}>&times;</button>
+          <button className={styles.closeBtn} onClick={onClose} aria-label="Close modal">&times;</button>
         </div>
         {children}
       </div>

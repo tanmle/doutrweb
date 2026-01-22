@@ -26,7 +26,7 @@ export const Avatar = ({ src, name, size = 32 }: AvatarProps) => {
       style={{ width: size, height: size, fontSize: size * 0.4 }}
     >
       {src ? (
-        <img src={src} alt={name || 'User avatar'} />
+        <img src={src} alt={name || 'User avatar'} width={size} height={size} />
       ) : (
         <span className={styles.initials}>{getInitials(name)}</span>
       )}

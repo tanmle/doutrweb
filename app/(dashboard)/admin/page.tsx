@@ -4,7 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Modal } from '@/components/ui/Modal';
+import { useToast } from '@/components/ui/ToastProvider';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { createUser, deleteUser, resetUserPassword } from './actions';
@@ -18,10 +20,12 @@ export default function AdminPage() {
   const [ownerFilter, setOwnerFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const supabase = createClient();
   const [refresh, setRefresh] = useState(0);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string>('member');
+  const toast = useToast();
   const router = useRouter();
 
   // Data States
@@ -73,54 +77,58 @@ export default function AdminPage() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      if (activeTab === 'products') {
-        const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-        if (data) setProducts(data);
-      } else if (activeTab === 'users') {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*, leader:profiles!leader_id(full_name)')
-          .order('created_at', { ascending: false });
-        if (data) setUsers(data);
-        
-        const { data: profileData } = await supabase.from('profiles').select('id, full_name, email, role');
-        if (profileData) setProfiles(profileData);
-      } else if (activeTab === 'fees') {
-        let query = supabase
-          .from('selling_fees')
-          .select('*, owner_profile:profiles!owner_id(full_name)')
-          .order('date', { ascending: false });
-        
-        const now = new Date();
-        
-        if (feeFilter === 'today') {
-          query = query.eq('date', today);
-        } else if (feeFilter === 'this_month') {
-          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-          query = query.gte('date', startOfMonth);
-        } else if (feeFilter === 'last_month') {
-          const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
-          const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];
-          query = query.gte('date', startOfLastMonth).lte('date', endOfLastMonth);
-        } else if (feeFilter === 'range' && dateRange.start && dateRange.end) {
-          query = query.gte('date', dateRange.start).lte('date', dateRange.end);
-        }
+      try {
+        if (activeTab === 'products') {
+          const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+          if (data) setProducts(data);
+        } else if (activeTab === 'users') {
+          const { data } = await supabase
+            .from('profiles')
+            .select('*, leader:profiles!leader_id(full_name)')
+            .order('created_at', { ascending: false });
+          if (data) setUsers(data);
+          
+          const { data: profileData } = await supabase.from('profiles').select('id, full_name, email, role');
+          if (profileData) setProfiles(profileData);
+        } else if (activeTab === 'fees') {
+          let query = supabase
+            .from('selling_fees')
+            .select('*, owner_profile:profiles!owner_id(full_name)')
+            .order('date', { ascending: false });
+          
+          const now = new Date();
+          
+          if (feeFilter === 'today') {
+            query = query.eq('date', today);
+          } else if (feeFilter === 'this_month') {
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+            query = query.gte('date', startOfMonth);
+          } else if (feeFilter === 'last_month') {
+            const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
+            const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];
+            query = query.gte('date', startOfLastMonth).lte('date', endOfLastMonth);
+          } else if (feeFilter === 'range' && dateRange.start && dateRange.end) {
+            query = query.gte('date', dateRange.start).lte('date', dateRange.end);
+          }
 
-        if (ownerFilter !== 'all') {
-          query = query.eq('owner_id', ownerFilter);
-        }
+          if (ownerFilter !== 'all') {
+            query = query.eq('owner_id', ownerFilter);
+          }
 
-        const { data, error } = await query;
-        if (error) console.error('Fee fetch error:', error);
-        if (data) setFees(data);
-        
-        const { data: profileData } = await supabase.from('profiles').select('id, full_name, email, role');
-        if (profileData) setProfiles(profileData);
-      } else if (activeTab === 'configuration') {
-        const { data } = await supabase.from('commission_rates').select('*').order('level', { ascending: true });
-        if (data) setCommissionRates(data);
+          const { data, error } = await query;
+          if (error) console.error('Fee fetch error:', error);
+          if (data) setFees(data);
+          
+          const { data: profileData } = await supabase.from('profiles').select('id, full_name, email, role');
+          if (profileData) setProfiles(profileData);
+        } else if (activeTab === 'configuration') {
+          const { data } = await supabase.from('commission_rates').select('*').order('level', { ascending: true });
+          if (data) setCommissionRates(data);
+        }
+      } finally {
+        setLoading(false);
+        setInitialLoading(false);
       }
-      setLoading(false);
     };
     fetchData();
   }, [activeTab, feeFilter, ownerFilter, dateRange, supabase, refresh, today]);
@@ -168,7 +176,7 @@ export default function AdminPage() {
       base_price: parseFloat(formData.base_price) || 0,
       selling_price: parseFloat(formData.selling_price) || 0,
     });
-    if (error) alert(error.message);
+    if (error) toast.error(error.message);
     else {
       setIsProductModalOpen(false);
       setFormData({});
@@ -182,9 +190,9 @@ export default function AdminPage() {
     setLoading(true);
     const result = await deleteUser(id);
     if (result.error) {
-        alert(result.error);
+        toast.error(result.error);
     } else {
-        alert('User deleted successfully');
+        toast.success('User deleted successfully');
         setRefresh(prev => prev + 1);
     }
     setLoading(false);
@@ -193,14 +201,17 @@ export default function AdminPage() {
   const handleResetPassword = async (id: string, email: string) => {
     const newPassword = prompt(`Enter new password for ${email}:`);
     if (!newPassword) return;
-    if (newPassword.length < 6) return alert('Password must be at least 6 characters');
+    if (newPassword.length < 6) {
+        toast.error('Password must be at least 6 characters');
+        return;
+    }
     
     setLoading(true);
     const result = await resetUserPassword(id, newPassword);
     if (result.error) {
-        alert(result.error);
+        toast.error(result.error);
     } else {
-        alert('Password reset successfully');
+        toast.success('Password reset successfully');
     }
     setLoading(false);
   };
@@ -215,7 +226,7 @@ export default function AdminPage() {
       selling_price: parseFloat(formData.selling_price) || 0,
     }).eq('id', selectedProduct.id);
 
-    if (error) alert(error.message);
+    if (error) toast.error(error.message);
     else {
       setIsEditProductModalOpen(false);
       setFormData({});
@@ -239,7 +250,7 @@ export default function AdminPage() {
     if (!confirm('Are you sure you want to delete this product?')) return;
     setLoading(true);
     const { error } = await supabase.from('products').delete().eq('id', id);
-    if (error) alert(error.message);
+    if (error) toast.error(error.message);
     else setRefresh(prev => prev + 1);
     setLoading(false);
   };
@@ -254,7 +265,7 @@ export default function AdminPage() {
       date: formData.date || new Date().toISOString().split('T')[0],
       note: formData.note || '',
     });
-    if (error) alert(error.message);
+    if (error) toast.error(error.message);
     else {
       setIsFeeModalOpen(false);
       setFormData({});
@@ -275,7 +286,7 @@ export default function AdminPage() {
       note: formData.note || '',
     }).eq('id', selectedFee.id);
 
-    if (error) alert(error.message);
+    if (error) toast.error(error.message);
     else {
       setIsEditFeeModalOpen(false);
       setFormData({});
@@ -301,7 +312,7 @@ export default function AdminPage() {
     if (!confirm('Are you sure you want to delete this fee?')) return;
     setLoading(true);
     const { error } = await supabase.from('selling_fees').delete().eq('id', id);
-    if (error) alert(error.message);
+    if (error) toast.error(error.message);
     else setRefresh(prev => prev + 1);
     setLoading(false);
   };
@@ -330,7 +341,7 @@ export default function AdminPage() {
       leader_id: formData.role === 'member' ? (formData.leader_id || null) : null
     }).eq('id', selectedUser.id);
 
-    if (error) alert(error.message);
+    if (error) toast.error(error.message);
     else {
       setIsEditUserModalOpen(false);
       setFormData({});
@@ -372,9 +383,9 @@ export default function AdminPage() {
       });
 
       if (res.error) {
-          alert('Error: ' + res.error);
+          toast.error('Error: ' + res.error);
       } else {
-          alert('User created successfully');
+          toast.success('User created successfully');
           setIsUserModalOpen(false);
           setFormData({});
           setRefresh(prev => prev + 1);
@@ -392,21 +403,25 @@ export default function AdminPage() {
     setLoading(true);
     const { error } = await supabase.from('commission_rates').upsert(commissionRates);
     if (error) {
-      alert('Error updating commission rates: ' + error.message);
+      toast.error('Error updating commission rates: ' + error.message);
     } else {
-      alert('Commission rates updated successfully!');
+      toast.success('Commission rates updated successfully!');
       setRefresh(prev => prev + 1);
     }
     setLoading(false);
   };
-
-
+ 
+  if (initialLoading) {
+    return <LoadingIndicator label="Loading admin data…" />;
+  }
+ 
   return (
+
     <div>
       <h1 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '2rem' }}>Admin Control Center</h1>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', flexWrap: 'wrap' }}>
         <Button variant={activeTab === 'products' ? 'primary' : 'ghost'} onClick={() => setActiveTab('products')}>
           Product Entry
         </Button>
@@ -425,12 +440,12 @@ export default function AdminPage() {
       <Card>
         {activeTab === 'products' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <h3>Product List</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <h3 style={{ margin: 0 }}>Product List</h3>
               <Button onClick={() => setIsProductModalOpen(true)}>+ Add New Product</Button>
             </div>
             <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+                <table className="admin-table admin-products-table" style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>
                       <th style={{ padding: '0.75rem' }}>Name</th>
@@ -442,19 +457,20 @@ export default function AdminPage() {
                   <tbody>
                     {products.map(p => (
                       <tr key={p.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ padding: '0.75rem' }}>{p.name}</td>
-                        <td style={{ padding: '0.75rem' }}>{formatUSD(p.base_price)}</td>
-                        <td style={{ padding: '0.75rem' }}>{formatUSD(p.selling_price)}</td>
-                        <td style={{ padding: '0.75rem' }}>
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <Button variant="ghost" onClick={() => openEditProductModal(p)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}>
-                              Edit
-                            </Button>
-                            <Button variant="ghost" onClick={() => handleDeleteProduct(p.id)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', color: '#ef4444' }}>
-                              Delete
-                            </Button>
-                          </div>
-                        </td>
+                        <td style={{ padding: '0.75rem' }} data-label="Name">{p.name}</td>
+                        <td style={{ padding: '0.75rem' }} data-label="Base Price">{formatUSD(p.base_price)}</td>
+                        <td style={{ padding: '0.75rem' }} data-label="Selling Price">{formatUSD(p.selling_price)}</td>
+                         <td style={{ padding: '0.75rem' }} data-label="Actions">
+                           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                             <Button variant="ghost" onClick={() => openEditProductModal(p)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}>
+                               Edit
+                             </Button>
+                             <Button variant="ghost" onClick={() => handleDeleteProduct(p.id)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', color: '#ef4444' }}>
+                               Delete
+                             </Button>
+                           </div>
+                         </td>
+
                       </tr>
                     ))}
                   </tbody>
@@ -465,12 +481,12 @@ export default function AdminPage() {
 
         {activeTab === 'users' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <h3>User List</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <h3 style={{ margin: 0 }}>User List</h3>
               <Button onClick={() => setIsUserModalOpen(true)}>+ Add New User</Button>
             </div>
              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+                <table className="admin-table admin-users-table" style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                    <thead>
                     <tr style={{ color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>
                       <th style={{ padding: '0.75rem' }}>Email</th>
@@ -483,9 +499,9 @@ export default function AdminPage() {
                   <tbody>
                     {users.map(u => (
                       <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ padding: '0.75rem' }}>{u.email}</td>
-                        <td style={{ padding: '0.75rem' }}>{u.full_name || 'N/A'}</td>
-                        <td style={{ padding: '0.75rem' }}>
+                        <td style={{ padding: '0.75rem' }} data-label="Email">{u.email}</td>
+                        <td style={{ padding: '0.75rem' }} data-label="Full Name">{u.full_name || 'N/A'}</td>
+                        <td style={{ padding: '0.75rem' }} data-label="Role">
                             <div style={{ position: 'relative', display: 'inline-block' }}>
                                 <span style={{ 
                                     textTransform: 'capitalize', 
@@ -516,12 +532,12 @@ export default function AdminPage() {
                                 )}
                             </div>
                         </td>
-                        <td style={{ padding: '0.75rem', fontSize: '0.875rem' }}>
+                        <td style={{ padding: '0.75rem', fontSize: '0.875rem' }} data-label="Leader">
                             {profiles.find(p => p.id === u.leader_id)?.full_name || '-'}
                         </td>
-                        <td style={{ padding: '0.75rem' }}>
+                        <td style={{ padding: '0.75rem' }} data-label="Actions">
                             {canEditUser(u.role) && (
-                                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
                                     <Button variant="ghost" onClick={() => openEditUserModal(u)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}>
                                         Edit
                                     </Button>
@@ -545,8 +561,8 @@ export default function AdminPage() {
         {activeTab === 'fees' && (
           <div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ minWidth: '220px', flex: '1 1 240px' }}>
                   <h3 style={{ marginBottom: '0.75rem' }}>Selling Fees</h3>
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <Button variant={feeFilter === 'all' ? 'primary' : 'secondary'} onClick={() => setFeeFilter('all')} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>All</Button>
@@ -556,17 +572,19 @@ export default function AdminPage() {
                     <Button variant={feeFilter === 'range' ? 'primary' : 'secondary'} onClick={() => setFeeFilter('range')} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>Date Range</Button>
                   </div>
                 </div>
-                <Button onClick={openFeeModal}>+ Add New Fee</Button>
+                <Button onClick={openFeeModal} style={{ alignSelf: 'flex-start', whiteSpace: 'nowrap' }}>+ Add New Fee</Button>
               </div>
 
               <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                <div style={{ minWidth: '150px' }}>
+                <div style={{ minWidth: '150px', flex: '1 1 180px' }}>
                   <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Filter by Owner</label>
-                  <select 
-                    value={ownerFilter} 
-                    onChange={(e) => setOwnerFilter(e.target.value)}
-                    style={{ fontSize: '0.75rem', width: '100%' }}
-                  >
+                    <select
+                      aria-label="Filter by owner"
+                      value={ownerFilter} 
+                      onChange={(e) => setOwnerFilter(e.target.value)}
+                      style={{ fontSize: '0.75rem', width: '100%' }}
+                    >
+
                     <option value="all">All Owners</option>
                     {profiles.map(p => (
                       <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
@@ -576,18 +594,20 @@ export default function AdminPage() {
 
                 {feeFilter === 'range' && (
                   <>
-                    <div style={{ minWidth: '150px' }}>
+                    <div style={{ minWidth: '150px', flex: '1 1 180px' }}>
                       <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Start Date</label>
                       <input 
+                        aria-label="Start date"
                         type="date" 
                         value={dateRange.start} 
                         onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
                         style={{ fontSize: '0.75rem', width: '100%', padding: '0.5rem', background: '#1a1a1a', border: '1px solid var(--border)', color: 'white', borderRadius: 'var(--radius-md)' }}
                       />
                     </div>
-                    <div style={{ minWidth: '150px' }}>
+                    <div style={{ minWidth: '150px', flex: '1 1 180px' }}>
                       <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>End Date</label>
                       <input 
+                        aria-label="End date"
                         type="date" 
                         value={dateRange.end} 
                         onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
@@ -599,7 +619,7 @@ export default function AdminPage() {
               </div>
             </div>
             <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+                <table className="admin-table admin-fees-table" style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>
                       <th style={{ padding: '0.75rem' }}>Fee Name</th>
@@ -612,18 +632,18 @@ export default function AdminPage() {
                   </thead>
                   <tbody>
                     {fees.length === 0 ? (
-                      <tr><td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>No fees found for this selection</td></tr>
+                      <tr><td colSpan={6} data-label="Status" style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>No fees found for this selection</td></tr>
                     ) : (
                       <>
                         {fees.map(f => (
                           <tr key={f.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <td style={{ padding: '0.75rem' }}>{f.name}</td>
-                            <td style={{ padding: '0.75rem' }}>{formatVND(f.price)}</td>
-                            <td style={{ padding: '0.75rem' }}>{f.owner_profile?.full_name || 'Unknown'}</td>
-                            <td style={{ padding: '0.75rem' }}>{f.date}</td>
-                            <td style={{ padding: '0.75rem', fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>{f.note || '-'}</td>
-                            <td style={{ padding: '0.75rem' }}>
-                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <td style={{ padding: '0.75rem' }} data-label="Fee Name">{f.name}</td>
+                            <td style={{ padding: '0.75rem' }} data-label="Price">{formatVND(f.price)}</td>
+                            <td style={{ padding: '0.75rem' }} data-label="Owner">{f.owner_profile?.full_name || 'Unknown'}</td>
+                            <td style={{ padding: '0.75rem' }} data-label="Date">{f.date}</td>
+                            <td style={{ padding: '0.75rem', fontSize: '0.875rem', color: 'var(--muted-foreground)' }} data-label="Note">{f.note || '-'}</td>
+                            <td style={{ padding: '0.75rem' }} data-label="Actions">
+                              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                 <Button variant="ghost" onClick={() => openEditFeeModal(f)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}>
                                   Edit
                                 </Button>
@@ -635,9 +655,9 @@ export default function AdminPage() {
                           </tr>
                         ))}
                         <tr style={{ backgroundColor: 'rgba(99, 102, 241, 0.05)', fontWeight: 'bold' }}>
-                          <td style={{ padding: '1rem 0.75rem' }}>Total</td>
-                          <td style={{ padding: '1rem 0.75rem', color: 'var(--primary)' }}>{formatVND(totalFeePrice)}</td>
-                          <td colSpan={4}></td>
+                          <td style={{ padding: '1rem 0.75rem' }} data-label="Fee Name">Total</td>
+                          <td style={{ padding: '1rem 0.75rem', color: 'var(--primary)' }} data-label="Price">{formatVND(totalFeePrice)}</td>
+                          <td colSpan={4} className="admin-total-spacer"></td>
                         </tr>
                       </>
                     )}
@@ -649,14 +669,14 @@ export default function AdminPage() {
 
         {activeTab === 'configuration' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Commission Configuration</h3>
               <Button onClick={handleSaveCommission} disabled={loading}>
-                {loading ? 'Saving...' : 'Save Configuration'}
+                {loading ? 'Saving…' : 'Save Configuration'}
               </Button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
               {/* Company Products Table */}
               <div>
                 <h4 style={{ marginBottom: '1rem', color: 'var(--primary)', fontWeight: 600 }}>COMPANY PRODUCTS</h4>
@@ -841,7 +861,7 @@ export default function AdminPage() {
             </div>
           )}
 
-          <Button type="submit" disabled={loading}>{loading ? 'Creating User...' : 'Create User'}</Button>
+          <Button type="submit" disabled={loading}>{loading ? 'Creating User…' : 'Create User'}</Button>
         </form>
       </Modal>
 
@@ -862,7 +882,7 @@ export default function AdminPage() {
             onChange={handleInputChange} 
             required 
           />
-          <Button type="submit" disabled={loading}>{loading ? 'Updating...' : 'Update Product'}</Button>
+          <Button type="submit" disabled={loading}>{loading ? 'Updating…' : 'Update Product'}</Button>
         </form>
       </Modal>
 
@@ -903,7 +923,7 @@ export default function AdminPage() {
 
           <Input label="Note" name="note" value={formData.note || ''} onChange={handleInputChange} />
           
-          <Button type="submit" disabled={loading}>{loading ? 'Updating...' : 'Update Fee'}</Button>
+          <Button type="submit" disabled={loading}>{loading ? 'Updating…' : 'Update Fee'}</Button>
         </form>
       </Modal>
 
@@ -956,9 +976,56 @@ export default function AdminPage() {
             Note: Passwords cannot be changed here for security reasons.
           </p>
 
-          <Button type="submit" disabled={loading}>{loading ? 'Updating...' : 'Update User'}</Button>
+          <Button type="submit" disabled={loading}>{loading ? 'Updating…' : 'Update User'}</Button>
         </form>
       </Modal>
+      <style jsx>{`
+        @media (max-width: 640px) {
+          .admin-table thead {
+            display: none;
+          }
+
+          .admin-table,
+          .admin-table tbody,
+          .admin-table tr,
+          .admin-table td {
+            display: block;
+            width: 100%;
+          }
+
+          .admin-table tr {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.5rem 0.25rem;
+            margin-bottom: 0.75rem;
+            background: rgba(255, 255, 255, 0.02);
+          }
+
+          .admin-table td {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          }
+
+          .admin-table td:last-child {
+            border-bottom: none;
+          }
+
+          .admin-table td::before {
+            content: attr(data-label);
+            color: var(--muted-foreground);
+            font-size: 0.75rem;
+            font-weight: 600;
+          }
+
+          .admin-table .admin-total-spacer {
+            display: none;
+          }
+        }
+      `}</style>
     </div>
   );
 }

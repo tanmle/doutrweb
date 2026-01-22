@@ -5,12 +5,15 @@ import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Modal } from '@/components/ui/Modal';
+import { useToast } from '@/components/ui/ToastProvider';
 import { createClient } from '@/utils/supabase/client';
 import { Shop } from '@/lib/types';
 
 export default function DailyEntryPage() {
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
@@ -20,12 +23,45 @@ export default function DailyEntryPage() {
   const [records, setRecords] = useState<any[]>([]);
   const [refresh, setRefresh] = useState(0);
   const [userRole, setUserRole] = useState<string>('member');
-  
+
   // Grid Filters
   const [shopFilter, setShopFilter] = useState('all');
   const [ownerFilter, setOwnerFilter] = useState('all');
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [dateFilter, setDateFilter] = useState<'today' | 'this_month' | 'last_month' | 'range'>('today');
+  const [dateRange, setDateRange] = useState(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return { start: today, end: today };
+  });
 
+  const toast = useToast();
+
+  useEffect(() => {
+    if (dateFilter === 'range') return;
+
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    if (dateFilter === 'today') {
+      setDateRange({ start: todayStr, end: todayStr });
+      return;
+    }
+
+    if (dateFilter === 'this_month') {
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      setDateRange({
+        start: startOfMonth.toISOString().split('T')[0],
+        end: todayStr
+      });
+      return;
+    }
+
+    const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+    setDateRange({
+      start: startOfLastMonth.toISOString().split('T')[0],
+      end: endOfLastMonth.toISOString().split('T')[0]
+    });
+  }, [dateFilter]);
   const router = useRouter();
   const supabase = createClient();
 
@@ -36,100 +72,104 @@ export default function DailyEntryPage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-        
+
         // Fetch User Role and Profiles for Owners
         const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
         if (profile) {
-            setUserRole(profile.role);
-            if (profile.role === 'admin') {
-                const { data: profileData } = await supabase.from('profiles').select('id, full_name, email').order('full_name');
-                if (profileData) setProfiles(profileData);
-            } else if (profile.role === 'leader') {
-                const { data: teamProfiles } = await supabase
-                    .from('profiles')
-                    .select('id, full_name, email')
-                    .or(`id.eq.${user.id},leader_id.eq.${user.id}`)
-                    .order('full_name');
-                if (teamProfiles) setProfiles(teamProfiles);
-            }
+          setUserRole(profile.role);
+          if (profile.role === 'admin') {
+            const { data: profileData } = await supabase.from('profiles').select('id, full_name, email').order('full_name');
+            if (profileData) setProfiles(profileData);
+          } else if (profile.role === 'leader') {
+            const { data: teamProfiles } = await supabase
+              .from('profiles')
+              .select('id, full_name, email')
+              .or(`id.eq.${user.id},leader_id.eq.${user.id}`)
+              .order('full_name');
+            if (teamProfiles) setProfiles(teamProfiles);
+          }
         }
 
         // Fetch shops based on role hierarchy
         let shopsQuery = supabase.from('shops').select('id, name, owner_id');
         if (profile?.role === 'admin') {
-            // Admin sees all
+          // Admin sees all
         } else if (profile?.role === 'leader') {
-            const { data: members } = await supabase.from('profiles').select('id').eq('leader_id', user.id);
-            const teamIds = [user.id, ...(members?.map(m => m.id) || [])];
-            shopsQuery = shopsQuery.in('owner_id', teamIds);
+          const { data: members } = await supabase.from('profiles').select('id').eq('leader_id', user.id);
+          const teamIds = [user.id, ...(members?.map(m => m.id) || [])];
+          shopsQuery = shopsQuery.in('owner_id', teamIds);
         } else {
-            // Member
-            shopsQuery = shopsQuery.eq('owner_id', user.id);
+          // Member
+          shopsQuery = shopsQuery.eq('owner_id', user.id);
         }
 
         const { data: shopsData } = await shopsQuery.order('name');
         if (shopsData) {
-            setShops(shopsData);
-            if (shopsData.length > 0 && !shopId) setShopId(shopsData[0].id);
+          setShops(shopsData);
+          if (shopsData.length > 0 && !shopId) setShopId(shopsData[0].id);
         }
 
         // Fetch products
         const { data: productsData } = await supabase.from('products').select('*').order('name');
         if (productsData) {
-            setProducts(productsData);
-            if (productsData.length > 0 && items[0].productId === '') {
-              setItems([{ productId: productsData[0].id, quantity: '' }]);
-            }
+          setProducts(productsData);
+          if (productsData.length > 0 && items[0].productId === '') {
+            setItems([{ productId: productsData[0].id, quantity: '' }]);
+          }
         }
 
         // Fetch records with filters based on role hierarchy
         let query = supabase
           .from('sales_records')
           .select(`
-            *,
-            shop:shops!inner(
-              id,
-              name, 
-              owner_id,
-              profiles!owner_id(full_name, email)
-            ),
-            product:products(id, name)
-          `)
+              *,
+              shop:shops!inner(
+                id,
+                name, 
+                owner_id,
+                profiles!owner_id(full_name, email)
+              ),
+              product:products(id, name)
+            `)
           .order('date', { ascending: false });
 
         if (shopFilter !== 'all') query = query.eq('shop_id', shopFilter);
-        
+
         const currentRole = profile?.role || 'member';
         if (currentRole === 'admin') {
-            if (ownerFilter !== 'all') {
-                query = query.eq('shop.owner_id', ownerFilter);
-            }
+          if (ownerFilter !== 'all') {
+            query = query.eq('shop.owner_id', ownerFilter);
+          }
         } else if (currentRole === 'leader') {
-            const { data: members } = await supabase
-                .from('profiles')
-                .select('id')
-                .eq('leader_id', user.id);
-            
-            const memberIds = members?.map(m => m.id) || [];
-            const teamIds = [user.id, ...memberIds];
+          const { data: members } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('leader_id', user.id);
 
-            if (ownerFilter !== 'all' && teamIds.includes(ownerFilter)) {
-                query = query.eq('shop.owner_id', ownerFilter);
-            } else {
-                query = query.in('shop.owner_id', teamIds);
-            }
+          const memberIds = members?.map(m => m.id) || [];
+          const teamIds = [user.id, ...memberIds];
+
+          if (ownerFilter !== 'all' && teamIds.includes(ownerFilter)) {
+            query = query.eq('shop.owner_id', ownerFilter);
+          } else {
+            query = query.in('shop.owner_id', teamIds);
+          }
         } else {
-            // Member sees only their own shops
-            query = query.eq('shop.owner_id', user.id);
+          // Member sees only their own shops
+          query = query.eq('shop.owner_id', user.id);
         }
-        
+
         if (dateRange.start) query = query.gte('date', dateRange.start);
         if (dateRange.end) query = query.lte('date', dateRange.end);
 
         const { data: salesData } = await query.limit(50);
         if (salesData) setRecords(salesData);
+      } finally {
+        setInitialLoading(false);
+      }
     };
     fetchData();
   }, [supabase, refresh, shopFilter, ownerFilter, dateRange, shopId, items]);
@@ -160,12 +200,12 @@ export default function DailyEntryPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-        alert('You must be logged in');
-        setLoading(false);
-        return;
+      toast.error('You must be logged in');
+      setLoading(false);
+      return;
     }
 
     const records = items.map(item => {
@@ -189,7 +229,7 @@ export default function DailyEntryPage() {
     }).filter(r => r !== null);
 
     if (records.length === 0) {
-      alert('Please add at least one valid product record');
+      toast.error('Please add at least one valid product record');
       setLoading(false);
       return;
     }
@@ -197,12 +237,12 @@ export default function DailyEntryPage() {
     const { error } = await supabase.from('sales_records').insert(records);
 
     if (error) {
-        alert('Error saving records: ' + error.message);
+      toast.error('Error saving records: ' + error.message);
     } else {
-        alert('Daily records submitted successfully!');
-        setItems([{ productId: products[0]?.id || '', quantity: '' }]);
-        setIsModalOpen(false);
-        setRefresh(prev => prev + 1);
+      toast.success('Daily records submitted successfully!');
+      setItems([{ productId: products[0]?.id || '', quantity: '' }]);
+      setIsModalOpen(false);
+      setRefresh(prev => prev + 1);
     }
     setLoading(false);
   };
@@ -211,12 +251,12 @@ export default function DailyEntryPage() {
     e.preventDefault();
     if (!selectedRecord) return;
     setLoading(true);
-    
+
     const product = products.find(p => p.id === formData.productId);
     if (!product) {
-        alert('Invalid product');
-        setLoading(false);
-        return;
+      toast.error('Invalid product');
+      setLoading(false);
+      return;
     }
 
     const quantity = parseInt(formData.quantity) || 0;
@@ -233,11 +273,11 @@ export default function DailyEntryPage() {
     }).eq('id', selectedRecord.id);
 
     if (error) {
-        alert('Error updating record: ' + error.message);
+      toast.error('Error updating record: ' + error.message);
     } else {
-        alert('Record updated successfully!');
-        setIsEditModalOpen(false);
-        setRefresh(prev => prev + 1);
+      toast.success('Record updated successfully!');
+      setIsEditModalOpen(false);
+      setRefresh(prev => prev + 1);
     }
     setLoading(false);
   };
@@ -258,9 +298,9 @@ export default function DailyEntryPage() {
     setLoading(true);
     const { error } = await supabase.from('sales_records').delete().eq('id', id);
     if (error) {
-        alert('Error deleting record: ' + error.message);
+      toast.error('Error deleting record: ' + error.message);
     } else {
-        setRefresh(prev => prev + 1);
+      setRefresh(prev => prev + 1);
     }
     setLoading(false);
   };
@@ -275,11 +315,15 @@ export default function DailyEntryPage() {
   const totalQty = records.reduce((sum, r) => sum + (r.items_sold || 0), 0);
   const totalRevenue = records.reduce((sum, r) => sum + (r.revenue || 0), 0);
 
+  if (initialLoading) {
+    return <LoadingIndicator label="Loading sales data…" />;
+  }
+
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Sales Records</h1>
-        <Button onClick={() => setIsModalOpen(true)}>+ Add Daily Sales</Button>
+    <div className="sales-page" style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem', width: '100%', minWidth: 0 }}>
+      <div className="sales-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 600, minWidth: 0 }}>Sales Records</h1>
+        <Button className="sales-add-button" onClick={() => setIsModalOpen(true)}>+ Add Daily Sales</Button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
@@ -294,53 +338,82 @@ export default function DailyEntryPage() {
       </div>
 
       <Card>
-        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '0.5rem' }}>
-          <div style={{ minWidth: '150px', flex: 1 }}>
+        <div className="sales-filters" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: '0.25rem' }}>
+          <div className="sales-filter" style={{ minWidth: '150px', flex: 1 }}>
             <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Shop</label>
-            <select value={shopFilter} onChange={(e) => setShopFilter(e.target.value)} style={{ width: '100%' }}>
+            <select aria-label="Filter by shop" value={shopFilter} onChange={(e) => setShopFilter(e.target.value)} style={{ width: '100%' }}>
               <option value="all">All Shops</option>
               {shops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
 
           {['admin', 'leader'].includes(userRole) && (
-            <div style={{ minWidth: '150px', flex: 1 }}>
+            <div className="sales-filter" style={{ minWidth: '150px', flex: 1 }}>
               <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Owner</label>
-              <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} style={{ width: '100%' }}>
+              <select aria-label="Filter by owner" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} style={{ width: '100%' }}>
                 <option value="all">All Owners</option>
                 {profiles.map(p => <option key={p.id} value={p.id}>{p.full_name || p.email}</option>)}
               </select>
             </div>
           )}
 
-          <div style={{ minWidth: '300px', flex: 2, display: 'flex', gap: '0.5rem' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Start Date</label>
-              <input 
-                type="date" 
-                value={dateRange.start} 
-                onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
-                style={{ width: '100%', height: '40px', background: '#1a1a1a', border: '1px solid var(--border)', color: 'white', padding: '0 0.5rem', borderRadius: '4px' }}
-              />
+          <div className="sales-date-range" style={{ minWidth: '180px', flex: '1 1 80px', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.2rem' }}>Date Filter</label>
+              <div className="sales-date-filter-row">
+                <Button variant={dateFilter === 'today' ? 'primary' : 'secondary'} onClick={() => setDateFilter('today')} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>Today</Button>
+                <Button variant={dateFilter === 'this_month' ? 'primary' : 'secondary'} onClick={() => setDateFilter('this_month')} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>This Month</Button>
+                <Button variant={dateFilter === 'last_month' ? 'primary' : 'secondary'} onClick={() => setDateFilter('last_month')} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>Last Month</Button>
+                <Button variant={dateFilter === 'range' ? 'primary' : 'secondary'} onClick={() => setDateFilter('range')} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>Date Range</Button>
+                <Button
+                  className="sales-reset-button-inline"
+                  variant="ghost"
+                  onClick={() => {
+                    const today = new Date().toISOString().split('T')[0];
+                    setShopFilter('all');
+                    setOwnerFilter('all');
+                    setDateFilter('today');
+                    setDateRange({ start: today, end: today });
+                  }}
+                >
+                  Reset
+                </Button>
+              </div>
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>End Date</label>
-              <input 
-                type="date" 
-                value={dateRange.end} 
-                onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
-                style={{ width: '100%', height: '40px', background: '#1a1a1a', border: '1px solid var(--border)', color: 'white', padding: '0 0.5rem', borderRadius: '4px' }}
-              />
-            </div>
+
+            {dateFilter === 'range' && (
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                <div style={{ flex: 1, minWidth: '140px' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Start Date</label>
+                  <input
+                    aria-label="Start date"
+                    type="date"
+                    value={dateRange.start}
+                    onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                    style={{ width: '100%', height: '40px', background: '#1a1a1a', border: '1px solid var(--border)', color: 'white', padding: '0 0.5rem', borderRadius: '4px' }}
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: '140px' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>End Date</label>
+                  <input
+                    aria-label="End date"
+                    type="date"
+                    value={dateRange.end}
+                    onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                    style={{ width: '100%', height: '40px', background: '#1a1a1a', border: '1px solid var(--border)', color: 'white', padding: '0 0.5rem', borderRadius: '4px' }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
-          
-          <Button variant="ghost" onClick={() => { setShopFilter('all'); setOwnerFilter('all'); setDateRange({start: '', end: ''}); }}>Reset</Button>
+
         </div>
       </Card>
 
       <Card>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+        <div className="sales-table-wrapper" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <table className="sales-table" style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
                 <th style={{ padding: '0.75rem' }}>Date</th>
@@ -355,30 +428,31 @@ export default function DailyEntryPage() {
             <tbody style={{ fontSize: '0.875rem' }}>
               {records.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>No records found.</td>
+                  <td colSpan={7} data-label="Status" style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>No records found.</td>
                 </tr>
               ) : (
                 records.map((r) => (
                   <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                    <td style={{ padding: '0.75rem' }}>{new Date(r.date).toLocaleDateString('vi-VN')}</td>
-                    <td style={{ padding: '0.75rem' }}>{r.shop?.name}</td>
-                    <td style={{ padding: '0.75rem' }}>
+                    <td style={{ padding: '0.75rem' }} data-label="Date">{new Date(r.date).toLocaleDateString('vi-VN')}</td>
+                    <td style={{ padding: '0.75rem' }} data-label="Shop">{r.shop?.name}</td>
+                    <td style={{ padding: '0.75rem' }} data-label="Owner">
                       {(() => {
                         const shopData = r.shop;
                         // Supabase often returns the join under the table name or specified alias
                         const profile = Array.isArray(shopData?.profiles) ? shopData.profiles[0] : shopData?.profiles;
-                        
+
                         if (profile) {
                           return profile.full_name || profile.email || 'No Name';
                         }
                         return shopData?.owner_id ? `ID: ${shopData.owner_id.substring(0, 8)}...` : 'N/A';
                       })()}
                     </td>
-                    <td style={{ padding: '0.75rem' }}>{r.product?.name}</td>
-                    <td style={{ padding: '0.75rem' }}>{r.items_sold}</td>
-                    <td style={{ padding: '0.75rem' }}>{formatUSD(r.revenue)}</td>
-                    <td style={{ padding: '0.75rem' }}>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <td style={{ padding: '0.75rem' }} data-label="Product">{r.product?.name}</td>
+                    <td style={{ padding: '0.75rem' }} data-label="QTY">{r.items_sold}</td>
+                    <td style={{ padding: '0.75rem' }} data-label="Revenue">{formatUSD(r.revenue)}</td>
+                    <td style={{ padding: '0.75rem' }} data-label="Actions">
+                      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+
                         <Button variant="ghost" onClick={() => openEditModal(r)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}>
                           Edit
                         </Button>
@@ -396,36 +470,38 @@ export default function DailyEntryPage() {
       </Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Daily Sales Entry">
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '600px', maxWidth: '100%' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', maxWidth: '600px' }}>
+          <div className="sales-modal-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Shop</label>
-              <select 
+              <select
+                aria-label="Select shop"
                 style={{ width: '100%', height: '42px' }}
                 value={shopId}
                 onChange={(e) => setShopId(e.target.value)}
                 required
               >
                 {shops.map(shop => (
-                    <option key={shop.id} value={shop.id}>{shop.name}</option>
+                  <option key={shop.id} value={shop.id}>{shop.name}</option>
                 ))}
               </select>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Date</label>
-              <input 
-                type="date" 
+              <input
+                aria-label="Select date"
+                type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                required 
-                style={{ 
-                  width: '100%', 
-                  background: '#1a1a1a', 
-                  border: '1px solid var(--border)', 
-                  color: 'var(--foreground)', 
-                  padding: '0.625rem 1rem', 
-                  borderRadius: 'var(--radius-md)', 
+                required
+                style={{
+                  width: '100%',
+                  background: '#1a1a1a',
+                  border: '1px solid var(--border)',
+                  color: 'var(--foreground)',
+                  padding: '0.625rem 1rem',
+                  borderRadius: 'var(--radius-md)',
                   fontSize: '0.875rem',
                   height: '42px'
                 }}
@@ -434,54 +510,57 @@ export default function DailyEntryPage() {
           </div>
 
           <div style={{ marginTop: '0.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+            <div className="sales-products-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+
               <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>Products Sold</h3>
               <Button type="button" variant="ghost" onClick={addItem} style={{ fontSize: '0.875rem', color: 'var(--primary)' }}>
                 + Add row
               </Button>
             </div>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '300px', overflowY: 'auto', paddingRight: '0.5rem' }}>
               {items.map((item, index) => (
-                <div key={index} style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: '1fr 80px 40px', 
-                  gap: '0.75rem', 
-                  alignItems: 'center', 
-                  background: 'rgba(255,255,255,0.02)', 
-                  padding: '0.75rem', 
-                  borderRadius: '8px', 
-                  border: '1px solid var(--border)' 
+                <div key={index} className="sales-product-row" style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(140px, 1fr) 70px 36px',
+                  gap: '0.75rem',
+                  alignItems: 'center',
+                  background: 'rgba(255,255,255,0.02)',
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border)'
                 }}>
                   <div>
                     {index === 0 && <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Product</label>}
-                    <select 
+                    <select
+                      aria-label="Select product"
                       style={{ width: '100%', height: '40px' }}
                       value={item.productId}
                       onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
                       required
                     >
                       {products.map(p => (
-                          <option key={p.id} value={p.id}>{p.name}</option>
+                        <option key={p.id} value={p.id}>{p.name}</option>
                       ))}
                     </select>
                   </div>
 
                   <div>
                     {index === 0 && <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>QTY</label>}
-                    <input 
-                      type="number" 
-                      placeholder="0" 
+                    <input
+                      aria-label="Quantity"
+                      type="number"
+                      placeholder="0"
                       value={item.quantity}
                       onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                      required 
-                      style={{ 
-                        width: '100%', 
-                        background: '#1a1a1a', 
-                        border: '1px solid var(--border)', 
-                        color: 'var(--foreground)', 
-                        padding: '0.5rem 0.5rem', 
-                        borderRadius: 'var(--radius-md)', 
+                      required
+                      style={{
+                        width: '100%',
+                        background: '#1a1a1a',
+                        border: '1px solid var(--border)',
+                        color: 'var(--foreground)',
+                        padding: '0.5rem 0.5rem',
+                        borderRadius: 'var(--radius-md)',
                         fontSize: '0.875rem',
                         height: '40px'
                       }}
@@ -490,9 +569,10 @@ export default function DailyEntryPage() {
 
                   <div style={{ display: 'flex', justifyContent: 'center', paddingTop: index === 0 ? '1.25rem' : '0' }}>
                     {items.length > 1 && (
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={() => removeItem(index)}
+                        aria-label="Remove product row"
                         style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1.25rem' }}
                       >
                         ✕
@@ -505,86 +585,133 @@ export default function DailyEntryPage() {
           </div>
 
           <Button type="submit" fullWidth disabled={loading} style={{ height: '48px', fontSize: '1rem' }}>
-            {loading ? 'Submitting...' : 'Submit Daily Record'}
+            {loading ? 'Submitting…' : 'Submit Daily Record'}
           </Button>
         </form>
       </Modal>
 
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Sales Entry">
-        <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '500px', maxWidth: '100%' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Shop</label>
-              <select 
-                style={{ width: '100%', height: '42px' }}
-                value={formData.shopId}
-                onChange={(e) => setFormData({...formData, shopId: e.target.value})}
-                required
-              >
-                {shops.map(shop => (
-                    <option key={shop.id} value={shop.id}>{shop.name}</option>
-                ))}
-              </select>
-            </div>
+        <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', maxWidth: '500px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Shop</label>
+            <select
+              aria-label="Select shop"
+              style={{ width: '100%', height: '42px' }}
+              value={formData.shopId}
+              onChange={(e) => setFormData({ ...formData, shopId: e.target.value })}
+              required
+            >
+              {shops.map(shop => (
+                <option key={shop.id} value={shop.id}>{shop.name}</option>
+              ))}
+            </select>
+          </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Date</label>
-              <input 
-                type="date" 
-                value={formData.date}
-                onChange={(e) => setFormData({...formData, date: e.target.value})}
-                required 
-                style={{ 
-                  width: '100%', 
-                  background: '#1a1a1a', 
-                  border: '1px solid var(--border)', 
-                  color: 'white', 
-                  padding: '0.625rem 1rem', 
-                  borderRadius: 'var(--radius-md)', 
-                  fontSize: '0.875rem',
-                  height: '42px'
-                }}
-              />
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Date</label>
+            <input
+              aria-label="Select date"
+              type="date"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              required
+              style={{
+                width: '100%',
+                background: '#1a1a1a',
+                border: '1px solid var(--border)',
+                color: 'white',
+                padding: '0.625rem 1rem',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.875rem',
+                height: '42px'
+              }}
+            />
+          </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Product</label>
-              <select 
-                style={{ width: '100%', height: '42px' }}
-                value={formData.productId}
-                onChange={(e) => setFormData({...formData, productId: e.target.value})}
-                required
-              >
-                {products.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Product</label>
+            <select
+              aria-label="Select product"
+              style={{ width: '100%', height: '42px' }}
+              value={formData.productId}
+              onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
+              required
+            >
+              {products.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Quantity Sold</label>
-              <input 
-                type="number" 
-                value={formData.quantity}
-                onChange={(e) => setFormData({...formData, quantity: e.target.value})}
-                required 
-                style={{ 
-                  width: '100%', 
-                  background: '#1a1a1a', 
-                  border: '1px solid var(--border)', 
-                  color: 'white', 
-                  padding: '0.625rem 1rem', 
-                  borderRadius: 'var(--radius-md)', 
-                  fontSize: '0.875rem',
-                  height: '42px'
-                }}
-              />
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Quantity Sold</label>
+            <input
+              aria-label="Quantity"
+              type="number"
+              value={formData.quantity}
+              onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+              required
+              style={{
+                width: '100%',
+                background: '#1a1a1a',
+                border: '1px solid var(--border)',
+                color: 'white',
+                padding: '0.625rem 1rem',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.875rem',
+                height: '42px'
+              }}
+            />
+          </div>
 
-            <Button type="submit" fullWidth disabled={loading}>
-                {loading ? 'Updating...' : 'Update Sales Record'}
-            </Button>
+          <Button type="submit" fullWidth disabled={loading}>
+            {loading ? 'Updating…' : 'Update Sales Record'}
+          </Button>
         </form>
       </Modal>
+      <style jsx>{`
+        @media (max-width: 640px) {
+          .sales-table thead {
+            display: none;
+          }
+
+          .sales-table,
+          .sales-table tbody,
+          .sales-table tr,
+          .sales-table td {
+            display: block;
+            width: 100%;
+          }
+
+          .sales-table tr {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.5rem 0.25rem;
+            margin-bottom: 0.75rem;
+            background: rgba(255, 255, 255, 0.02);
+          }
+
+          .sales-table td {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          }
+
+          .sales-table td:last-child {
+            border-bottom: none;
+          }
+
+          .sales-table td::before {
+            content: attr(data-label);
+            color: var(--muted-foreground);
+            font-size: 0.75rem;
+            font-weight: 600;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -58,11 +58,12 @@ export default function ReportsPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
           <Card>
               <h3>Team Leader View</h3>
-              <p style={{ color: 'var(--muted-foreground)', marginTop: '0.5rem', fontSize: '0.875rem' }}>
-                  Total Profit (All Time): <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>
-                    ${sales.reduce((acc, curr) => acc + (curr.profit || 0), 0).toLocaleString()}
-                  </span>
-              </p>
+                <p style={{ color: 'var(--muted-foreground)', marginTop: '0.5rem', fontSize: '0.875rem' }}>
+                    Total Profit (All Time): <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>
+                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(sales.reduce((acc, curr) => acc + (curr.profit || 0), 0))}
+                    </span>
+                </p>
+
           </Card>
            <Card>
               <h3>Recent Activity</h3>

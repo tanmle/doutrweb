@@ -5,11 +5,14 @@ import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
+import { useToast } from '@/components/ui/ToastProvider';
 import { createClient } from '@/utils/supabase/client';
 
 export default function NewShopPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [name, setName] = useState('');
   const [platform, setPlatform] = useState('tiktok');
   const [status, setStatus] = useState('active');
@@ -18,39 +21,44 @@ export default function NewShopPage() {
   const [availableUsers, setAvailableUsers] = useState<any[]>([]);
   const [selectedOwnerId, setSelectedOwnerId] = useState<string>('');
 
+  const toast = useToast();
   const supabase = createClient();
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      if (user) {
-        setSelectedOwnerId(user.id);
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-        if (profile) {
-          setUserRole(profile.role);
-          if (profile.role === 'member') {
-            router.push('/shops');
-            return;
-          }
-          if (profile.role === 'admin') {
-            // Fetch all users to assign to
-            const { data: allUsers } = await supabase.from('profiles').select('id, full_name, email').order('full_name');
-            if (allUsers) setAvailableUsers(allUsers);
-          } else if (profile.role === 'leader') {
-            // Fetch only self and team members
-            const { data: teamUsers } = await supabase
-              .from('profiles')
-              .select('id, full_name, email')
-              .or(`id.eq.${user.id},leader_id.eq.${user.id}`)
-              .order('full_name');
-            if (teamUsers) setAvailableUsers(teamUsers);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+        if (user) {
+          setSelectedOwnerId(user.id);
+          const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+          if (profile) {
+            setUserRole(profile.role);
+            if (profile.role === 'member') {
+              router.push('/shops');
+              return;
+            }
+            if (profile.role === 'admin') {
+              // Fetch all users to assign to
+              const { data: allUsers } = await supabase.from('profiles').select('id, full_name, email').order('full_name');
+              if (allUsers) setAvailableUsers(allUsers);
+            } else if (profile.role === 'leader') {
+              // Fetch only self and team members
+              const { data: teamUsers } = await supabase
+                .from('profiles')
+                .select('id, full_name, email')
+                .or(`id.eq.${user.id},leader_id.eq.${user.id}`)
+                .order('full_name');
+              if (teamUsers) setAvailableUsers(teamUsers);
+            }
           }
         }
+      } finally {
+        setInitialLoading(false);
       }
     };
     init();
-  }, [supabase]);
+  }, [supabase, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,13 +75,17 @@ export default function NewShopPage() {
     });
 
     if (error) {
-        alert('Error creating shop: ' + error.message);
+        toast.error('Error creating shop: ' + error.message);
         setLoading(false);
     } else {
         router.push('/shops');
         router.refresh();
     }
   };
+
+  if (initialLoading) {
+    return <LoadingIndicator label="Loading shop setup…" />;
+  }
 
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto' }}>
@@ -89,10 +101,11 @@ export default function NewShopPage() {
             required 
           />
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Platform</label>
               <select 
+                aria-label="Select platform"
                 style={{ width: '100%' }}
                 value={platform}
                 onChange={(e) => setPlatform(e.target.value)}
@@ -106,6 +119,7 @@ export default function NewShopPage() {
             <div>
               <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Status</label>
               <select 
+                aria-label="Select status"
                 style={{ width: '100%' }}
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
@@ -120,6 +134,7 @@ export default function NewShopPage() {
             <div>
               <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Assign to Owner</label>
               <select 
+                aria-label="Assign shop owner"
                 style={{ width: '100%' }}
                 value={selectedOwnerId}
                 onChange={(e) => setSelectedOwnerId(e.target.value)}
@@ -140,7 +155,7 @@ export default function NewShopPage() {
               Cancel
             </Button>
             <Button type="submit" style={{ flex: 1 }} disabled={loading}>
-              {loading ? 'Creating...' : 'Create Shop'}
+              {loading ? 'Creating…' : 'Create Shop'}
             </Button>
           </div>
         </form>

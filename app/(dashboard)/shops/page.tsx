@@ -5,13 +5,16 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Modal } from '@/components/ui/Modal';
+import { useToast } from '@/components/ui/ToastProvider';
 import { createClient } from '@/utils/supabase/client';
 import { Shop } from '@/lib/types';
 
 export default function ShopsPage() {
   const [shops, setShops] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [ownerFilter, setOwnerFilter] = useState<string>('all');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedShop, setSelectedShop] = useState<any>(null);
@@ -19,62 +22,66 @@ export default function ShopsPage() {
   const [userRole, setUserRole] = useState<string>('member');
   const [formData, setFormData] = useState<any>({});
 
+  const toast = useToast();
   const supabase = createClient();
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
-      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-      if (profile) {
-        setUserRole(profile.role);
-        if (profile.role === 'admin') {
-          const { data: profileData } = await supabase.from('profiles').select('id, full_name, email').order('full_name');
-          if (profileData) setProfiles(profileData);
-        } else if (profile.role === 'leader') {
-          const { data: teamProfiles } = await supabase
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        if (profile) {
+          setUserRole(profile.role);
+          if (profile.role === 'admin') {
+            const { data: profileData } = await supabase.from('profiles').select('id, full_name, email').order('full_name');
+            if (profileData) setProfiles(profileData);
+          } else if (profile.role === 'leader') {
+            const { data: teamProfiles } = await supabase
+              .from('profiles')
+              .select('id, full_name, email')
+              .or(`id.eq.${user.id},leader_id.eq.${user.id}`)
+              .order('full_name');
+            if (teamProfiles) setProfiles(teamProfiles);
+          }
+        }
+
+        let query = supabase
+          .from('shops')
+          .select('*, owner:profiles!owner_id(full_name, email)')
+          .order('name');
+
+        const currentRole = profile?.role || 'member';
+        if (currentRole === 'admin') {
+          if (ownerFilter !== 'all') {
+            query = query.eq('owner_id', ownerFilter);
+          }
+        } else if (currentRole === 'leader') {
+          const { data: members } = await supabase
             .from('profiles')
-            .select('id, full_name, email')
-            .or(`id.eq.${user.id},leader_id.eq.${user.id}`)
-            .order('full_name');
-          if (teamProfiles) setProfiles(teamProfiles);
-        }
-      }
+            .select('id')
+            .eq('leader_id', user.id);
 
-      let query = supabase
-        .from('shops')
-        .select('*, owner:profiles!owner_id(full_name, email)')
-        .order('name');
+          const memberIds = members?.map(m => m.id) || [];
+          const teamIds = [user.id, ...memberIds];
 
-      const currentRole = profile?.role || 'member';
-      if (currentRole === 'admin') {
-        if (ownerFilter !== 'all') {
-          query = query.eq('owner_id', ownerFilter);
-        }
-      } else if (currentRole === 'leader') {
-        const { data: members } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('leader_id', user.id);
-
-        const memberIds = members?.map(m => m.id) || [];
-        const teamIds = [user.id, ...memberIds];
-
-        if (ownerFilter !== 'all' && teamIds.includes(ownerFilter)) {
-          query = query.eq('owner_id', ownerFilter);
+          if (ownerFilter !== 'all' && teamIds.includes(ownerFilter)) {
+            query = query.eq('owner_id', ownerFilter);
+          } else {
+            query = query.in('owner_id', teamIds);
+          }
         } else {
-          query = query.in('owner_id', teamIds);
+          // Member sees only their own shops
+          query = query.eq('owner_id', user.id);
         }
-      } else {
-        // Member sees only their own shops
-        query = query.eq('owner_id', user.id);
+
+        const { data: shopsData } = await query;
+
+        if (shopsData) setShops(shopsData);
+      } finally {
+        setInitialLoading(false);
       }
-
-      const { data: shopsData } = await query;
-
-      if (shopsData) setShops(shopsData);
-      setLoading(false);
     };
 
     fetchInitialData();
@@ -107,14 +114,44 @@ export default function ShopsPage() {
       .eq('id', selectedShop.id);
 
     if (error) {
-      alert(error.message);
+      toast.error(error.message);
     } else {
       setIsEditModalOpen(false);
-      // Refresh list
-      const { data } = await supabase
+      // Refresh list scoped to role
+      let query = supabase
         .from('shops')
         .select('*, owner:profiles!owner_id(full_name, email)')
         .order('name');
+
+      if (userRole === 'admin') {
+        if (ownerFilter !== 'all') {
+          query = query.eq('owner_id', ownerFilter);
+        }
+      } else if (userRole === 'leader') {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: members } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('leader_id', user.id);
+
+          const memberIds = members?.map(m => m.id) || [];
+          const teamIds = [user.id, ...memberIds];
+
+          if (ownerFilter !== 'all' && teamIds.includes(ownerFilter)) {
+            query = query.eq('owner_id', ownerFilter);
+          } else {
+            query = query.in('owner_id', teamIds);
+          }
+        }
+      } else {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          query = query.eq('owner_id', user.id);
+        }
+      }
+
+      const { data } = await query;
       if (data) setShops(data);
     }
     setLoading(false);
@@ -130,10 +167,10 @@ export default function ShopsPage() {
       .eq('id', id);
 
     if (error) {
-      alert(error.message);
+      toast.error(error.message);
     } else {
       setShops(shops.filter(s => s.id !== id));
-      alert('Shop deleted successfully');
+      toast.success('Shop deleted successfully');
     }
     setLoading(false);
   };
@@ -152,6 +189,7 @@ export default function ShopsPage() {
             <div style={{ minWidth: '200px' }}>
               <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Filter by Owner</label>
               <select
+                aria-label="Filter by owner"
                 value={ownerFilter}
                 onChange={(e) => setOwnerFilter(e.target.value)}
                 style={{ fontSize: '0.875rem', width: '100%' }}
@@ -172,8 +210,8 @@ export default function ShopsPage() {
         )}
       </div>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', color: 'var(--muted-foreground)' }}>Loading shops...</div>
+      {initialLoading ? (
+        <LoadingIndicator label="Loading shops…" />
       ) : shops.length === 0 ? (
         <Card className="flex-center" style={{ borderStyle: 'dashed', minHeight: '180px', opacity: 0.8 }}>
           <div style={{ textAlign: 'center' }}>
@@ -219,6 +257,7 @@ export default function ShopsPage() {
                     style={{ flex: '0 0 auto', color: '#ef4444', padding: '0.5rem' }}
                     onClick={() => handleDeleteShop(shop.id, shop.name)}
                     title="Delete Shop"
+                    aria-label="Delete shop"
                   >
                     ✕
                   </Button>

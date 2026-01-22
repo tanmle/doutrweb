@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/Card';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { createClient } from '@/utils/supabase/client';
 import styles from './page.module.css';
 import {
@@ -32,6 +33,7 @@ type SalesRecord = {
     owner_id?: string | null;
     owner?: {
       full_name?: string | null;
+      role?: string | null;
     } | null;
   } | null;
 };
@@ -125,7 +127,7 @@ export default function DashboardPage() {
                     items_sold, 
                     shop:shops!inner(
                         owner_id, 
-                        owner:profiles!owner_id(full_name)
+                        owner:profiles!owner_id(full_name, role)
                     )
                 `)
           .gte('date', dateStr);
@@ -166,8 +168,11 @@ export default function DashboardPage() {
           // Process Chart Data (30-day trend context)
           const membersSet = new Set<string>();
           const groupedData = salesRows.reduce<Record<string, ChartPoint>>((acc, curr) => {
+            const owner = curr.shop?.owner;
+            if (owner?.role === 'admin') return acc;
+
             const date = curr.date;
-            const name = curr.shop?.owner?.full_name || 'Unknown';
+            const name = owner?.full_name || 'Unknown';
             const rev = Number(curr.revenue) || 0;
             membersSet.add(name);
 
@@ -196,6 +201,11 @@ export default function DashboardPage() {
   }, [supabase]);
 
   const progress = Math.min((stats.currentKPI / stats.targetKPI) * 100, 100);
+
+  const currencyFormatter = useMemo(() => new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD'
+  }), []);
 
   const filteredChartData = useMemo(() => {
     if (chartData.length === 0) return chartData;
@@ -257,7 +267,7 @@ export default function DashboardPage() {
     return dateRange.start && dateRange.end ? `${dateRange.start} → ${dateRange.end}` : 'Date Range';
   }, [dateRange.end, dateRange.start, filter]);
 
-  if (loading) return <div style={{ padding: '2rem' }}>Loading Dashboard...</div>;
+  if (loading) return <LoadingIndicator label="Loading dashboard…" />;
 
   return (
     <div>
@@ -272,7 +282,7 @@ export default function DashboardPage() {
 
         <Card className={styles.statCard}>
           <span className={styles.statLabel}>Today's Revenue</span>
-          <span className={styles.statValue}>${stats.todayRevenue.toLocaleString()}</span>
+          <span className={styles.statValue}>{currencyFormatter.format(stats.todayRevenue)}</span>
           <span className={styles.statTrend}>Gross Revenue Today</span>
         </Card>
 
@@ -280,14 +290,15 @@ export default function DashboardPage() {
           <span className={styles.statLabel}>Monthly KPI Progress</span>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <span className={styles.statValue}>{progress.toFixed(1)}%</span>
-            <span style={{ color: 'var(--muted-foreground)' }}>Target: ${stats.targetKPI.toLocaleString()}</span>
+            <span style={{ color: 'var(--muted-foreground)' }}>Target: {currencyFormatter.format(stats.targetKPI)}</span>
           </div>
           <div className={styles.progressBar}>
             <div className={styles.progressFill} style={{ width: `${progress}%` }} />
           </div>
-          <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginTop: '0.5rem', display: 'block' }}>
-            MTD: ${stats.monthlyRevenue.toLocaleString()}
-          </span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginTop: '0.5rem', display: 'block' }}>
+              MTD: {currencyFormatter.format(stats.monthlyRevenue)}
+            </span>
+
         </Card>
       </div>
 
@@ -297,6 +308,7 @@ export default function DashboardPage() {
             <h2 className={styles.sectionTitle} style={{ margin: 0 }}>Analytics: Revenue</h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
               <select
+                aria-label="Filter chart by date"
                 value={filter}
                 onChange={(event) => setFilter(event.target.value as ChartFilter)}
                 style={{
@@ -316,6 +328,7 @@ export default function DashboardPage() {
               </select>
               {role !== 'member' && (
                 <select
+                  aria-label="Filter chart by member"
                   value={memberFilter}
                   onChange={(event) => setMemberFilter(event.target.value)}
                   style={{
@@ -337,6 +350,7 @@ export default function DashboardPage() {
               {filter === 'range' && (
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   <input
+                    aria-label="Start date"
                     type="date"
                     value={dateRange.start}
                     onChange={(event) => setDateRange((prev) => ({ ...prev, start: event.target.value }))}
@@ -351,6 +365,7 @@ export default function DashboardPage() {
                   />
                   <span style={{ color: 'var(--muted-foreground)' }}>to</span>
                   <input
+                    aria-label="End date"
                     type="date"
                     value={dateRange.end}
                     onChange={(event) => setDateRange((prev) => ({ ...prev, end: event.target.value }))}
@@ -405,7 +420,7 @@ export default function DashboardPage() {
                     contentStyle={{ background: '#1a1a1a', border: '1px solid var(--border)', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)' }}
                     itemStyle={{ fontSize: '12px', padding: '2px 0' }}
                     labelStyle={{ fontWeight: 'bold', marginBottom: '4px', color: 'var(--primary)' }}
-                    formatter={(value: any, name?: string) => [`$${Number(value || 0).toLocaleString()}`, name || 'Revenue']}
+                    formatter={(value: any, name?: string) => [currencyFormatter.format(Number(value || 0)), name || 'Revenue']}
                   />
                   <Legend verticalAlign="top" height={40} iconType="circle" />
                   {memberNamesToRender.map((name, index) => (

@@ -74,6 +74,9 @@ export default function LoginPage() {
             label="Email Address"
             placeholder="seller@gmail.com"
             type="email"
+            name="email"
+            autoComplete="email"
+            spellCheck={false}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -82,6 +85,8 @@ export default function LoginPage() {
             label="Password"
             placeholder="••••••••"
             type="password"
+            name="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -89,7 +94,7 @@ export default function LoginPage() {
 
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Processing...' : 'Sign In'}
+              {loading ? 'Processing…' : 'Sign In'}
             </Button>
           </div>
         </form>
