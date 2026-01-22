@@ -4,12 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import styles from './SalesPage.module.css';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/ToastProvider';
 import { createClient } from '@/utils/supabase/client';
-import { Shop } from '@/lib/types';
 
 export default function DailyEntryPage() {
   const [loading, setLoading] = useState(false);
@@ -320,13 +319,15 @@ export default function DailyEntryPage() {
   }
 
   return (
-    <div className="sales-page" style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem', width: '100%', minWidth: 0 }}>
-      <div className="sales-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 600, minWidth: 0 }}>Sales Records</h1>
-        <Button className="sales-add-button" onClick={() => setIsModalOpen(true)}>+ Add Daily Sales</Button>
+    <div className={styles.page}>
+      <div className={styles.headerBar}>
+        <h1 className={styles.title}>Sales Records</h1>
+        <div className={styles.addButtonWrap}>
+          <Button onClick={() => setIsModalOpen(true)}>+ Add Daily Sales</Button>
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+      <div className={styles.kpiGrid}>
         <Card style={{ padding: '1.25rem', borderLeft: '4px solid var(--primary)' }}>
           <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Total QTY</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{totalQty.toLocaleString()}</div>
@@ -338,54 +339,72 @@ export default function DailyEntryPage() {
       </div>
 
       <Card>
-        <div className="sales-filters" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: '0.25rem' }}>
-          <div className="sales-filter" style={{ minWidth: '150px', flex: 1 }}>
-            <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Shop</label>
-            <select aria-label="Filter by shop" value={shopFilter} onChange={(e) => setShopFilter(e.target.value)} style={{ width: '100%' }}>
+        <div className={styles.filtersRow}>
+          <div className={styles.filterCol}>
+            <label className={styles.label}>Shop</label>
+            <select
+              aria-label="Filter by shop"
+              value={shopFilter}
+              onChange={(e) => setShopFilter(e.target.value)}
+              className={styles.select}
+            >
               <option value="all">All Shops</option>
               {shops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
 
           {['admin', 'leader'].includes(userRole) && (
-            <div className="sales-filter" style={{ minWidth: '150px', flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Owner</label>
-              <select aria-label="Filter by owner" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} style={{ width: '100%' }}>
+            <div className={styles.filterCol}>
+              <label className={styles.label}>Owner</label>
+              <select
+                aria-label="Filter by owner"
+                value={ownerFilter}
+                onChange={(e) => setOwnerFilter(e.target.value)}
+                className={styles.select}
+              >
                 <option value="all">All Owners</option>
                 {profiles.map(p => <option key={p.id} value={p.id}>{p.full_name || p.email}</option>)}
               </select>
             </div>
           )}
 
-          <div className="sales-date-range" style={{ minWidth: '180px', flex: '1 1 80px', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.2rem' }}>Date Filter</label>
-              <div className="sales-date-filter-row">
-                <Button variant={dateFilter === 'today' ? 'primary' : 'secondary'} onClick={() => setDateFilter('today')} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>Today</Button>
-                <Button variant={dateFilter === 'this_month' ? 'primary' : 'secondary'} onClick={() => setDateFilter('this_month')} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>This Month</Button>
-                <Button variant={dateFilter === 'last_month' ? 'primary' : 'secondary'} onClick={() => setDateFilter('last_month')} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>Last Month</Button>
-                <Button variant={dateFilter === 'range' ? 'primary' : 'secondary'} onClick={() => setDateFilter('range')} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>Date Range</Button>
-                <Button
-                  className="sales-reset-button-inline"
-                  variant="ghost"
-                  onClick={() => {
-                    const today = new Date().toISOString().split('T')[0];
-                    setShopFilter('all');
-                    setOwnerFilter('all');
-                    setDateFilter('today');
-                    setDateRange({ start: today, end: today });
-                  }}
-                >
-                  Reset
-                </Button>
-              </div>
+          <div className={styles.dateCol}>
+            <label className={styles.label}>Date Filter</label>
+
+            <div className={styles.dateButtons}>
+              <Button variant={dateFilter === 'today' ? 'primary' : 'secondary'} onClick={() => setDateFilter('today')} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>
+                Today
+              </Button>
+              <Button variant={dateFilter === 'this_month' ? 'primary' : 'secondary'} onClick={() => setDateFilter('this_month')} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>
+                This Month
+              </Button>
+              <Button variant={dateFilter === 'last_month' ? 'primary' : 'secondary'} onClick={() => setDateFilter('last_month')} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>
+                Last Month
+              </Button>
+              <Button variant={dateFilter === 'range' ? 'primary' : 'secondary'} onClick={() => setDateFilter('range')} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>
+                Date Range
+              </Button>
+
+              <Button
+                className={styles.resetBtn}
+                variant="ghost"
+                onClick={() => {
+                  const today = new Date().toISOString().split('T')[0];
+                  setShopFilter('all');
+                  setOwnerFilter('all');
+                  setDateFilter('today');
+                  setDateRange({ start: today, end: today });
+                }}
+              >
+                Reset
+              </Button>
             </div>
 
             {dateFilter === 'range' && (
-
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                <div style={{ flex: 1, minWidth: '140px' }}>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Start Date</label>
+              <div className={styles.rangeRow}>
+                {/* keep your existing date inputs, just remove the wrapper inline flex */}
+                <div>
+                  <label className={styles.label}>Start Date</label>
                   <input
                     aria-label="Start date"
                     type="date"
@@ -394,8 +413,9 @@ export default function DailyEntryPage() {
                     style={{ width: '100%', height: '40px', background: '#1a1a1a', border: '1px solid var(--border)', color: 'white', padding: '0 0.5rem', borderRadius: '4px' }}
                   />
                 </div>
-                <div style={{ flex: 1, minWidth: '140px' }}>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>End Date</label>
+
+                <div>
+                  <label className={styles.label}>End Date</label>
                   <input
                     aria-label="End date"
                     type="date"
@@ -407,6 +427,7 @@ export default function DailyEntryPage() {
               </div>
             )}
           </div>
+
 
         </div>
       </Card>
@@ -451,7 +472,7 @@ export default function DailyEntryPage() {
                     <td style={{ padding: '0.75rem' }} data-label="QTY">{r.items_sold}</td>
                     <td style={{ padding: '0.75rem' }} data-label="Revenue">{formatUSD(r.revenue)}</td>
                     <td style={{ padding: '0.75rem' }} data-label="Actions">
-                      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      <div className={styles.tableActions}>
 
                         <Button variant="ghost" onClick={() => openEditModal(r)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}>
                           Edit

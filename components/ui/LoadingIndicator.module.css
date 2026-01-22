@@ -1,0 +1,309 @@
+@keyframes rollWheel {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes cartBounce {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+
+  50% {
+    transform: translateY(-4px) rotate(2deg);
+  }
+}
+
+@keyframes itemBob {
+
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+
+  50% {
+    transform: translateY(-8px) scale(1.05);
+  }
+}
+
+@keyframes itemFloatIn {
+  0% {
+    opacity: 0;
+    transform: translate(-20px, 20px) scale(0.5);
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(60px, -40px) scale(1);
+  }
+}
+
+@keyframes glowPulse {
+
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scaleX(1);
+  }
+
+  50% {
+    opacity: 0.6;
+    transform: scaleX(1.2);
+  }
+}
+
+@keyframes cartRoll {
+  0% {
+    transform: translateX(-20px);
+  }
+
+  50% {
+    transform: translateX(0px);
+  }
+
+  100% {
+    transform: translateX(-20px);
+  }
+}
+
+.loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 2rem;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  gap: 2rem;
+}
+
+.cartContainer {
+  position: relative;
+  width: 120px;
+  height: 100px;
+  animation: cartRoll 2s ease-in-out infinite;
+}
+
+.cartBody {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 45px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 32px rgba(99, 102, 241, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation: cartBounce 1s ease-in-out infinite;
+}
+
+.cartHandle {
+  position: absolute;
+  top: -12px;
+  right: -16px;
+  width: 24px;
+  height: 20px;
+  border: 3px solid #4f46e5;
+  border-left: none;
+  border-radius: 0 12px 12px 0;
+  transform: rotate(-15deg);
+}
+
+.cartInner {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.wheel {
+  position: absolute;
+  bottom: 8px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  animation: rollWheel 0.5s linear infinite;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.5),
+    inset 0 2px 4px rgba(255, 255, 255, 0.1);
+}
+
+.wheel::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.wheel::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.wheelLeft {
+  left: 16px;
+}
+
+.wheelRight {
+  right: 16px;
+}
+
+.item {
+  position: absolute;
+  font-size: 1.25rem;
+  animation: itemBob 1s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.item1 {
+  top: 8px;
+  left: 12px;
+  animation-delay: 0s;
+}
+
+.item2 {
+  top: 14px;
+  left: 32px;
+  animation-delay: 0.15s;
+}
+
+.item3 {
+  top: 6px;
+  left: 52px;
+  animation-delay: 0.3s;
+}
+
+.floatingItem {
+  position: absolute;
+  font-size: 1rem;
+  animation: itemFloatIn 2s ease-in-out infinite;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.floatingItem1 {
+  top: 20px;
+  right: -30px;
+  animation-delay: 0s;
+}
+
+.floatingItem2 {
+  top: 40px;
+  right: -20px;
+  animation-delay: 0.5s;
+}
+
+.floatingItem3 {
+  top: 10px;
+  right: -40px;
+  animation-delay: 1s;
+}
+
+.trail {
+  position: absolute;
+  left: -40px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 80px;
+  height: 8px;
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.4), transparent);
+  border-radius: 4px;
+  animation: glowPulse 1s ease-in-out infinite;
+}
+
+.loader>div:last-child {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* dots row */
+.dots {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.75rem;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  background: var(--primary);
+  border-radius: 50%;
+  animation: itemBob 1.4s ease-in-out infinite;
+  box-shadow: 0 0 12px var(--primary);
+}
+
+.dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.label {
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .cartContainer {
+    width: 100px;
+    height: 85px;
+  }
+
+  .cartBody {
+    width: 70px;
+    height: 40px;
+    bottom: 20px;
+  }
+
+  .wheel {
+    width: 14px;
+    height: 14px;
+  }
+
+  .item {
+    font-size: 1rem;
+  }
+
+  .floatingItem {
+    font-size: 0.875rem;
+  }
+}

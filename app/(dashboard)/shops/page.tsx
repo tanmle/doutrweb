@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
+import styles from './ShopsPage.module.css';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -256,22 +256,24 @@ export default function ShopsPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-end' }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Shops</h1>
+      <div className={styles.headerBar}>
+        <div className={styles.leftGroup}>
+          <h1 className={styles.title}>Shops</h1>
 
           {['admin', 'leader'].includes(userRole) && (
-            <div style={{ minWidth: '200px' }}>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Filter by Owner</label>
+            <div className={styles.filterBox}>
+              <label className={styles.filterLabel}>Filter by Owner</label>
               <select
                 aria-label="Filter by owner"
                 value={ownerFilter}
                 onChange={(e) => setOwnerFilter(e.target.value)}
-                style={{ fontSize: '0.875rem', width: '100%' }}
+                className={styles.filterSelect}
               >
                 <option value="all">All Owners</option>
                 {profiles.map((p) => (
-                  <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
+                  <option key={p.id} value={p.id}>
+                    {p.full_name || p.email}
+                  </option>
                 ))}
               </select>
             </div>
@@ -279,7 +281,11 @@ export default function ShopsPage() {
         </div>
 
         {userRole !== 'member' && (
-          <Button onClick={openCreateModal}>+ New Shop</Button>
+          <div className={styles.newButton}>
+            <Button onClick={openCreateModal} fullWidth>
+              + New Shop
+            </Button>
+          </div>
         )}
       </div>
 

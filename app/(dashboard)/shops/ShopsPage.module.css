@@ -1,0 +1,65 @@
+.headerBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.leftGroup {
+    display: flex;
+    align-items: flex-end;
+    gap: 2rem;
+    min-width: 0;
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.filterBox {
+    min-width: 240px;
+}
+
+.filterLabel {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+    margin-bottom: 0.5rem;
+}
+
+.filterSelect {
+    width: 100%;
+    font-size: 0.875rem;
+}
+
+/* ✅ Mobile */
+@media (max-width: 640px) {
+    .headerBar {
+        flex-direction: column;
+        align-items: stretch;
+        /* full width children */
+    }
+
+    .leftGroup {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .filterBox {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .filterSelect {
+        width: 100%;
+    }
+
+    .newButton {
+        width: 100%;
+    }
+}
