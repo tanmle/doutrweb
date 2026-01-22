@@ -2,7 +2,7 @@
  * Type definitions for the admin panel
  */
 
-export type Tab = 'products' | 'users' | 'fees' | 'configuration';
+export type Tab = 'products' | 'users' | 'fees' | 'configuration' | 'payroll';
 export type FeeFilter = 'all' | 'today' | 'this_month' | 'last_month' | 'range';
 
 export interface Product {
@@ -22,6 +22,7 @@ export interface User {
   leader_id?: string;
   bank_name?: string;
   bank_number?: string;
+  base_salary?: number;
   created_at: string;
   leader?: {
     full_name: string;
@@ -47,6 +48,26 @@ export interface Profile {
   role: 'admin' | 'leader' | 'member';
   bank_name?: string;
   bank_number?: string;
+  base_salary?: number;
+}
+
+export interface PayrollRecord {
+  id: string;
+  user_id: string;
+  month: string;
+  standard_work_days: number;
+  actual_work_days: number;
+  bonus: number;
+  total_salary: number;
+  status: 'pending' | 'paid';
+  user?: {
+    full_name: string;
+    email: string;
+    role?: string;
+    bank_name?: string;
+    bank_number?: string;
+    base_salary?: number;
+  };
 }
 
 export interface CommissionRate {

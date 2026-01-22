@@ -37,6 +37,12 @@ export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
             >
                 Configuration
             </Button>
+            <Button
+                variant={activeTab === 'payroll' ? 'primary' : 'ghost'}
+                onClick={() => onTabChange('payroll')}
+            >
+                Payroll
+            </Button>
         </div>
     );
 }

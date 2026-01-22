@@ -6,6 +6,7 @@ import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { useToast } from '@/components/ui/ToastProvider';
 import { createClient } from '@/utils/supabase/client';
 import { createUser, deleteUser, resetUserPassword } from './actions';
+import { generatePayroll, updatePayrollRecord } from './actions_payroll';
 import { useAuth } from './hooks/useAuth';
 import { useAdminData } from './hooks/useAdminData';
 import {
@@ -14,12 +15,15 @@ import {
   UsersTab,
   FeesTab,
   ConfigurationTab,
+  PayrollTab,
   ProductModal,
   FeeModal,
   UserModal,
+  PayrollModal,
+  GeneratePayrollModal,
   AdminTableStyles,
 } from './components';
-import type { Tab, FeeFilter, Product, User, Fee, FormData } from './utils/types';
+import type { Tab, FeeFilter, Product, User, Fee, FormData, PayrollRecord } from './utils/types';
 import styles from './components/AdminComponents.module.css';
 
 export default function AdminPage() {
@@ -29,6 +33,7 @@ export default function AdminPage() {
   const [ownerFilter, setOwnerFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
   const [refresh, setRefresh] = useState(0);
+  const [payrollMonth, setPayrollMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
 
   // Modal states
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -40,6 +45,9 @@ export default function AdminPage() {
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isPayrollModalOpen, setIsPayrollModalOpen] = useState(false);
+  const [selectedPayrollRecord, setSelectedPayrollRecord] = useState<PayrollRecord | null>(null);
+  const [isGeneratePayrollModalOpen, setIsGeneratePayrollModalOpen] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<FormData>({});
@@ -55,7 +63,8 @@ export default function AdminPage() {
     profiles,
     commissionRates,
     setCommissionRates,
-  } = useAdminData({ activeTab, feeFilter, ownerFilter, dateRange, refresh });
+    payrollRecords,
+  } = useAdminData({ activeTab, feeFilter, ownerFilter, dateRange, month: payrollMonth, refresh });
 
   const supabase = createClient();
   const toast = useToast();
@@ -218,7 +227,8 @@ export default function AdminPage() {
       role: formData.role || 'member',
       leader_id: (formData.role === 'member' || !formData.role) ? formData.leader_id : null,
       bank_name: formData.bank_name,
-      bank_number: formData.bank_number
+      bank_number: formData.bank_number,
+      base_salary: parseFloat(formData.base_salary) || 0
     });
 
     if (res.error) {
@@ -241,7 +251,8 @@ export default function AdminPage() {
       role: formData.role,
       leader_id: formData.role === 'member' ? (formData.leader_id || null) : null,
       bank_name: formData.bank_name || null,
-      bank_number: formData.bank_number || null
+      bank_number: formData.bank_number || null,
+      base_salary: parseFloat(formData.base_salary) || 0
     }).eq('id', selectedUser.id);
 
     if (error) toast.error(error.message);
@@ -261,7 +272,8 @@ export default function AdminPage() {
       role: user.role,
       leader_id: user.leader_id || '',
       bank_name: user.bank_name || '',
-      bank_number: user.bank_number || ''
+      bank_number: user.bank_number || '',
+      base_salary: user.base_salary || ''
     });
     setIsEditUserModalOpen(true);
   };
@@ -311,6 +323,51 @@ export default function AdminPage() {
       toast.error('Error updating commission rates: ' + error.message);
     } else {
       toast.success('Commission rates updated successfully!');
+      setRefresh(prev => prev + 1);
+    }
+    setLoading(false);
+  };
+
+  // Payroll handlers
+  const handleGeneratePayroll = () => {
+    setIsGeneratePayrollModalOpen(true);
+  };
+
+  const handleBulkGenerateSubmit = async (standardDays: number, userDays: Record<string, number>) => {
+    setLoading(true);
+    const result = await generatePayroll(payrollMonth, standardDays, userDays);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success(`Payroll generated for ${payrollMonth}`);
+      setRefresh(prev => prev + 1);
+      setIsGeneratePayrollModalOpen(false);
+    }
+    setLoading(false);
+  };
+
+  const openEditPayrollModal = (record: PayrollRecord) => {
+    setSelectedPayrollRecord(record);
+    setIsPayrollModalOpen(true);
+  };
+
+  const handleUpdatePayrollSubmit = async (data: any) => {
+    if (!selectedPayrollRecord) return;
+    setLoading(true);
+    const result = await updatePayrollRecord(selectedPayrollRecord.id, {
+      standard_work_days: data.standard_work_days,
+      actual_work_days: data.actual_work_days,
+      bonus: data.bonus,
+      total_salary: data.total_salary,
+      status: data.status
+    });
+
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success('Payroll record updated');
+      setIsPayrollModalOpen(false);
+      setSelectedPayrollRecord(null);
       setRefresh(prev => prev + 1);
     }
     setLoading(false);
@@ -373,6 +430,18 @@ export default function AdminPage() {
             loading={loading}
             onCommissionChange={handleCommissionChange}
             onSave={handleSaveCommission}
+          />
+        )}
+
+        {activeTab === 'payroll' && (
+          <PayrollTab
+            payrollRecords={payrollRecords}
+            users={users} // pass users if needed for extra info, though records have user relation
+            loading={dataLoading}
+            month={payrollMonth}
+            onMonthChange={setPayrollMonth}
+            onGenerate={handleGeneratePayroll}
+            onEdit={openEditPayrollModal}
           />
         )}
       </Card>
@@ -440,6 +509,32 @@ export default function AdminPage() {
         onClose={() => setIsEditUserModalOpen(false)}
         onSubmit={handleUpdateUserSubmit}
         onChange={handleInputChange}
+      />
+
+      <GeneratePayrollModal
+        isOpen={isGeneratePayrollModalOpen}
+        users={users}
+        existingRecords={payrollRecords}
+        month={payrollMonth}
+        loading={loading}
+        onClose={() => setIsGeneratePayrollModalOpen(false)}
+        onSubmit={handleBulkGenerateSubmit}
+      />
+
+      <PayrollModal
+        isOpen={isPayrollModalOpen}
+        record={selectedPayrollRecord}
+        user={selectedPayrollRecord?.user ? {
+          id: selectedPayrollRecord.user_id,
+          full_name: selectedPayrollRecord.user.full_name,
+          base_salary: selectedPayrollRecord.user.base_salary,
+          bank_name: selectedPayrollRecord.user.bank_name,
+          bank_number: selectedPayrollRecord.user.bank_number
+        } : null}
+        month={payrollMonth}
+        loading={loading}
+        onClose={() => setIsPayrollModalOpen(false)}
+        onSubmit={handleUpdatePayrollSubmit}
       />
 
       <AdminTableStyles />

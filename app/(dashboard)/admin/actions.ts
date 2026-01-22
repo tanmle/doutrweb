@@ -4,7 +4,7 @@ import { createAdminClient } from '@/utils/supabase/admin';
 
 export async function createUser(data: any) {
   const supabase = createAdminClient();
-  const { email, password, full_name, role, leader_id, bank_name, bank_number } = data;
+  const { email, password, full_name, role, leader_id, bank_name, bank_number, base_salary } = data;
 
   // 1. Create User in Supabase Auth
   const { data: userData, error: userError } = await supabase.auth.admin.createUser({
@@ -27,7 +27,8 @@ export async function createUser(data: any) {
             role: role || 'member',
             leader_id: (role === 'member' || !role) ? (leader_id || null) : null,
             bank_name: bank_name || null,
-            bank_number: bank_number || null
+            bank_number: bank_number || null,
+            base_salary: base_salary || 0
         })
         .eq('id', userData.user.id);
     

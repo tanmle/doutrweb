@@ -11,3 +11,6 @@ export { FeeModal } from './FeeModal';
 export { UserModal } from './UserModal';
 export { TabNavigation } from './TabNavigation';
 export { AdminTableStyles } from './AdminTableStyles';
+export { PayrollTab } from './PayrollTab';
+export { PayrollModal } from './PayrollModal';
+export { GeneratePayrollModal } from './GeneratePayrollModal';

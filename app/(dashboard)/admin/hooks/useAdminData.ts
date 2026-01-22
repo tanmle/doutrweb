@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import type { Tab, FeeFilter, Product, User, Fee, Profile, CommissionRate } from '../utils/types';
+import type { Tab, FeeFilter, Product, User, Fee, Profile, CommissionRate, PayrollRecord } from '../utils/types';
 
 interface UseAdminDataProps {
   activeTab: Tab;
   feeFilter: FeeFilter;
   ownerFilter: string;
   dateRange: { start: string; end: string };
+  month?: string; // YYYY-MM
   refresh: number;
 }
 
@@ -17,6 +18,7 @@ export function useAdminData({
   feeFilter,
   ownerFilter,
   dateRange,
+  month,
   refresh,
 }: UseAdminDataProps) {
   const [loading, setLoading] = useState(false);
@@ -25,6 +27,7 @@ export function useAdminData({
   const [fees, setFees] = useState<Fee[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [commissionRates, setCommissionRates] = useState<CommissionRate[]>([]);
+  const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>([]);
   
   const supabase = createClient();
   const today = new Date().toISOString().split('T')[0];
@@ -92,6 +95,19 @@ export function useAdminData({
             .select('*')
             .order('level', { ascending: true });
           if (data) setCommissionRates(data);
+        } else if (activeTab === 'payroll' && month) {
+            // First get all users to make sure we have them
+            const { data: userData } = await supabase
+                .from('profiles')
+                .select('id, full_name, email, role, base_salary, bank_name, bank_number');
+            if (userData) setUsers(userData as any); // Cast to suit User type if needed, or update User type
+
+            const startOfMonth = `${month}-01`;
+            const { data } = await supabase
+                .from('payroll_records')
+                .select('*, user:profiles!user_id(full_name, email, bank_name, bank_number, base_salary, role)')
+                .eq('month', startOfMonth);
+            if (data) setPayrollRecords(data as any);
         }
       } finally {
         setLoading(false);
@@ -99,7 +115,7 @@ export function useAdminData({
     };
     
     fetchData();
-  }, [activeTab, feeFilter, ownerFilter, dateRange, supabase, refresh, today]);
+  }, [activeTab, feeFilter, ownerFilter, dateRange, month, supabase, refresh, today]);
 
   return {
     loading,
@@ -109,5 +125,6 @@ export function useAdminData({
     profiles,
     commissionRates,
     setCommissionRates,
+    payrollRecords,
   };
 }

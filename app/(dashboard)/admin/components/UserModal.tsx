@@ -4,6 +4,7 @@ import React from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { formatCurrency, parseCurrency } from '@/utils/currency';
 import type { FormData, Profile, User } from '../utils/types';
 import styles from './AdminComponents.module.css';
 
@@ -81,12 +82,42 @@ export function UserModal({
                     </>
                 )}
 
+
                 <Input
                     label="Full Name"
                     name="full_name"
                     value={formData.full_name || ''}
                     onChange={onChange}
                     required
+                />
+
+                <Input
+                    label="Base Salary (VND)"
+                    name="base_salary"
+                    value={formatCurrency(formData.base_salary)}
+                    onChange={(e) => {
+                        const numericValue = parseCurrency(e.target.value);
+                        // Start: Manually creating a synthetic event-like object or calling a custom handler if needed.
+                        // However, UserModal expects a ChangeEvent.
+                        // We can just update formData directly via a wrapper or assume onChange handles basic inputs.
+                        // But onChange in props expects React.ChangeEvent.
+                        // Let's modify the onChange behavior just for this input.
+                        // We need to pass { target: { name, value } } to the parent on change.
+                        // The parent `handleInputChange` in `page.tsx` handles typical inputs but expects raw values.
+                        // If we pass the numeric value back, it should work if it's stored as number or string number.
+
+                        // Actually, better to just let the parent handle it? 
+                        // Issue is the passed `value` to Input is now formatted string. 
+                        // `onChange` needs to send the *numeric* value (or stringified number) back to state.
+
+                        const syntheticEvent = {
+                            target: {
+                                name: 'base_salary',
+                                value: numericValue
+                            }
+                        } as any;
+                        onChange(syntheticEvent);
+                    }}
                 />
 
                 <div>
