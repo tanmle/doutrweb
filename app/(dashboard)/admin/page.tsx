@@ -84,6 +84,7 @@ export default function AdminPage() {
       name: formData.name,
       base_price: parseFloat(formData.base_price) || 0,
       selling_price: parseFloat(formData.selling_price) || 0,
+      type: formData.type || 'company',
     });
     if (error) toast.error(error.message);
     else {
@@ -102,6 +103,7 @@ export default function AdminPage() {
       name: formData.name,
       base_price: parseFloat(formData.base_price) || 0,
       selling_price: parseFloat(formData.selling_price) || 0,
+      type: formData.type,
     }).eq('id', selectedProduct.id);
 
     if (error) toast.error(error.message);
@@ -120,6 +122,7 @@ export default function AdminPage() {
       name: product.name,
       base_price: product.base_price.toString(),
       selling_price: product.selling_price.toString(),
+      type: product.type || 'company',
     });
     setIsEditProductModalOpen(true);
   };

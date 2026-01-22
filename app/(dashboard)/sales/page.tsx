@@ -4,11 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import styles from './SalesPage.module.css';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/ToastProvider';
 import { createClient } from '@/utils/supabase/client';
+import { forms, cards, tables, filters, layouts } from '@/styles/modules';
 
 export default function DailyEntryPage() {
   const [loading, setLoading] = useState(false);
@@ -319,34 +319,34 @@ export default function DailyEntryPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.headerBar}>
-        <h1 className={styles.title}>Sales Records</h1>
-        <div className={styles.addButtonWrap}>
-          <Button onClick={() => setIsModalOpen(true)}>+ Add Daily Sales</Button>
-        </div>
+    <div className={layouts.pageContainer}>
+      <div className={layouts.pageHeaderWithActions}>
+        <h1 className={layouts.pageHeader}>Sales Records</h1>
+        <Button onClick={() => setIsModalOpen(true)}>+ Add Daily Sales</Button>
       </div>
 
-      <div className={styles.kpiGrid}>
-        <Card style={{ padding: '1.25rem', borderLeft: '4px solid var(--primary)' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Total QTY</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{totalQty.toLocaleString()}</div>
+      <div className={cards.cardGridTwoCol}>
+        <Card className={cards.statCard}>
+          <div className={cards.statLabel}>Total QTY</div>
+          <div className={cards.statValue}>{totalQty.toLocaleString()}</div>
         </Card>
-        <Card style={{ padding: '1.25rem', borderLeft: '4px solid #10b981' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Total Revenue</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{formatUSD(totalRevenue)}</div>
+        <Card className={cards.statCardSuccess}>
+          <div className={cards.statLabel}>Total Revenue</div>
+          <div className={cards.statValue}>{formatUSD(totalRevenue)}</div>
         </Card>
       </div>
+
+      <div className={layouts.spacingY}></div>
 
       <Card>
-        <div className={styles.filtersRow}>
-          <div className={styles.filterCol}>
-            <label className={styles.label}>Shop</label>
+        <div className={filters.filterControls}>
+          <div className={filters.filterField}>
+            <label className={filters.filterLabel}>Shop</label>
             <select
               aria-label="Filter by shop"
               value={shopFilter}
               onChange={(e) => setShopFilter(e.target.value)}
-              className={styles.select}
+              className={filters.filterSelect}
             >
               <option value="all">All Shops</option>
               {shops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -354,13 +354,13 @@ export default function DailyEntryPage() {
           </div>
 
           {['admin', 'leader'].includes(userRole) && (
-            <div className={styles.filterCol}>
-              <label className={styles.label}>Owner</label>
+            <div className={filters.filterField}>
+              <label className={filters.filterLabel}>Owner</label>
               <select
                 aria-label="Filter by owner"
                 value={ownerFilter}
                 onChange={(e) => setOwnerFilter(e.target.value)}
-                className={styles.select}
+                className={filters.filterSelect}
               >
                 <option value="all">All Owners</option>
                 {profiles.map(p => <option key={p.id} value={p.id}>{p.full_name || p.email}</option>)}
@@ -368,98 +368,99 @@ export default function DailyEntryPage() {
             </div>
           )}
 
-          <div className={styles.dateCol}>
-            <label className={styles.label}>Date Filter</label>
+          <div className={filters.filterGroup}>
+            <label className={filters.filterLabel}>Date Filter</label>
 
-            <div className={styles.dateButtons}>
-              <Button variant={dateFilter === 'today' ? 'primary' : 'secondary'} onClick={() => setDateFilter('today')} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>
-                Today
-              </Button>
-              <Button variant={dateFilter === 'this_month' ? 'primary' : 'secondary'} onClick={() => setDateFilter('this_month')} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>
-                This Month
-              </Button>
-              <Button variant={dateFilter === 'last_month' ? 'primary' : 'secondary'} onClick={() => setDateFilter('last_month')} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>
-                Last Month
-              </Button>
-              <Button variant={dateFilter === 'range' ? 'primary' : 'secondary'} onClick={() => setDateFilter('range')} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>
-                Date Range
-              </Button>
+            <div className={layouts.flexColumn}>
+              <div className={filters.filterButtons}>
+                <Button variant={dateFilter === 'today' ? 'primary' : 'secondary'} onClick={() => setDateFilter('today')}>
+                  Today
+                </Button>
+                <Button variant={dateFilter === 'this_month' ? 'primary' : 'secondary'} onClick={() => setDateFilter('this_month')}>
+                  This Month
+                </Button>
+                <Button variant={dateFilter === 'last_month' ? 'primary' : 'secondary'} onClick={() => setDateFilter('last_month')}>
+                  Last Month
+                </Button>
+                <Button variant={dateFilter === 'range' ? 'primary' : 'secondary'} onClick={() => setDateFilter('range')}>
+                  Date Range
+                </Button>
 
-              <Button
-                className={styles.resetBtn}
-                variant="ghost"
-                onClick={() => {
-                  const today = new Date().toISOString().split('T')[0];
-                  setShopFilter('all');
-                  setOwnerFilter('all');
-                  setDateFilter('today');
-                  setDateRange({ start: today, end: today });
-                }}
-              >
-                Reset
-              </Button>
-            </div>
-
-            {dateFilter === 'range' && (
-              <div className={styles.rangeRow}>
-                {/* keep your existing date inputs, just remove the wrapper inline flex */}
-                <div>
-                  <label className={styles.label}>Start Date</label>
-                  <input
-                    aria-label="Start date"
-                    type="date"
-                    value={dateRange.start}
-                    onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                    style={{ width: '100%', height: '40px', background: '#1a1a1a', border: '1px solid var(--border)', color: 'white', padding: '0 0.5rem', borderRadius: '4px' }}
-                  />
-                </div>
-
-                <div>
-                  <label className={styles.label}>End Date</label>
-                  <input
-                    aria-label="End date"
-                    type="date"
-                    value={dateRange.end}
-                    onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                    style={{ width: '100%', height: '40px', background: '#1a1a1a', border: '1px solid var(--border)', color: 'white', padding: '0 0.5rem', borderRadius: '4px' }}
-                  />
-                </div>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    const today = new Date().toISOString().split('T')[0];
+                    setShopFilter('all');
+                    setOwnerFilter('all');
+                    setDateFilter('today');
+                    setDateRange({ start: today, end: today });
+                  }}
+                >
+                  Reset
+                </Button>
               </div>
-            )}
+
+              {dateFilter === 'range' && (
+                <div className={filters.dateRangeContainer}>
+                  <div className={filters.dateRangeField}>
+                    <label className={filters.filterLabel}>Start Date</label>
+                    <input
+                      aria-label="Start date"
+                      type="date"
+                      value={dateRange.start}
+                      onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                      className={filters.filterInput}
+                    />
+                  </div>
+
+                  <div className={filters.dateRangeField}>
+                    <label className={filters.filterLabel}>End Date</label>
+                    <input
+                      aria-label="End date"
+                      type="date"
+                      value={dateRange.end}
+                      onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                      className={filters.filterInput}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-
-
         </div>
       </Card>
 
+      <div className={layouts.spacingY}></div>
+
       <Card>
-        <div className="sales-table-wrapper" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <table className="sales-table" style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+        <div className={tables.tableWrapper}>
+          <table className={tables.table}>
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
-                <th style={{ padding: '0.75rem' }}>Date</th>
-                <th style={{ padding: '0.75rem' }}>Shop</th>
-                <th style={{ padding: '0.75rem' }}>Owner</th>
-                <th style={{ padding: '0.75rem' }}>Product</th>
-                <th style={{ padding: '0.75rem' }}>QTY</th>
-                <th style={{ padding: '0.75rem' }}>Revenue</th>
-                <th style={{ padding: '0.75rem' }}>Actions</th>
+              <tr>
+                <th>Date</th>
+                <th>Shop</th>
+                <th>Owner</th>
+                <th>Product</th>
+                <th>QTY</th>
+                <th>Revenue</th>
+                <th>Actions</th>
               </tr>
             </thead>
-            <tbody style={{ fontSize: '0.875rem' }}>
+            <tbody>
               {records.length === 0 ? (
                 <tr>
-                  <td colSpan={7} data-label="Status" style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>No records found.</td>
+                  <td colSpan={7} className={layouts.textCenter} style={{ padding: '2rem' }}>
+                    <span className={layouts.textMuted}>No records found.</span>
+                  </td>
                 </tr>
               ) : (
                 records.map((r) => (
-                  <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                    <td style={{ padding: '0.75rem' }} data-label="Date">{new Date(r.date).toLocaleDateString('vi-VN')}</td>
-                    <td style={{ padding: '0.75rem' }} data-label="Shop">{r.shop?.name}</td>
-                    <td style={{ padding: '0.75rem' }} data-label="Owner">
+                  <tr key={r.id}>
+                    <td data-label="Date">{new Date(r.date).toLocaleDateString('vi-VN')}</td>
+                    <td data-label="Shop">{r.shop?.name}</td>
+                    <td data-label="Owner">
                       {(() => {
                         const shopData = r.shop;
-                        // Supabase often returns the join under the table name or specified alias
                         const profile = Array.isArray(shopData?.profiles) ? shopData.profiles[0] : shopData?.profiles;
 
                         if (profile) {
@@ -468,12 +469,11 @@ export default function DailyEntryPage() {
                         return shopData?.owner_id ? `ID: ${shopData.owner_id.substring(0, 8)}...` : 'N/A';
                       })()}
                     </td>
-                    <td style={{ padding: '0.75rem' }} data-label="Product">{r.product?.name}</td>
-                    <td style={{ padding: '0.75rem' }} data-label="QTY">{r.items_sold}</td>
-                    <td style={{ padding: '0.75rem' }} data-label="Revenue">{formatUSD(r.revenue)}</td>
-                    <td style={{ padding: '0.75rem' }} data-label="Actions">
-                      <div className={styles.tableActions}>
-
+                    <td data-label="Product">{r.product?.name}</td>
+                    <td data-label="QTY">{r.items_sold}</td>
+                    <td data-label="Revenue">{formatUSD(r.revenue)}</td>
+                    <td data-label="Actions">
+                      <div className={tables.tableActionsSmall}>
                         <Button variant="ghost" onClick={() => openEditModal(r)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}>
                           Edit
                         </Button>
@@ -491,13 +491,13 @@ export default function DailyEntryPage() {
       </Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Daily Sales Entry">
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', maxWidth: '600px' }}>
-          <div className="sales-modal-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Shop</label>
+        <form onSubmit={handleSubmit} className={forms.form}>
+          <div className={forms.formGridAuto}>
+            <div className={forms.formField}>
+              <label className={forms.formLabel}>Shop</label>
               <select
                 aria-label="Select shop"
-                style={{ width: '100%', height: '42px' }}
+                className={forms.formSelect}
                 value={shopId}
                 onChange={(e) => setShopId(e.target.value)}
                 required
@@ -508,40 +508,30 @@ export default function DailyEntryPage() {
               </select>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Date</label>
+            <div className={forms.formField}>
+              <label className={forms.formLabel}>Date</label>
               <input
                 aria-label="Select date"
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 required
-                style={{
-                  width: '100%',
-                  background: '#1a1a1a',
-                  border: '1px solid var(--border)',
-                  color: 'var(--foreground)',
-                  padding: '0.625rem 1rem',
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: '0.875rem',
-                  height: '42px'
-                }}
+                className={forms.formInput}
               />
             </div>
           </div>
 
-          <div style={{ marginTop: '0.5rem' }}>
-            <div className="sales-products-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
-
-              <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>Products Sold</h3>
+          <div className={layouts.spacingTop}>
+            <div className={layouts.flexRowSpaced} style={{ marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+              <h3 className={layouts.sectionHeaderSmall}>Products Sold</h3>
               <Button type="button" variant="ghost" onClick={addItem} style={{ fontSize: '0.875rem', color: 'var(--primary)' }}>
                 + Add row
               </Button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '300px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+            <div className={layouts.flexColumn} style={{ maxHeight: '300px', overflowY: 'auto', paddingRight: '0.5rem' }}>
               {items.map((item, index) => (
-                <div key={index} className="sales-product-row" style={{
+                <div key={index} style={{
                   display: 'grid',
                   gridTemplateColumns: 'minmax(140px, 1fr) 70px 36px',
                   gap: '0.75rem',
@@ -552,10 +542,11 @@ export default function DailyEntryPage() {
                   border: '1px solid var(--border)'
                 }}>
                   <div>
-                    {index === 0 && <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Product</label>}
+                    {index === 0 && <label className={forms.formLabel} style={{ marginBottom: '0.25rem' }}>Product</label>}
                     <select
                       aria-label="Select product"
-                      style={{ width: '100%', height: '40px' }}
+                      className={forms.formSelect}
+                      style={{ height: '40px' }}
                       value={item.productId}
                       onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
                       required
@@ -567,7 +558,7 @@ export default function DailyEntryPage() {
                   </div>
 
                   <div>
-                    {index === 0 && <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>QTY</label>}
+                    {index === 0 && <label className={forms.formLabel} style={{ marginBottom: '0.25rem' }}>QTY</label>}
                     <input
                       aria-label="Quantity"
                       type="number"
@@ -575,16 +566,8 @@ export default function DailyEntryPage() {
                       value={item.quantity}
                       onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
                       required
-                      style={{
-                        width: '100%',
-                        background: '#1a1a1a',
-                        border: '1px solid var(--border)',
-                        color: 'var(--foreground)',
-                        padding: '0.5rem 0.5rem',
-                        borderRadius: 'var(--radius-md)',
-                        fontSize: '0.875rem',
-                        height: '40px'
-                      }}
+                      className={forms.formInput}
+                      style={{ height: '40px' }}
                     />
                   </div>
 
@@ -605,19 +588,19 @@ export default function DailyEntryPage() {
             </div>
           </div>
 
-          <Button type="submit" fullWidth disabled={loading} style={{ height: '48px', fontSize: '1rem' }}>
+          <Button type="submit" fullWidth disabled={loading} style={{ height: '48px', fontSize: '1rem', marginTop: '1rem' }}>
             {loading ? 'Submitting…' : 'Submit Daily Record'}
           </Button>
         </form>
       </Modal>
 
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Sales Entry">
-        <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', maxWidth: '500px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Shop</label>
+        <form onSubmit={handleUpdate} className={forms.form}>
+          <div className={forms.formField}>
+            <label className={forms.formLabel}>Shop</label>
             <select
               aria-label="Select shop"
-              style={{ width: '100%', height: '42px' }}
+              className={forms.formSelect}
               value={formData.shopId}
               onChange={(e) => setFormData({ ...formData, shopId: e.target.value })}
               required
@@ -628,32 +611,23 @@ export default function DailyEntryPage() {
             </select>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Date</label>
+          <div className={forms.formField}>
+            <label className={forms.formLabel}>Date</label>
             <input
               aria-label="Select date"
               type="date"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               required
-              style={{
-                width: '100%',
-                background: '#1a1a1a',
-                border: '1px solid var(--border)',
-                color: 'white',
-                padding: '0.625rem 1rem',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '0.875rem',
-                height: '42px'
-              }}
+              className={forms.formInput}
             />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Product</label>
+          <div className={forms.formField}>
+            <label className={forms.formLabel}>Product</label>
             <select
               aria-label="Select product"
-              style={{ width: '100%', height: '42px' }}
+              className={forms.formSelect}
               value={formData.productId}
               onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
               required
@@ -664,76 +638,23 @@ export default function DailyEntryPage() {
             </select>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Quantity Sold</label>
+          <div className={forms.formField}>
+            <label className={forms.formLabel}>Quantity Sold</label>
             <input
               aria-label="Quantity"
               type="number"
               value={formData.quantity}
               onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
               required
-              style={{
-                width: '100%',
-                background: '#1a1a1a',
-                border: '1px solid var(--border)',
-                color: 'white',
-                padding: '0.625rem 1rem',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '0.875rem',
-                height: '42px'
-              }}
+              className={forms.formInput}
             />
           </div>
 
-          <Button type="submit" fullWidth disabled={loading}>
+          <Button type="submit" fullWidth disabled={loading} style={{ marginTop: '1rem' }}>
             {loading ? 'Updating…' : 'Update Sales Record'}
           </Button>
         </form>
       </Modal>
-      <style jsx>{`
-        @media (max-width: 640px) {
-          .sales-table thead {
-            display: none;
-          }
-
-          .sales-table,
-          .sales-table tbody,
-          .sales-table tr,
-          .sales-table td {
-            display: block;
-            width: 100%;
-          }
-
-          .sales-table tr {
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 0.5rem 0.25rem;
-            margin-bottom: 0.75rem;
-            background: rgba(255, 255, 255, 0.02);
-          }
-
-          .sales-table td {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1rem;
-            padding: 0.5rem 0.75rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-          }
-
-          .sales-table td:last-child {
-            border-bottom: none;
-          }
-
-          .sales-table td::before {
-            content: attr(data-label);
-            color: var(--muted-foreground);
-            font-size: 0.75rem;
-            font-weight: 600;
-          }
-        }
-      `}</style>
     </div>
   );
 }
-

@@ -148,11 +148,14 @@
     border-radius: var(--radius-md);
     border: 1px solid var(--border);
     margin-top: 1rem;
+    width: fit-content;
 }
 
 .filterField {
     min-width: 150px;
-    flex: 1 1 180px;
+    width: 280px;
+    /* Fixed reasonable width */
+    max-width: 100%;
 }
 
 .filterLabel {
@@ -383,5 +386,14 @@
 
     .totalRow td:not(.totalLabel):not(.totalPrice) {
         display: none;
+    }
+
+    .filterField {
+        width: 100%;
+        flex: none;
+    }
+
+    .filterControls {
+        width: 100%;
     }
 }

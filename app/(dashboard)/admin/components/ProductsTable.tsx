@@ -21,6 +21,7 @@ export function ProductsTable({ products, onEdit, onDelete }: ProductsTableProps
                         <th>Name</th>
                         <th>Base Price</th>
                         <th>Selling Price</th>
+                        <th>Type</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -30,6 +31,18 @@ export function ProductsTable({ products, onEdit, onDelete }: ProductsTableProps
                             <td data-label="Name">{p.name}</td>
                             <td data-label="Base Price">{formatUSD(p.base_price)}</td>
                             <td data-label="Selling Price">{formatUSD(p.selling_price)}</td>
+                            <td data-label="Type">
+                                <span style={{
+                                    textTransform: 'capitalize',
+                                    padding: '2px 8px',
+                                    borderRadius: '4px',
+                                    background: p.type === 'company' ? 'rgba(99, 102, 241, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                                    color: p.type === 'company' ? '#818cf8' : '#34d399',
+                                    fontSize: '0.75rem'
+                                }}>
+                                    {p.type === 'self_researched' ? 'Self-Research' : 'Company'}
+                                </span>
+                            </td>
                             <td data-label="Actions">
                                 <div className={styles.tableActions}>
                                     <Button

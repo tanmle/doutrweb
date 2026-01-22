@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { useToast } from '@/components/ui/ToastProvider';
 import { createClient } from '@/utils/supabase/client';
+import { forms, layouts } from '@/styles/modules';
 
 export default function NewShopPage() {
   const router = useRouter();
@@ -63,23 +64,23 @@ export default function NewShopPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    
+
     setLoading(true);
-    
+
     // Insert into Supabase
     const { error } = await supabase.from('shops').insert({
-        name,
-        platform,
-        status,
-        owner_id: selectedOwnerId || user.id
+      name,
+      platform,
+      status,
+      owner_id: selectedOwnerId || user.id
     });
 
     if (error) {
-        toast.error('Error creating shop: ' + error.message);
-        setLoading(false);
+      toast.error('Error creating shop: ' + error.message);
+      setLoading(false);
     } else {
-        router.push('/shops');
-        router.refresh();
+      router.push('/shops');
+      router.refresh();
     }
   };
 
@@ -88,25 +89,25 @@ export default function NewShopPage() {
   }
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-      <h1 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '2rem' }}>Add New Shop</h1>
-      
+    <div className={layouts.pageContainerNarrow}>
+      <h1 className={layouts.pageHeader}>Add New Shop</h1>
+
       <Card>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <Input 
-            label="Shop Name" 
-            placeholder="e.g. My Awesome Store" 
+        <form onSubmit={handleSubmit} className={forms.form}>
+          <Input
+            label="Shop Name"
+            placeholder="e.g. My Awesome Store"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            required 
+            required
           />
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Platform</label>
-              <select 
+
+          <div className={forms.formGridAuto}>
+            <div className={forms.formField}>
+              <label className={forms.formLabel}>Platform</label>
+              <select
                 aria-label="Select platform"
-                style={{ width: '100%' }}
+                className={forms.formSelect}
                 value={platform}
                 onChange={(e) => setPlatform(e.target.value)}
               >
@@ -116,11 +117,11 @@ export default function NewShopPage() {
               </select>
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Status</label>
-              <select 
+            <div className={forms.formField}>
+              <label className={forms.formLabel}>Status</label>
+              <select
                 aria-label="Select status"
-                style={{ width: '100%' }}
+                className={forms.formSelect}
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
               >
@@ -131,11 +132,11 @@ export default function NewShopPage() {
           </div>
 
           {['admin', 'leader'].includes(userRole) && (
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Assign to Owner</label>
-              <select 
+            <div className={forms.formField}>
+              <label className={forms.formLabel}>Assign to Owner</label>
+              <select
                 aria-label="Assign shop owner"
-                style={{ width: '100%' }}
+                className={forms.formSelect}
                 value={selectedOwnerId}
                 onChange={(e) => setSelectedOwnerId(e.target.value)}
                 required
@@ -144,17 +145,17 @@ export default function NewShopPage() {
                   <option key={u.id} value={u.id}>{u.full_name || u.email} ({u.email})</option>
                 ))}
               </select>
-              <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginTop: '0.25rem' }}>
+              <p className={forms.formHint}>
                 Only Admins and Leaders can assign shops to other users.
               </p>
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-            <Button type="button" variant="secondary" onClick={() => router.back()} style={{ flex: 1 }}>
+          <div className={forms.formActionsFull}>
+            <Button type="button" variant="secondary" onClick={() => router.back()}>
               Cancel
             </Button>
-            <Button type="submit" style={{ flex: 1 }} disabled={loading}>
+            <Button type="submit" disabled={loading}>
               {loading ? 'Creating…' : 'Create Shop'}
             </Button>
           </div>

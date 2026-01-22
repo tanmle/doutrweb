@@ -1,0 +1,208 @@
+/* ============================================
+   Layouts Module - Shared Layout Styles
+   ============================================ */
+
+/* Page Layouts */
+.pageContainer {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.pageContainerNarrow {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.pageContainerWide {
+    max-width: 100%;
+    padding: 0 1rem;
+}
+
+/* Page Headers */
+.pageHeader {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
+}
+
+.pageHeaderLarge {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
+}
+
+.pageHeaderWithActions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+/* Section Headers */
+.sectionHeader {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.sectionHeaderSmall {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+/* Flex Layouts */
+.flexRow {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.flexRowSpaced {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.flexColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.flexWrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.flexCenter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Grid Layouts */
+.grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.gridTwoCol {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.gridThreeCol {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.gridAutoFit {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Spacing Utilities */
+.spacingTop {
+    margin-top: 1rem;
+}
+
+.spacingTopLarge {
+    margin-top: 2rem;
+}
+
+.spacingBottom {
+    margin-bottom: 1rem;
+}
+
+.spacingBottomLarge {
+    margin-bottom: 2rem;
+}
+
+.spacingY {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.spacingYLarge {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+/* Text Utilities */
+.textCenter {
+    text-align: center;
+}
+
+.textMuted {
+    color: var(--muted-foreground);
+}
+
+.textSmall {
+    font-size: 0.875rem;
+}
+
+.textXSmall {
+    font-size: 0.75rem;
+}
+
+.textLarge {
+    font-size: 1.125rem;
+}
+
+.textBold {
+    font-weight: 600;
+}
+
+.textUppercase {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .gridThreeCol {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .pageHeader {
+        font-size: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .pageHeaderLarge {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .pageHeaderWithActions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .flexRow,
+    .flexRowSpaced {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .gridTwoCol,
+    .gridThreeCol {
+        grid-template-columns: 1fr;
+    }
+
+    .gridAutoFit {
+        grid-template-columns: 1fr;
+    }
+}

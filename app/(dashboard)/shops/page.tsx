@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import styles from './ShopsPage.module.css';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -10,6 +9,8 @@ import { Modal } from '@/components/ui/Modal';
 import { ShopCard } from '@/components/ui/ShopCard';
 import { useToast } from '@/components/ui/ToastProvider';
 import { createClient } from '@/utils/supabase/client';
+import { forms, cards, layouts } from '@/styles/modules';
+import styles from './ShopsPage.module.css';
 
 export default function ShopsPage() {
   const [shops, setShops] = useState<any[]>([]);
@@ -292,9 +293,9 @@ export default function ShopsPage() {
       {initialLoading ? (
         <LoadingIndicator label="Loading shops…" />
       ) : shops.length === 0 ? (
-        <Card className="flex-center" style={{ borderStyle: 'dashed', minHeight: '180px', opacity: 0.8 }}>
-          <div style={{ textAlign: 'center' }}>
-            <p style={{ marginBottom: '1rem' }}>No shops found.</p>
+        <Card className={cards.emptyCard}>
+          <div className={cards.emptyCardContent}>
+            <p className={cards.emptyCardText}>No shops found.</p>
             {userRole !== 'member' && (
               <Button variant="secondary" onClick={openCreateModal}>
                 Create your first shop
@@ -303,7 +304,7 @@ export default function ShopsPage() {
           </div>
         </Card>
       ) : (
-        <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
+        <div className={cards.cardGrid}>
           {shops.map((shop) => (
             <ShopCard
               key={shop.id}
@@ -319,7 +320,7 @@ export default function ShopsPage() {
 
       {/* ✅ NEW: Create Shop Modal */}
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="New Shop">
-        <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form onSubmit={handleCreateSubmit} className={forms.form}>
           <Input
             label="Shop Name"
             name="name"
@@ -328,12 +329,12 @@ export default function ShopsPage() {
             required
           />
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Platform</label>
+          <div className={forms.formGrid}>
+            <div className={forms.formField}>
+              <label className={forms.formLabel}>Platform</label>
               <select
                 name="platform"
-                style={{ width: '100%' }}
+                className={forms.formSelect}
                 value={createFormData.platform || 'tiktok'}
                 onChange={handleCreateInputChange}
               >
@@ -343,11 +344,11 @@ export default function ShopsPage() {
               </select>
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Status</label>
+            <div className={forms.formField}>
+              <label className={forms.formLabel}>Status</label>
               <select
                 name="status"
-                style={{ width: '100%' }}
+                className={forms.formSelect}
                 value={createFormData.status || 'active'}
                 onChange={handleCreateInputChange}
               >
@@ -358,11 +359,11 @@ export default function ShopsPage() {
           </div>
 
           {['admin', 'leader'].includes(userRole) && (
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Assign to Owner</label>
+            <div className={forms.formField}>
+              <label className={forms.formLabel}>Assign to Owner</label>
               <select
                 name="owner_id"
-                style={{ width: '100%' }}
+                className={forms.formSelect}
                 value={createFormData.owner_id || ''}
                 onChange={handleCreateInputChange}
                 required
@@ -386,13 +387,13 @@ export default function ShopsPage() {
 
       {/* Edit Shop Modal */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Shop">
-        <form onSubmit={handleUpdateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form onSubmit={handleUpdateSubmit} className={forms.form}>
           <Input label="Shop Name" name="name" value={formData.name || ''} onChange={handleInputChange} required />
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Platform</label>
-              <select name="platform" style={{ width: '100%' }} value={formData.platform || ''} onChange={handleInputChange}>
+          <div className={forms.formGrid}>
+            <div className={forms.formField}>
+              <label className={forms.formLabel}>Platform</label>
+              <select name="platform" className={forms.formSelect} value={formData.platform || ''} onChange={handleInputChange}>
                 <option value="tiktok">TikTok Shop</option>
                 <option value="lazada">Lazada</option>
                 <option value="shopee">Shopee</option>
@@ -400,9 +401,9 @@ export default function ShopsPage() {
               </select>
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Status</label>
-              <select name="status" style={{ width: '100%' }} value={formData.status || ''} onChange={handleInputChange}>
+            <div className={forms.formField}>
+              <label className={forms.formLabel}>Status</label>
+              <select name="status" className={forms.formSelect} value={formData.status || ''} onChange={handleInputChange}>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
@@ -410,9 +411,9 @@ export default function ShopsPage() {
           </div>
 
           {['admin', 'leader'].includes(userRole) && (
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Assign to Owner</label>
-              <select name="owner_id" style={{ width: '100%' }} value={formData.owner_id || ''} onChange={handleInputChange} required>
+            <div className={forms.formField}>
+              <label className={forms.formLabel}>Assign to Owner</label>
+              <select name="owner_id" className={forms.formSelect} value={formData.owner_id || ''} onChange={handleInputChange} required>
                 {profiles.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.full_name || p.email} ({p.email})

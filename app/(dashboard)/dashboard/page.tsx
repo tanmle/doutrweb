@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { createClient } from '@/utils/supabase/client';
-import styles from './page.module.css';
+import { cards, layouts, filters, forms } from '@/styles/modules';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -259,124 +259,102 @@ export default function DashboardPage() {
     return memberNames.filter((name) => name === memberFilter);
   }, [memberFilter, memberNames]);
 
-  const filterLabel = useMemo(() => {
-    if (filter === 'today') return 'Today';
-    if (filter === 'week') return 'This Week';
-    if (filter === 'month') return 'This Month';
-    if (filter === 'last-month') return 'Last Month';
-    return dateRange.start && dateRange.end ? `${dateRange.start} → ${dateRange.end}` : 'Date Range';
-  }, [dateRange.end, dateRange.start, filter]);
-
   if (loading) return <LoadingIndicator label="Loading dashboard…" />;
 
   return (
-    <div>
-      <h1 className={styles.sectionTitle}>Today's Overview</h1>
+    <div className={layouts.pageContainer}>
+      <h1 className={layouts.sectionHeader}>Today's Overview</h1>
 
-      <div className={styles.grid}>
-        <Card className={styles.statCard}>
-          <span className={styles.statLabel}>Today's Sales</span>
-          <span className={styles.statValue}>{stats.todaySales.toLocaleString()} items</span>
-          <span className={`${styles.statTrend} ${styles.trendUp}`}>Units Sold Today</span>
+      <div className={cards.cardGridThreeCol}>
+        <Card className={cards.statCard}>
+          <span className={cards.statLabel}>Today's Sales: </span>
+          <span className={cards.statValue}>{stats.todaySales.toLocaleString()} items</span>
+          <span className={cards.statChange}>
+            <span className={cards.statChangePositive}>Units Sold Today</span>
+          </span>
         </Card>
 
-        <Card className={styles.statCard}>
-          <span className={styles.statLabel}>Today's Revenue</span>
-          <span className={styles.statValue}>{currencyFormatter.format(stats.todayRevenue)}</span>
-          <span className={styles.statTrend}>Gross Revenue Today</span>
+        <Card className={cards.statCard}>
+          <span className={cards.statLabel}>Today's Revenue: </span>
+          <span className={cards.statValue}>{currencyFormatter.format(stats.todayRevenue)}</span>
+          <span className={cards.statChange}>
+            <span>Gross Revenue Today</span>
+          </span>
         </Card>
 
-        <Card className={styles.statCard}>
-          <span className={styles.statLabel}>Monthly KPI Progress</span>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span className={styles.statValue}>{progress.toFixed(1)}%</span>
-            <span style={{ color: 'var(--muted-foreground)' }}>Target: {currencyFormatter.format(stats.targetKPI)}</span>
+        <Card className={cards.statCard}>
+          <span className={cards.statLabel}>Monthly KPI Progress</span>
+          <div className={layouts.flexRowSpaced} style={{ alignItems: 'baseline' }}>
+            <span className={cards.statValue}>{progress.toFixed(1)}%</span>
+            <span className={layouts.textMuted}>Target: {currencyFormatter.format(stats.targetKPI)}</span>
           </div>
-          <div className={styles.progressBar}>
-            <div className={styles.progressFill} style={{ width: `${progress}%` }} />
+          <div style={{ height: '8px', width: '100%', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden', marginTop: '0.5rem' }}>
+            <div style={{ height: '100%', background: 'var(--primary)', width: `${progress}%`, transition: 'width 0.5s ease-out' }} />
           </div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginTop: '0.5rem', display: 'block' }}>
-              MTD: {currencyFormatter.format(stats.monthlyRevenue)}
-            </span>
-
+          <span className={layouts.textMuted} style={{ fontSize: '0.75rem', marginTop: '0.5rem', display: 'block' }}>
+            MTD: {currencyFormatter.format(stats.monthlyRevenue)}
+          </span>
         </Card>
       </div>
 
-      <div className={styles.grid} style={{ gridTemplateColumns: '1fr' }}>
-        <Card className={styles.chartContainer} style={{ padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem', flexWrap: 'wrap' }}>
-            <h2 className={styles.sectionTitle} style={{ margin: 0 }}>Analytics: Revenue</h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <select
-                aria-label="Filter chart by date"
-                value={filter}
-                onChange={(event) => setFilter(event.target.value as ChartFilter)}
-                style={{
-                  background: 'var(--card)',
-                  border: '1px solid var(--border)',
-                  color: 'var(--foreground)',
-                  borderRadius: '6px',
-                  padding: '0.4rem 0.6rem',
-                  fontSize: '0.875rem'
-                }}
-              >
-                <option value="today">Today</option>
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-                <option value="last-month">Last Month</option>
-                <option value="range">Date Range</option>
-              </select>
-              {role !== 'member' && (
+      <div className={layouts.spacingYLarge}></div>
+
+      <div className={layouts.grid}>
+        <Card style={{ padding: '1.5rem' }}>
+          <div className={layouts.flexRowSpaced} style={{ marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+            <h2 className={layouts.sectionHeader} style={{ margin: 0 }}>Analytics: Revenue</h2>
+
+            <div className={filters.filterControls} style={{ padding: 0, border: 'none', background: 'transparent' }}>
+              <div className={filters.filterButtons}>
                 <select
-                  aria-label="Filter chart by member"
-                  value={memberFilter}
-                  onChange={(event) => setMemberFilter(event.target.value)}
-                  style={{
-                    background: 'var(--card)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--foreground)',
-                    borderRadius: '6px',
-                    padding: '0.4rem 0.6rem',
-                    fontSize: '0.875rem'
-                  }}
+                  aria-label="Filter chart by date"
+                  value={filter}
+                  onChange={(event) => setFilter(event.target.value as ChartFilter)}
+                  className={filters.filterSelect}
+                  style={{ width: 'auto' }}
                 >
-                  {memberOptions.map((member) => (
-                    <option key={member} value={member}>
-                      {member === 'all' ? 'All Members' : member}
-                    </option>
-                  ))}
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="last-month">Last Month</option>
+                  <option value="range">Date Range</option>
                 </select>
-              )}
+
+                {role !== 'member' && (
+                  <select
+                    aria-label="Filter chart by member"
+                    value={memberFilter}
+                    onChange={(event) => setMemberFilter(event.target.value)}
+                    className={filters.filterSelect}
+                    style={{ width: 'auto' }}
+                  >
+                    {memberOptions.map((member) => (
+                      <option key={member} value={member}>
+                        {member === 'all' ? 'All Members' : member}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
               {filter === 'range' && (
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <div className={filters.dateRangeContainer}>
                   <input
                     aria-label="Start date"
                     type="date"
                     value={dateRange.start}
                     onChange={(event) => setDateRange((prev) => ({ ...prev, start: event.target.value }))}
-                    style={{
-                      background: 'var(--card)',
-                      border: '1px solid var(--border)',
-                      color: 'var(--foreground)',
-                      borderRadius: '6px',
-                      padding: '0.35rem 0.5rem',
-                      fontSize: '0.875rem'
-                    }}
+                    className={filters.filterInput}
+                    style={{ width: 'auto', padding: '0.4rem 0.6rem' }}
                   />
-                  <span style={{ color: 'var(--muted-foreground)' }}>to</span>
+                  <span className={layouts.textMuted}>to</span>
                   <input
                     aria-label="End date"
                     type="date"
                     value={dateRange.end}
                     onChange={(event) => setDateRange((prev) => ({ ...prev, end: event.target.value }))}
-                    style={{
-                      background: 'var(--card)',
-                      border: '1px solid var(--border)',
-                      color: 'var(--foreground)',
-                      borderRadius: '6px',
-                      padding: '0.35rem 0.5rem',
-                      fontSize: '0.875rem'
-                    }}
+                    className={filters.filterInput}
+                    style={{ width: 'auto', padding: '0.4rem 0.6rem' }}
                   />
                 </div>
               )}
@@ -438,8 +416,6 @@ export default function DashboardPage() {
                     />
                   ))}
 
-
-
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
@@ -453,5 +429,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-

@@ -1,0 +1,189 @@
+/* ============================================
+   Filters Module - Shared Filter Styles
+   ============================================ */
+
+/* Filter Containers */
+.filterContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.filterHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+/* Filter Buttons */
+.filterButtons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.filterButtonsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 0.5rem;
+}
+
+/* Filter Controls */
+.filterControls {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    justify-content: center;
+}
+
+/* Flexible group for things like Date Filters */
+.filterGroup {
+    flex: 1 1 auto;
+    min-width: 320px;
+}
+
+.filterField {
+    min-width: 150px;
+    width: 280px;
+    /* Fixed reasonable width */
+    max-width: 100%;
+}
+
+.filterFieldFull {
+    width: 100%;
+}
+
+.filterLabel {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Filter Inputs */
+.filterSelect {
+    width: 100%;
+    padding: 0.625rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
+    color: white;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    transition: border-color 0.2s ease;
+}
+
+.filterSelect:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.filterInput {
+    width: 100%;
+    padding: 0.625rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
+    color: white;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    transition: border-color 0.2s ease;
+}
+
+.filterInput:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+/* Date Range Filters */
+.dateRangeContainer {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.dateRangeField {
+    flex: 1;
+    min-width: 150px;
+}
+
+/* Search Filters */
+.searchContainer {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+}
+
+.searchInput {
+    width: 100%;
+    padding: 0.625rem 0.625rem 0.625rem 2.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
+    color: white;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    transition: border-color 0.2s ease;
+}
+
+.searchInput:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.searchIcon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted-foreground);
+    pointer-events: none;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .filterButtons {
+        width: 100%;
+    }
+
+    .filterButtonsGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .filterControls {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .filterField {
+        width: 100%;
+        min-width: auto;
+    }
+
+    .filterGroup {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .dateRangeContainer {
+        flex-direction: column;
+    }
+
+    .dateRangeField {
+        width: 100%;
+    }
+
+    .searchContainer {
+        width: 100%;
+    }
+}

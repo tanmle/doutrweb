@@ -10,6 +10,7 @@ export interface Product {
   name: string;
   base_price: number;
   selling_price: number;
+  type?: 'company' | 'self_researched';
   created_at: string;
 }
 

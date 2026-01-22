@@ -55,6 +55,20 @@ export function ProductModal({
                     onChange={onChange}
                     required
                 />
+                <div>
+                    <label className={styles.formLabel}>
+                        Product Type
+                    </label>
+                    <select
+                        name="type"
+                        value={formData.type || 'company'}
+                        onChange={onChange}
+                        className={styles.formSelect}
+                    >
+                        <option value="company">Company</option>
+                        <option value="self_researched">Self-Research</option>
+                    </select>
+                </div>
                 <Button type="submit" disabled={loading}>
                     {loading ? (isEdit ? 'Updating…' : 'Saving...') : (isEdit ? 'Update Product' : 'Save Product')}
                 </Button>

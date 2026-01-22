@@ -1,0 +1,134 @@
+/* ============================================
+   Cards Module - Shared Card Styles
+   ============================================ */
+
+/* Summary/Stat Cards */
+.statCard {
+    padding: 1.25rem;
+    border-left: 4px solid var(--primary);
+}
+
+.statCardSuccess {
+    padding: 1.25rem;
+    border-left: 4px solid #10b981;
+}
+
+.statCardWarning {
+    padding: 1.25rem;
+    border-left: 4px solid #f59e0b;
+}
+
+.statCardDanger {
+    padding: 1.25rem;
+    border-left: 4px solid #ef4444;
+}
+
+.statLabel {
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.statValue {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.statValueLarge {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.statChange {
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.statChangePositive {
+    color: #10b981;
+}
+
+.statChangeNegative {
+    color: #ef4444;
+}
+
+/* Empty State Cards */
+.emptyCard {
+    border-style: dashed;
+    min-height: 180px;
+    opacity: 0.8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.emptyCardContent {
+    text-align: center;
+}
+
+.emptyCardText {
+    margin-bottom: 1rem;
+    color: var(--muted-foreground);
+}
+
+/* Card Grids */
+.cardGrid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.cardGridTwoCol {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.cardGridThreeCol {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.cardGridFourCol {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(4, 1fr);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .cardGridFourCol {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .cardGridThreeCol {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+
+    .cardGrid,
+    .cardGridTwoCol,
+    .cardGridThreeCol,
+    .cardGridFourCol {
+        grid-template-columns: 1fr;
+    }
+
+    .statValue {
+        font-size: 1.25rem;
+    }
+
+    .statValueLarge {
+        font-size: 1.5rem;
+    }
+}
