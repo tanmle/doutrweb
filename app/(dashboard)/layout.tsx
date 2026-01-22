@@ -7,17 +7,33 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { createClient } from '@/utils/supabase/client';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+
+type Profile = {
+  full_name?: string | null;
+  avatar_url?: string | null;
+  role?: string | null;
+};
+
+type EditFormData = {
+  fullName: string;
+  avatarUrl: string;
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+};
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
-  const [editFormData, setEditFormData] = useState({
+  const [editFormData, setEditFormData] = useState<EditFormData>({
     fullName: '',
     avatarUrl: '',
     currentPassword: '',
@@ -28,7 +44,7 @@ export default function DashboardLayout({
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [updating, setUpdating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     const getProfile = async () => {
@@ -62,24 +78,29 @@ export default function DashboardLayout({
     getProfile();
   }, [supabase]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setAvatarFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
     }
-  };
+  }, []);
 
-  const handleLogout = async () => {
+  useEffect(() => {
+    if (!avatarFile) return;
+    const objectUrl = URL.createObjectURL(avatarFile);
+    setPreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [avatarFile]);
+
+  const handleLogout = useCallback(async () => {
     await supabase.auth.signOut();
-    window.location.href = '/login';
-  };
+    router.replace('/login');
+  }, [router, supabase]);
 
-  const handleProfileUpdate = async (e: React.FormEvent) => {
+  const handleProfileUpdate = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setUpdating(true);
-    
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
@@ -101,7 +122,7 @@ export default function DashboardLayout({
         const { data: { publicUrl } } = supabase.storage
           .from('avatars')
           .getPublicUrl(filePath);
-        
+
         finalAvatarUrl = publicUrl;
       }
 
@@ -140,26 +161,28 @@ export default function DashboardLayout({
       if (profileError) throw profileError;
 
       // Success
-      setProfile({
-        ...profile,
+      setProfile((prev) => ({
+        ...(prev ?? {}),
         full_name: editFormData.fullName,
         avatar_url: finalAvatarUrl
-      });
+      }));
+      setPreviewUrl(finalAvatarUrl);
       setIsEditProfileOpen(false);
-      setEditFormData(prev => ({ 
-        ...prev, 
-        currentPassword: '', 
-        newPassword: '', 
-        confirmPassword: '' 
+      setEditFormData(prev => ({
+        ...prev,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
       }));
       setAvatarFile(null);
       alert('Profile updated successfully!');
-    } catch (error: any) {
-      alert('Error: ' + error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      alert('Error: ' + message);
     } finally {
       setUpdating(false);
     }
-  };
+  }, [avatarFile, editFormData, supabase]);
 
   return (
     <>
@@ -174,7 +197,7 @@ export default function DashboardLayout({
         )}
 
         <div className={`${styles.sidebar} ${sidebarOpen ? styles.open : ''}`}>
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} role={profile?.role} />
+          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} role={profile?.role ?? undefined} />
         </div>
 
         <main className={styles.main}>

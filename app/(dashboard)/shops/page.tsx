@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { createClient } from '@/utils/supabase/client';
-import { Shop } from '@/lib/types'; 
+import { Shop } from '@/lib/types';
 
 export default function ShopsPage() {
   const [shops, setShops] = useState<any[]>([]);
@@ -18,7 +18,7 @@ export default function ShopsPage() {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [userRole, setUserRole] = useState<string>('member');
   const [formData, setFormData] = useState<any>({});
-  
+
   const supabase = createClient();
 
   useEffect(() => {
@@ -41,12 +41,12 @@ export default function ShopsPage() {
           if (teamProfiles) setProfiles(teamProfiles);
         }
       }
-      
+
       let query = supabase
         .from('shops')
         .select('*, owner:profiles!owner_id(full_name, email)')
         .order('name');
-        
+
       const currentRole = profile?.role || 'member';
       if (currentRole === 'admin') {
         if (ownerFilter !== 'all') {
@@ -57,7 +57,7 @@ export default function ShopsPage() {
           .from('profiles')
           .select('id')
           .eq('leader_id', user.id);
-        
+
         const memberIds = members?.map(m => m.id) || [];
         const teamIds = [user.id, ...memberIds];
 
@@ -70,9 +70,9 @@ export default function ShopsPage() {
         // Member sees only their own shops
         query = query.eq('owner_id', user.id);
       }
-        
+
       const { data: shopsData } = await query;
-        
+
       if (shopsData) setShops(shopsData);
       setLoading(false);
     };
@@ -94,7 +94,7 @@ export default function ShopsPage() {
   const handleUpdateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedShop) return;
-    
+
     setLoading(true);
     const { error } = await supabase
       .from('shops')
@@ -122,7 +122,7 @@ export default function ShopsPage() {
 
   const handleDeleteShop = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to delete the shop "${name}"? This will delete all associated sales records.`)) return;
-    
+
     setLoading(true);
     const { error } = await supabase
       .from('shops')
@@ -146,13 +146,13 @@ export default function ShopsPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-end' }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Connected Shops</h1>
-          
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Shops</h1>
+
           {['admin', 'leader'].includes(userRole) && (
             <div style={{ minWidth: '200px' }}>
               <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Filter by Owner</label>
-              <select 
-                value={ownerFilter} 
+              <select
+                value={ownerFilter}
                 onChange={(e) => setOwnerFilter(e.target.value)}
                 style={{ fontSize: '0.875rem', width: '100%' }}
               >
@@ -175,75 +175,75 @@ export default function ShopsPage() {
       {loading ? (
         <div style={{ textAlign: 'center', color: 'var(--muted-foreground)' }}>Loading shops...</div>
       ) : shops.length === 0 ? (
-         <Card className="flex-center" style={{ borderStyle: 'dashed', minHeight: '180px', opacity: 0.8 }}>
-            <div style={{ textAlign: 'center' }}>
-                <p style={{ marginBottom: '1rem' }}>No shops found.</p>
-                {userRole !== 'member' && (
-                  <Link href="/shops/new">
-                      <Button variant="secondary">Create your first shop</Button>
-                  </Link>
-                )}
-            </div>
+        <Card className="flex-center" style={{ borderStyle: 'dashed', minHeight: '180px', opacity: 0.8 }}>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ marginBottom: '1rem' }}>No shops found.</p>
+            {userRole !== 'member' && (
+              <Link href="/shops/new">
+                <Button variant="secondary">Create your first shop</Button>
+              </Link>
+            )}
+          </div>
         </Card>
       ) : (
         <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
-            {shops.map((shop) => (
+          {shops.map((shop) => (
             <Card key={shop.id}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>{shop.name}</h3>
-                <span style={{ 
-                    padding: '0.25rem 0.75rem', 
-                    borderRadius: '99px', 
-                    background: shop.status === 'active' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                    color: shop.status === 'active' ? '#34d399' : '#f87171',
-                    fontSize: '0.75rem',
-                    border: '1px solid currentColor'
+                <span style={{
+                  padding: '0.25rem 0.75rem',
+                  borderRadius: '99px',
+                  background: shop.status === 'active' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                  color: shop.status === 'active' ? '#34d399' : '#f87171',
+                  fontSize: '0.75rem',
+                  border: '1px solid currentColor'
                 }}>
-                    {shop.status.toUpperCase()}
+                  {shop.status.toUpperCase()}
                 </span>
-                </div>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
-                    <span>Platform: {shop.platform}</span>
-                    <span>Owner: {shop.owner?.full_name || shop.owner?.email || 'Unknown'}</span>
-                </div>
+              </div>
 
-                <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    {userRole !== 'member' && (
-                      <Button variant="secondary" style={{ flex: 1 }} onClick={() => handleEditClick(shop)}>Edit</Button>
-                    )}
-                    <Button variant="secondary" style={{ flex: 1 }}>Reports</Button>
-                    {['admin', 'leader'].includes(userRole) && (
-                      <Button 
-                        variant="ghost" 
-                        style={{ flex: '0 0 auto', color: '#ef4444', padding: '0.5rem' }} 
-                        onClick={() => handleDeleteShop(shop.id, shop.name)}
-                        title="Delete Shop"
-                      >
-                        ✕
-                      </Button>
-                    )}
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
+                <span>Platform: {shop.platform}</span>
+                <span>Owner: {shop.owner?.full_name || shop.owner?.email || 'Unknown'}</span>
+              </div>
+
+              <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {userRole !== 'member' && (
+                  <Button variant="secondary" style={{ flex: 1 }} onClick={() => handleEditClick(shop)}>Edit</Button>
+                )}
+                <Button variant="secondary" style={{ flex: 1 }}>Reports</Button>
+                {['admin', 'leader'].includes(userRole) && (
+                  <Button
+                    variant="ghost"
+                    style={{ flex: '0 0 auto', color: '#ef4444', padding: '0.5rem' }}
+                    onClick={() => handleDeleteShop(shop.id, shop.name)}
+                    title="Delete Shop"
+                  >
+                    ✕
+                  </Button>
+                )}
+              </div>
             </Card>
-            ))}
+          ))}
         </div>
       )}
 
       {/* Edit Shop Modal */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Shop">
         <form onSubmit={handleUpdateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <Input 
-            label="Shop Name" 
+          <Input
+            label="Shop Name"
             name="name"
             value={formData.name || ''}
             onChange={handleInputChange}
-            required 
+            required
           />
-          
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Platform</label>
-              <select 
+              <select
                 name="platform"
                 style={{ width: '100%' }}
                 value={formData.platform || ''}
@@ -258,7 +258,7 @@ export default function ShopsPage() {
 
             <div>
               <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Status</label>
-              <select 
+              <select
                 name="status"
                 style={{ width: '100%' }}
                 value={formData.status || ''}
@@ -273,7 +273,7 @@ export default function ShopsPage() {
           {['admin', 'leader'].includes(userRole) && (
             <div>
               <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Assign to Owner</label>
-              <select 
+              <select
                 name="owner_id"
                 style={{ width: '100%' }}
                 value={formData.owner_id || ''}

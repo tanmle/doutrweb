@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -15,9 +15,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -34,9 +34,9 @@ export default function LoginPage() {
       router.push('/dashboard');
       router.refresh(); // Ensure server session is updated
     }
-  };
+  }, [email, password, router, supabase]);
 
-  const handleSignUp = async () => {
+  const handleSignUp = useCallback(async () => {
     setLoading(true);
     setError(null);
     const { error } = await supabase.auth.signUp({
@@ -55,7 +55,7 @@ export default function LoginPage() {
       setError('Check email for confirmation link!');
     }
     setLoading(false);
-  };
+  }, [email, password, supabase]);
 
   return (
     <div className={styles.container}>
@@ -70,30 +70,27 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleLogin} className={styles.form}>
-          <Input 
-            label="Email Address" 
-            placeholder="seller@gmail.com" 
-            type="email" 
+          <Input
+            label="Email Address"
+            placeholder="seller@gmail.com"
+            type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <Input 
-            label="Password" 
-            placeholder="••••••••" 
-            type="password" 
+          <Input
+            label="Password"
+            placeholder="••••••••"
+            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
 
-          <div style={{ display: 'flex', gap: '1rem' }}>
-             <Button type="submit" fullWidth disabled={loading}>
-               {loading ? 'Processing...' : 'Sign In'}
-             </Button>
-             <Button type="button" variant="secondary" fullWidth disabled={loading} onClick={handleSignUp}>
-               Sign Up
-             </Button>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Processing...' : 'Sign In'}
+            </Button>
           </div>
         </form>
       </Card>

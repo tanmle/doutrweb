@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './Sidebar.module.css';
@@ -16,10 +16,10 @@ const navItems = [
 export const Sidebar = ({ isOpen, onClose, role }: { isOpen: boolean; onClose: () => void; role?: string }) => {
   const pathname = usePathname();
 
-  const filteredNavItems = navItems.filter(item => {
+  const filteredNavItems = useMemo(() => navItems.filter(item => {
     if (item.label === 'Admin') return role === 'admin';
     return true;
-  });
+  }), [role]);
 
   return (
     <aside className={styles.sidebarWrapper}>
