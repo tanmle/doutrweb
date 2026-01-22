@@ -345,6 +345,7 @@ export default function DashboardPage() {
                     type="date"
                     value={dateRange.start}
                     onChange={(event) => setDateRange((prev) => ({ ...prev, start: event.target.value }))}
+                    onClick={(e) => e.currentTarget.showPicker()}
                     className={`${filters.filterInput} ${dashboard.filterDateInput}`}
                   />
                   <span className={layouts.textMuted}>to</span>
@@ -353,6 +354,7 @@ export default function DashboardPage() {
                     type="date"
                     value={dateRange.end}
                     onChange={(event) => setDateRange((prev) => ({ ...prev, end: event.target.value }))}
+                    onClick={(e) => e.currentTarget.showPicker()}
                     className={`${filters.filterInput} ${dashboard.filterDateInput}`}
                   />
                 </div>

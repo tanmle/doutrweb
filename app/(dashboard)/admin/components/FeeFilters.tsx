@@ -93,6 +93,7 @@ export function FeeFilters({
                                 type="date"
                                 value={dateRange.start}
                                 onChange={(e) => onDateRangeChange({ ...dateRange, start: e.target.value })}
+                                onClick={(e) => e.currentTarget.showPicker()}
                                 className={styles.filterDateInput}
                             />
                         </div>
@@ -105,6 +106,7 @@ export function FeeFilters({
                                 type="date"
                                 value={dateRange.end}
                                 onChange={(e) => onDateRangeChange({ ...dateRange, end: e.target.value })}
+                                onClick={(e) => e.currentTarget.showPicker()}
                                 className={styles.filterDateInput}
                             />
                         </div>

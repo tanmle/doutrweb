@@ -409,6 +409,7 @@ export default function DailyEntryPage() {
                       type="date"
                       value={dateRange.start}
                       onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                      onClick={(e) => e.currentTarget.showPicker()}
                       className={filters.filterInput}
                     />
                   </div>
@@ -420,6 +421,7 @@ export default function DailyEntryPage() {
                       type="date"
                       value={dateRange.end}
                       onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                      onClick={(e) => e.currentTarget.showPicker()}
                       className={filters.filterInput}
                     />
                   </div>
@@ -515,6 +517,7 @@ export default function DailyEntryPage() {
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
+                onClick={(e) => e.currentTarget.showPicker()}
                 required
                 className={forms.formInput}
               />
@@ -607,6 +610,7 @@ export default function DailyEntryPage() {
               type="date"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              onClick={(e) => e.currentTarget.showPicker()}
               required
               className={forms.formInput}
             />

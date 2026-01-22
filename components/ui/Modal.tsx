@@ -23,14 +23,6 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
     <div
       className={styles.overlay}
       onClick={onClose}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          onClose();
-        }
-      }}
     >
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>

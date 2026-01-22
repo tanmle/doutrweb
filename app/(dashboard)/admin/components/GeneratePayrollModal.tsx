@@ -76,8 +76,15 @@ export function GeneratePayrollModal({
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
                 {/* Global Settings */}
-                <div style={{ paddingBottom: '1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-end', gap: '1rem' }}>
-                    <div style={{ maxWidth: '220px' }}>
+                <div style={{
+                    paddingBottom: '1rem',
+                    borderBottom: '1px solid var(--border)',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'flex-end',
+                    gap: '1rem'
+                }}>
+                    <div style={{ flex: '1 1 200px', maxWidth: '220px' }}>
                         <Input
                             label="Standard Work Days for Month"
                             type="number"
@@ -86,7 +93,12 @@ export function GeneratePayrollModal({
                             onChange={e => setStandardDays(Number(e.target.value))}
                         />
                     </div>
-                    <Button type="button" variant="secondary" onClick={handleSetAll} style={{ marginBottom: '1rem' }}>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={handleSetAll}
+                        style={{ marginBottom: '1rem', whiteSpace: 'nowrap' }}
+                    >
                         Set All
                     </Button>
                 </div>
@@ -103,14 +115,13 @@ export function GeneratePayrollModal({
                         <tbody>
                             {users.map(user => (
                                 <tr key={user.id}>
-                                    <td style={{ padding: '0.75rem 0' }}>
+                                    <td data-label="User" style={{ padding: '0.75rem 0' }}>
                                         <div style={{ fontWeight: 500 }}>{user.full_name}</div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{user.email}</div>
                                     </td>
-                                    <td>
+                                    <td data-label="Actual Days">
                                         <input
                                             type="number"
-                                            className={forms.formInput} // reusing standard input class or similar
+                                            className={forms.formInput}
                                             style={{ width: '80px', padding: '0.25rem 0.5rem' }}
                                             value={userDays[user.id] ?? 0}
                                             onChange={(e) => handleUserDayChange(user.id, e.target.value)}

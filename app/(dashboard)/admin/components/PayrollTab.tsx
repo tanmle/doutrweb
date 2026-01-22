@@ -69,6 +69,7 @@ export function PayrollTab({
                             type="month"
                             value={month}
                             onChange={(e) => onMonthChange(e.target.value)}
+                            onClick={(e) => e.currentTarget.showPicker()}
                             className={filters.filterInput}
                             style={{ width: '100%' }}
                         />
@@ -124,7 +125,7 @@ export function PayrollTab({
                                             {formatCurrency(record.user?.base_salary || 0)}
                                         </td>
                                         <td data-label="Work Days">
-                                            {record.standard_work_days} / <strong>{record.actual_work_days}</strong>
+                                            <span>{record.standard_work_days} / <strong>{record.actual_work_days}</strong></span>
                                         </td>
                                         <td data-label="Bonus">
                                             {formatCurrency(record.bonus || 0)}
