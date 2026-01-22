@@ -32,6 +32,20 @@ export function UserModal({
 }: UserModalProps) {
     const leaders = profiles.filter(p => p.role === 'leader');
     const showLeaderSelect = formData.role === 'member' || (!formData.role && !isEdit);
+    const [banks, setBanks] = React.useState<any[]>([]);
+
+    React.useEffect(() => {
+        if (isOpen) {
+            fetch('https://api.vietqr.io/v2/banks')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.code === '00') {
+                        setBanks(data.data);
+                    }
+                })
+                .catch(err => console.error('Error fetching banks:', err));
+        }
+    }, [isOpen]);
 
     return (
         <Modal
@@ -109,6 +123,32 @@ export function UserModal({
                         </select>
                     </div>
                 )}
+
+                <div>
+                    <label className={styles.formLabel}>
+                        Bank Name
+                    </label>
+                    <select
+                        name="bank_name"
+                        value={formData.bank_name || ''}
+                        onChange={onChange}
+                        className={styles.formSelect}
+                    >
+                        <option value="">Select Bank</option>
+                        {banks.map((bank: any) => (
+                            <option key={bank.id} value={`${bank.shortName} - ${bank.name}`}>
+                                {bank.shortName} - {bank.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <Input
+                    label="Bank Number"
+                    name="bank_number"
+                    value={formData.bank_number || ''}
+                    onChange={onChange}
+                />
 
                 {isEdit && (
                     <p className={styles.passwordNote}>

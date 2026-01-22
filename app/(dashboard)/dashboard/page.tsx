@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { createClient } from '@/utils/supabase/client';
-import { cards, layouts, filters, forms } from '@/styles/modules';
+import { cards, layouts, filters, forms, dashboard } from '@/styles/modules';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -284,14 +284,17 @@ export default function DashboardPage() {
 
         <Card className={cards.statCard}>
           <span className={cards.statLabel}>Monthly KPI Progress</span>
-          <div className={layouts.flexRowSpaced} style={{ alignItems: 'baseline' }}>
+          <div className={`${layouts.flexRowSpaced} ${dashboard.kpiHeader}`}>
             <span className={cards.statValue}>{progress.toFixed(1)}%</span>
             <span className={layouts.textMuted}>Target: {currencyFormatter.format(stats.targetKPI)}</span>
           </div>
-          <div style={{ height: '8px', width: '100%', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden', marginTop: '0.5rem' }}>
-            <div style={{ height: '100%', background: 'var(--primary)', width: `${progress}%`, transition: 'width 0.5s ease-out' }} />
+          <div className={dashboard.progressBarContainer}>
+            <div
+              className={dashboard.progressBarFill}
+              style={{ width: `${progress}%` }}
+            />
           </div>
-          <span className={layouts.textMuted} style={{ fontSize: '0.75rem', marginTop: '0.5rem', display: 'block' }}>
+          <span className={`${layouts.textMuted} ${dashboard.mtdText}`}>
             MTD: {currencyFormatter.format(stats.monthlyRevenue)}
           </span>
         </Card>
@@ -300,18 +303,17 @@ export default function DashboardPage() {
       <div className={layouts.spacingYLarge}></div>
 
       <div className={layouts.grid}>
-        <Card style={{ padding: '1.5rem' }}>
-          <div className={layouts.flexRowSpaced} style={{ marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-            <h2 className={layouts.sectionHeader} style={{ margin: 0 }}>Analytics: Revenue</h2>
+        <Card className={dashboard.chartCard}>
+          <div className={`${layouts.flexRowSpaced} ${dashboard.chartHeader}`}>
+            <h2 className={`${layouts.sectionHeader} ${dashboard.chartTitle}`}>Analytics: Revenue</h2>
 
-            <div className={filters.filterControls} style={{ padding: 0, border: 'none', background: 'transparent' }}>
+            <div className={`${filters.filterControls} ${dashboard.filterContainer}`}>
               <div className={filters.filterButtons}>
                 <select
                   aria-label="Filter chart by date"
                   value={filter}
                   onChange={(event) => setFilter(event.target.value as ChartFilter)}
-                  className={filters.filterSelect}
-                  style={{ width: 'auto' }}
+                  className={`${filters.filterSelect} ${dashboard.filterSelect}`}
                 >
                   <option value="today">Today</option>
                   <option value="week">This Week</option>
@@ -325,8 +327,7 @@ export default function DashboardPage() {
                     aria-label="Filter chart by member"
                     value={memberFilter}
                     onChange={(event) => setMemberFilter(event.target.value)}
-                    className={filters.filterSelect}
-                    style={{ width: 'auto' }}
+                    className={`${filters.filterSelect} ${dashboard.filterSelect}`}
                   >
                     {memberOptions.map((member) => (
                       <option key={member} value={member}>
@@ -344,8 +345,7 @@ export default function DashboardPage() {
                     type="date"
                     value={dateRange.start}
                     onChange={(event) => setDateRange((prev) => ({ ...prev, start: event.target.value }))}
-                    className={filters.filterInput}
-                    style={{ width: 'auto', padding: '0.4rem 0.6rem' }}
+                    className={`${filters.filterInput} ${dashboard.filterDateInput}`}
                   />
                   <span className={layouts.textMuted}>to</span>
                   <input
@@ -353,15 +353,14 @@ export default function DashboardPage() {
                     type="date"
                     value={dateRange.end}
                     onChange={(event) => setDateRange((prev) => ({ ...prev, end: event.target.value }))}
-                    className={filters.filterInput}
-                    style={{ width: 'auto', padding: '0.4rem 0.6rem' }}
+                    className={`${filters.filterInput} ${dashboard.filterDateInput}`}
                   />
                 </div>
               )}
             </div>
           </div>
 
-          <div style={{ width: '100%', height: '450px' }}>
+          <div className={dashboard.chartContainer}>
             {filteredChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={filteredChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
@@ -419,7 +418,7 @@ export default function DashboardPage() {
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted-foreground)' }}>
+              <div className={dashboard.emptyState}>
                 No sales performance data found for this period.
               </div>
             )}

@@ -22,6 +22,8 @@ type EditFormData = {
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
+  bankName: string;
+  bankNumber: string;
 };
 
 export default function DashboardLayout({
@@ -39,8 +41,11 @@ export default function DashboardLayout({
     avatarUrl: '',
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    bankName: '',
+    bankNumber: ''
   });
+  const [banks, setBanks] = useState<any[]>([]);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [updating, setUpdating] = useState(false);
@@ -53,10 +58,10 @@ export default function DashboardLayout({
       if (user) {
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('full_name, avatar_url, role')
+          .select('full_name, avatar_url, role, bank_name, bank_number')
           .eq('id', user.id)
           .single();
-        
+
         if (profileData) {
           setProfile(profileData);
           setEditFormData(prev => ({
@@ -65,7 +70,9 @@ export default function DashboardLayout({
             avatarUrl: profileData.avatar_url || '',
             currentPassword: '',
             newPassword: '',
-            confirmPassword: ''
+            confirmPassword: '',
+            bankName: profileData.bank_name || '',
+            bankNumber: profileData.bank_number || ''
           }));
           setPreviewUrl(profileData.avatar_url || '');
         } else {
@@ -78,6 +85,17 @@ export default function DashboardLayout({
     };
     getProfile();
   }, [supabase]);
+
+  useEffect(() => {
+    fetch('https://api.vietqr.io/v2/banks')
+      .then(res => res.json())
+      .then(data => {
+        if (data.code === '00') {
+          setBanks(data.data);
+        }
+      })
+      .catch(err => console.error('Error fetching banks:', err));
+  }, []);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -163,7 +181,9 @@ export default function DashboardLayout({
         .from('profiles')
         .update({
           full_name: editFormData.fullName,
-          avatar_url: finalAvatarUrl
+          avatar_url: finalAvatarUrl,
+          bank_name: editFormData.bankName || null,
+          bank_number: editFormData.bankNumber || null
         })
         .eq('id', user.id);
 
@@ -173,7 +193,9 @@ export default function DashboardLayout({
       setProfile((prev) => ({
         ...(prev ?? {}),
         full_name: editFormData.fullName,
-        avatar_url: finalAvatarUrl
+        avatar_url: finalAvatarUrl,
+        bank_name: editFormData.bankName || null,
+        bank_number: editFormData.bankNumber || null
       }));
       setPreviewUrl(finalAvatarUrl);
       setIsEditProfileOpen(false);
@@ -181,7 +203,9 @@ export default function DashboardLayout({
         ...prev,
         currentPassword: '',
         newPassword: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        bankName: editFormData.bankName,
+        bankNumber: editFormData.bankNumber
       }));
       setAvatarFile(null);
       toast.success('Profile updated successfully!');
@@ -254,6 +278,7 @@ export default function DashboardLayout({
         onFileTrigger={handleFileTrigger}
         onFileChange={handleFileChange}
         onFieldChange={handleEditFormChange}
+        banks={banks}
       />
     </>
   );

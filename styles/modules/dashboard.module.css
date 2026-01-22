@@ -1,0 +1,71 @@
+/* ============================================
+   Dashboard Module - Dashboard Specific Styles
+   ============================================ */
+
+/* KPI Card Styles */
+.kpiHeader {
+    align-items: baseline;
+}
+
+.progressBarContainer {
+    height: 8px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.progressBarFill {
+    height: 100%;
+    background: var(--primary);
+    transition: width 0.5s ease-out;
+}
+
+.mtdText {
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+    display: block;
+}
+
+/* Analytics Chart Card Styles */
+.chartCard {
+    padding: 1.5rem;
+}
+
+.chartHeader {
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.chartTitle {
+    margin: 0;
+}
+
+.filterContainer {
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
+.filterSelect {
+    width: auto;
+}
+
+.filterDateInput {
+    width: auto;
+    padding: 0.4rem 0.6rem;
+}
+
+.chartContainer {
+    width: 100%;
+    height: 450px;
+}
+
+.emptyState {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted-foreground);
+}

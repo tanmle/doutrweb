@@ -216,7 +216,9 @@ export default function AdminPage() {
       password: formData.password,
       full_name: formData.full_name,
       role: formData.role || 'member',
-      leader_id: (formData.role === 'member' || !formData.role) ? formData.leader_id : null
+      leader_id: (formData.role === 'member' || !formData.role) ? formData.leader_id : null,
+      bank_name: formData.bank_name,
+      bank_number: formData.bank_number
     });
 
     if (res.error) {
@@ -237,7 +239,9 @@ export default function AdminPage() {
     const { error } = await supabase.from('profiles').update({
       full_name: formData.full_name,
       role: formData.role,
-      leader_id: formData.role === 'member' ? (formData.leader_id || null) : null
+      leader_id: formData.role === 'member' ? (formData.leader_id || null) : null,
+      bank_name: formData.bank_name || null,
+      bank_number: formData.bank_number || null
     }).eq('id', selectedUser.id);
 
     if (error) toast.error(error.message);
@@ -255,7 +259,9 @@ export default function AdminPage() {
     setFormData({
       full_name: user.full_name || '',
       role: user.role,
-      leader_id: user.leader_id || ''
+      leader_id: user.leader_id || '',
+      bank_name: user.bank_name || '',
+      bank_number: user.bank_number || ''
     });
     setIsEditUserModalOpen(true);
   };

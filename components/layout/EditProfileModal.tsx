@@ -11,6 +11,8 @@ type EditFormData = {
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
+  bankName: string;
+  bankNumber: string;
 };
 
 type EditProfileModalProps = {
@@ -24,6 +26,7 @@ type EditProfileModalProps = {
   onFileTrigger: () => void;
   onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onFieldChange: (field: keyof EditFormData, value: string) => void;
+  banks: any[];
 };
 
 export const EditProfileModal: React.FC<EditProfileModalProps> = ({
@@ -37,6 +40,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   onFileTrigger,
   onFileChange,
   onFieldChange,
+  banks,
 }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Edit Profile">
@@ -77,6 +81,43 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               value={formData.fullName}
               onChange={(event) => onFieldChange('fullName', event.target.value)}
               required
+            />
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionTitle}>Bank Information</span>
+            <span className={styles.sectionLine} aria-hidden="true" />
+          </div>
+          <div className={styles.fields}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Bank Name</label>
+              <select
+                value={formData.bankName}
+                onChange={(event) => onFieldChange('bankName', event.target.value)}
+                style={{
+                  padding: '10px',
+                  border: '1px solid var(--border)',
+                  borderRadius: '6px',
+                  backgroundColor: 'var(--background-secondary)',
+                  color: 'var(--text-primary)',
+                  width: '100%',
+                  fontSize: '0.875rem'
+                }}
+              >
+                <option value="">Select Bank</option>
+                {banks.map((bank: any) => (
+                  <option key={bank.id} value={`${bank.shortName} - ${bank.name}`}>
+                    {bank.shortName} - {bank.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Input
+              label="Bank Number"
+              value={formData.bankNumber}
+              onChange={(event) => onFieldChange('bankNumber', event.target.value)}
             />
           </div>
         </div>

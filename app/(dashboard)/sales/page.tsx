@@ -8,7 +8,7 @@ import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/ToastProvider';
 import { createClient } from '@/utils/supabase/client';
-import { forms, cards, tables, filters, layouts } from '@/styles/modules';
+import { forms, cards, tables, filters, layouts, sales } from '@/styles/modules';
 
 export default function DailyEntryPage() {
   const [loading, setLoading] = useState(false);
@@ -449,7 +449,7 @@ export default function DailyEntryPage() {
             <tbody>
               {records.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className={layouts.textCenter} style={{ padding: '2rem' }}>
+                  <td colSpan={7} className={`${layouts.textCenter} ${sales.emptyStateCell}`}>
                     <span className={layouts.textMuted}>No records found.</span>
                   </td>
                 </tr>
@@ -474,10 +474,10 @@ export default function DailyEntryPage() {
                     <td data-label="Revenue">{formatUSD(r.revenue)}</td>
                     <td data-label="Actions">
                       <div className={tables.tableActionsSmall}>
-                        <Button variant="ghost" onClick={() => openEditModal(r)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}>
+                        <Button variant="ghost" onClick={() => openEditModal(r)} className={sales.actionButtonSmall}>
                           Edit
                         </Button>
-                        <Button variant="ghost" onClick={() => handleDelete(r.id)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', color: '#ef4444' }}>
+                        <Button variant="ghost" onClick={() => handleDelete(r.id)} className={sales.deleteButtonSmall}>
                           Delete
                         </Button>
                       </div>
@@ -522,31 +522,21 @@ export default function DailyEntryPage() {
           </div>
 
           <div className={layouts.spacingTop}>
-            <div className={layouts.flexRowSpaced} style={{ marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+            <div className={`${layouts.flexRowSpaced} ${sales.productsSectionHeader}`}>
               <h3 className={layouts.sectionHeaderSmall}>Products Sold</h3>
-              <Button type="button" variant="ghost" onClick={addItem} style={{ fontSize: '0.875rem', color: 'var(--primary)' }}>
+              <Button type="button" variant="ghost" onClick={addItem} className={sales.addButton}>
                 + Add row
               </Button>
             </div>
 
-            <div className={layouts.flexColumn} style={{ maxHeight: '300px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+            <div className={sales.productsList}>
               {items.map((item, index) => (
-                <div key={index} style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'minmax(140px, 1fr) 70px 36px',
-                  gap: '0.75rem',
-                  alignItems: 'center',
-                  background: 'rgba(255,255,255,0.02)',
-                  padding: '0.75rem',
-                  borderRadius: '8px',
-                  border: '1px solid var(--border)'
-                }}>
+                <div key={index} className={sales.productRow}>
                   <div>
-                    {index === 0 && <label className={forms.formLabel} style={{ marginBottom: '0.25rem' }}>Product</label>}
+                    {index === 0 && <label className={`${forms.formLabel} ${sales.productRowLabel}`}>Product</label>}
                     <select
                       aria-label="Select product"
                       className={forms.formSelect}
-                      style={{ height: '40px' }}
                       value={item.productId}
                       onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
                       required
@@ -558,7 +548,7 @@ export default function DailyEntryPage() {
                   </div>
 
                   <div>
-                    {index === 0 && <label className={forms.formLabel} style={{ marginBottom: '0.25rem' }}>QTY</label>}
+                    {index === 0 && <label className={`${forms.formLabel} ${sales.productRowLabel}`}>QTY</label>}
                     <input
                       aria-label="Quantity"
                       type="number"
@@ -567,17 +557,16 @@ export default function DailyEntryPage() {
                       onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
                       required
                       className={forms.formInput}
-                      style={{ height: '40px' }}
                     />
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'center', paddingTop: index === 0 ? '1.25rem' : '0' }}>
+                  <div className={index === 0 ? sales.removeButtonContainerWithLabel : sales.removeButtonContainer}>
                     {items.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeItem(index)}
                         aria-label="Remove product row"
-                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1.25rem' }}
+                        className={sales.removeButton}
                       >
                         ✕
                       </button>
@@ -588,7 +577,7 @@ export default function DailyEntryPage() {
             </div>
           </div>
 
-          <Button type="submit" fullWidth disabled={loading} style={{ height: '48px', fontSize: '1rem', marginTop: '1rem' }}>
+          <Button type="submit" fullWidth disabled={loading} className={sales.submitButton}>
             {loading ? 'Submitting…' : 'Submit Daily Record'}
           </Button>
         </form>
@@ -650,7 +639,7 @@ export default function DailyEntryPage() {
             />
           </div>
 
-          <Button type="submit" fullWidth disabled={loading} style={{ marginTop: '1rem' }}>
+          <Button type="submit" fullWidth disabled={loading} className={sales.updateButton}>
             {loading ? 'Updating…' : 'Update Sales Record'}
           </Button>
         </form>

@@ -20,6 +20,8 @@ export interface User {
   full_name?: string;
   role: 'admin' | 'leader' | 'member';
   leader_id?: string;
+  bank_name?: string;
+  bank_number?: string;
   created_at: string;
   leader?: {
     full_name: string;
@@ -43,6 +45,8 @@ export interface Profile {
   full_name?: string;
   email: string;
   role: 'admin' | 'leader' | 'member';
+  bank_name?: string;
+  bank_number?: string;
 }
 
 export interface CommissionRate {
