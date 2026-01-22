@@ -7,9 +7,9 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Modal } from '@/components/ui/Modal';
+import { ShopCard } from '@/components/ui/ShopCard';
 import { useToast } from '@/components/ui/ToastProvider';
 import { createClient } from '@/utils/supabase/client';
-import { Shop } from '@/lib/types';
 
 export default function ShopsPage() {
   const [shops, setShops] = useState<any[]>([]);
@@ -22,8 +22,51 @@ export default function ShopsPage() {
   const [userRole, setUserRole] = useState<string>('member');
   const [formData, setFormData] = useState<any>({});
 
+  // ✅ NEW: create modal state + form
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createFormData, setCreateFormData] = useState<any>({
+    name: '',
+    platform: 'tiktok',
+    status: 'active',
+    owner_id: '',
+  });
+
   const toast = useToast();
   const supabase = createClient();
+
+  const refreshShopsScoped = async () => {
+    let query = supabase
+      .from('shops')
+      .select('*, owner:profiles!owner_id(full_name, email)')
+      .order('name');
+
+    if (userRole === 'admin') {
+      if (ownerFilter !== 'all') query = query.eq('owner_id', ownerFilter);
+    } else if (userRole === 'leader') {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: members } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('leader_id', user.id);
+
+        const memberIds = members?.map(m => m.id) || [];
+        const teamIds = [user.id, ...memberIds];
+
+        if (ownerFilter !== 'all' && teamIds.includes(ownerFilter)) {
+          query = query.eq('owner_id', ownerFilter);
+        } else {
+          query = query.in('owner_id', teamIds);
+        }
+      }
+    } else {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) query = query.eq('owner_id', user.id);
+    }
+
+    const { data } = await query;
+    if (data) setShops(data);
+  };
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -31,32 +74,44 @@ export default function ShopsPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-        if (profile) {
-          setUserRole(profile.role);
-          if (profile.role === 'admin') {
-            const { data: profileData } = await supabase.from('profiles').select('id, full_name, email').order('full_name');
-            if (profileData) setProfiles(profileData);
-          } else if (profile.role === 'leader') {
-            const { data: teamProfiles } = await supabase
-              .from('profiles')
-              .select('id, full_name, email')
-              .or(`id.eq.${user.id},leader_id.eq.${user.id}`)
-              .order('full_name');
-            if (teamProfiles) setProfiles(teamProfiles);
-          }
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        const currentRole = profile?.role || 'member';
+        setUserRole(currentRole);
+
+        if (currentRole === 'admin') {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .order('full_name');
+          if (profileData) setProfiles(profileData);
+        } else if (currentRole === 'leader') {
+          const { data: teamProfiles } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .or(`id.eq.${user.id},leader_id.eq.${user.id}`)
+            .order('full_name');
+          if (teamProfiles) setProfiles(teamProfiles);
         }
 
+        // ✅ default owner for create form
+        setCreateFormData((prev: any) => ({
+          ...prev,
+          owner_id: currentRole === 'member' ? user.id : (prev.owner_id || user.id),
+        }));
+
+        // Fetch shops (same logic as before)
         let query = supabase
           .from('shops')
           .select('*, owner:profiles!owner_id(full_name, email)')
           .order('name');
 
-        const currentRole = profile?.role || 'member';
         if (currentRole === 'admin') {
-          if (ownerFilter !== 'all') {
-            query = query.eq('owner_id', ownerFilter);
-          }
+          if (ownerFilter !== 'all') query = query.eq('owner_id', ownerFilter);
         } else if (currentRole === 'leader') {
           const { data: members } = await supabase
             .from('profiles')
@@ -72,12 +127,10 @@ export default function ShopsPage() {
             query = query.in('owner_id', teamIds);
           }
         } else {
-          // Member sees only their own shops
           query = query.eq('owner_id', user.id);
         }
 
         const { data: shopsData } = await query;
-
         if (shopsData) setShops(shopsData);
       } finally {
         setInitialLoading(false);
@@ -93,7 +146,7 @@ export default function ShopsPage() {
       name: shop.name,
       platform: shop.platform,
       status: shop.status,
-      owner_id: shop.owner_id
+      owner_id: shop.owner_id,
     });
     setIsEditModalOpen(true);
   };
@@ -109,7 +162,7 @@ export default function ShopsPage() {
         name: formData.name,
         platform: formData.platform,
         status: formData.status,
-        owner_id: formData.owner_id
+        owner_id: formData.owner_id,
       })
       .eq('id', selectedShop.id);
 
@@ -117,43 +170,63 @@ export default function ShopsPage() {
       toast.error(error.message);
     } else {
       setIsEditModalOpen(false);
-      // Refresh list scoped to role
-      let query = supabase
-        .from('shops')
-        .select('*, owner:profiles!owner_id(full_name, email)')
-        .order('name');
-
-      if (userRole === 'admin') {
-        if (ownerFilter !== 'all') {
-          query = query.eq('owner_id', ownerFilter);
-        }
-      } else if (userRole === 'leader') {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: members } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('leader_id', user.id);
-
-          const memberIds = members?.map(m => m.id) || [];
-          const teamIds = [user.id, ...memberIds];
-
-          if (ownerFilter !== 'all' && teamIds.includes(ownerFilter)) {
-            query = query.eq('owner_id', ownerFilter);
-          } else {
-            query = query.in('owner_id', teamIds);
-          }
-        }
-      } else {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          query = query.eq('owner_id', user.id);
-        }
-      }
-
-      const { data } = await query;
-      if (data) setShops(data);
+      await refreshShopsScoped();
+      toast.success('Shop updated successfully');
     }
+    setLoading(false);
+  };
+
+  // ✅ NEW: open create modal
+  const openCreateModal = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const defaultOwnerId =
+      ['admin', 'leader'].includes(userRole)
+        ? (createFormData.owner_id || user?.id || '')
+        : (user?.id || '');
+
+    setCreateFormData({
+      name: '',
+      platform: 'tiktok',
+      status: 'active',
+      owner_id: defaultOwnerId,
+    });
+    setIsCreateModalOpen(true);
+  };
+
+  // ✅ NEW: create submit
+  const handleCreateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!createFormData.name?.trim()) {
+      toast.error('Shop name is required');
+      return;
+    }
+
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('shops')
+      .insert({
+        name: createFormData.name.trim(),
+        platform: createFormData.platform,
+        status: createFormData.status,
+        owner_id: createFormData.owner_id,
+      })
+      .select('*, owner:profiles!owner_id(full_name, email)')
+      .single();
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setIsCreateModalOpen(false);
+      toast.success('Shop created successfully');
+
+      // Update list
+      if (data) {
+        // if current view would include it, refresh; simplest is refresh always
+        await refreshShopsScoped();
+      }
+    }
+
     setLoading(false);
   };
 
@@ -161,10 +234,7 @@ export default function ShopsPage() {
     if (!confirm(`Are you sure you want to delete the shop "${name}"? This will delete all associated sales records.`)) return;
 
     setLoading(true);
-    const { error } = await supabase
-      .from('shops')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabase.from('shops').delete().eq('id', id);
 
     if (error) {
       toast.error(error.message);
@@ -177,6 +247,11 @@ export default function ShopsPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // ✅ NEW: create form input handler
+  const handleCreateInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setCreateFormData({ ...createFormData, [e.target.name]: e.target.value });
   };
 
   return (
@@ -195,7 +270,7 @@ export default function ShopsPage() {
                 style={{ fontSize: '0.875rem', width: '100%' }}
               >
                 <option value="all">All Owners</option>
-                {profiles.map(p => (
+                {profiles.map((p) => (
                   <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
                 ))}
               </select>
@@ -204,9 +279,7 @@ export default function ShopsPage() {
         </div>
 
         {userRole !== 'member' && (
-          <Link href="/shops/new">
-            <Button>+ New Shop</Button>
-          </Link>
+          <Button onClick={openCreateModal}>+ New Shop</Button>
         )}
       </div>
 
@@ -217,65 +290,35 @@ export default function ShopsPage() {
           <div style={{ textAlign: 'center' }}>
             <p style={{ marginBottom: '1rem' }}>No shops found.</p>
             {userRole !== 'member' && (
-              <Link href="/shops/new">
-                <Button variant="secondary">Create your first shop</Button>
-              </Link>
+              <Button variant="secondary" onClick={openCreateModal}>
+                Create your first shop
+              </Button>
             )}
           </div>
         </Card>
       ) : (
-        <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+        <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
           {shops.map((shop) => (
-            <Card key={shop.id}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>{shop.name}</h3>
-                <span style={{
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '99px',
-                  background: shop.status === 'active' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                  color: shop.status === 'active' ? '#34d399' : '#f87171',
-                  fontSize: '0.75rem',
-                  border: '1px solid currentColor'
-                }}>
-                  {shop.status.toUpperCase()}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
-                <span>Platform: {shop.platform}</span>
-                <span>Owner: {shop.owner?.full_name || shop.owner?.email || 'Unknown'}</span>
-              </div>
-
-              <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                {userRole !== 'member' && (
-                  <Button variant="secondary" style={{ flex: 1 }} onClick={() => handleEditClick(shop)}>Edit</Button>
-                )}
-                <Button variant="secondary" style={{ flex: 1 }}>Reports</Button>
-                {['admin', 'leader'].includes(userRole) && (
-                  <Button
-                    variant="ghost"
-                    style={{ flex: '0 0 auto', color: '#ef4444', padding: '0.5rem' }}
-                    onClick={() => handleDeleteShop(shop.id, shop.name)}
-                    title="Delete Shop"
-                    aria-label="Delete shop"
-                  >
-                    ✕
-                  </Button>
-                )}
-              </div>
-            </Card>
+            <ShopCard
+              key={shop.id}
+              shop={shop}
+              userRole={userRole}
+              onEdit={handleEditClick}
+              onDelete={handleDeleteShop}
+              onReports={() => console.log('Reports clicked for shop:', shop.id)}
+            />
           ))}
         </div>
       )}
 
-      {/* Edit Shop Modal */}
-      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Shop">
-        <form onSubmit={handleUpdateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      {/* ✅ NEW: Create Shop Modal */}
+      <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="New Shop">
+        <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <Input
             label="Shop Name"
             name="name"
-            value={formData.name || ''}
-            onChange={handleInputChange}
+            value={createFormData.name || ''}
+            onChange={handleCreateInputChange}
             required
           />
 
@@ -285,12 +328,11 @@ export default function ShopsPage() {
               <select
                 name="platform"
                 style={{ width: '100%' }}
-                value={formData.platform || ''}
-                onChange={handleInputChange}
+                value={createFormData.platform || 'tiktok'}
+                onChange={handleCreateInputChange}
               >
-                <option value="tiktok">TikTok Shop</option>
-                <option value="lazada">Lazada</option>
-                <option value="shopee">Shopee</option>
+                <option value="tiktok">TikTok</option>
+                <option value="amazon">Amazon</option>
                 <option value="other">Other</option>
               </select>
             </div>
@@ -300,8 +342,8 @@ export default function ShopsPage() {
               <select
                 name="status"
                 style={{ width: '100%' }}
-                value={formData.status || ''}
-                onChange={handleInputChange}
+                value={createFormData.status || 'active'}
+                onChange={handleCreateInputChange}
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -315,12 +357,60 @@ export default function ShopsPage() {
               <select
                 name="owner_id"
                 style={{ width: '100%' }}
-                value={formData.owner_id || ''}
-                onChange={handleInputChange}
+                value={createFormData.owner_id || ''}
+                onChange={handleCreateInputChange}
                 required
               >
-                {profiles.map(p => (
-                  <option key={p.id} value={p.id}>{p.full_name || p.email} ({p.email})</option>
+                {profiles.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.full_name || p.email} ({p.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div style={{ marginTop: '1rem' }}>
+            <Button type="submit" fullWidth disabled={loading}>
+              {loading ? 'Creating...' : 'Create Shop'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Shop Modal */}
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Shop">
+        <form onSubmit={handleUpdateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <Input label="Shop Name" name="name" value={formData.name || ''} onChange={handleInputChange} required />
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Platform</label>
+              <select name="platform" style={{ width: '100%' }} value={formData.platform || ''} onChange={handleInputChange}>
+                <option value="tiktok">TikTok Shop</option>
+                <option value="lazada">Lazada</option>
+                <option value="shopee">Shopee</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Status</label>
+              <select name="status" style={{ width: '100%' }} value={formData.status || ''} onChange={handleInputChange}>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+
+          {['admin', 'leader'].includes(userRole) && (
+            <div>
+              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Assign to Owner</label>
+              <select name="owner_id" style={{ width: '100%' }} value={formData.owner_id || ''} onChange={handleInputChange} required>
+                {profiles.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.full_name || p.email} ({p.email})
+                  </option>
                 ))}
               </select>
             </div>
