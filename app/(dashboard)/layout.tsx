@@ -1,15 +1,14 @@
 'use client';
 
-import { Sidebar } from '@/components/layout/Sidebar';
-import styles from './layout.module.css';
-import { Button } from '@/components/ui/Button';
-import { Avatar } from '@/components/ui/Avatar';
-import { Modal } from '@/components/ui/Modal';
-import { Input } from '@/components/ui/Input';
-import { useToast } from '@/components/ui/ToastProvider';
-import { createClient } from '@/utils/supabase/client';
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { EditProfileModal } from '@/components/layout/EditProfileModal';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { Avatar } from '@/components/ui/Avatar';
+import { Button } from '@/components/ui/Button';
+import { useToast } from '@/components/ui/ToastProvider';
+import { createClient } from '@/utils/supabase/client';
+import styles from './layout.module.css';
 
 type Profile = {
   full_name?: string | null;
@@ -85,6 +84,14 @@ export default function DashboardLayout({
     if (file) {
       setAvatarFile(file);
     }
+  }, []);
+
+  const handleEditFormChange = useCallback((field: keyof EditFormData, value: string) => {
+    setEditFormData((prev) => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleFileTrigger = useCallback(() => {
+    fileInputRef.current?.click();
   }, []);
 
   useEffect(() => {
@@ -240,85 +247,18 @@ export default function DashboardLayout({
         </main>
       </div>
 
-      <Modal isOpen={isEditProfileOpen} onClose={() => setIsEditProfileOpen(false)} title="Edit Profile">
-        <form onSubmit={handleProfileUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '400px', maxWidth: '100%' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-            <div style={{ position: 'relative' }}>
-              <Avatar src={previewUrl} name={editFormData.fullName} size={80} />
-              <button 
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                aria-label="Upload profile photo"
-                style={{ 
-                  position: 'absolute', 
-                  bottom: 0, 
-                  right: 0, 
-                  background: 'var(--primary)', 
-                  color: 'white', 
-                  border: 'none', 
-                  borderRadius: '50%', 
-                  width: '24px', 
-                  height: '24px', 
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.75rem',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                }}
-              >
-                ✎
-              </button>
-            </div>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileChange} 
-              accept="image/*" 
-              style={{ display: 'none' }} 
-            />
-            <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Click the icon to upload a new photo</span>
-          </div>
-
-          <Input 
-            label="Full Name" 
-            value={editFormData.fullName} 
-            onChange={(e) => setEditFormData({ ...editFormData, fullName: e.target.value })}
-            required
-          />
-          
-          <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--foreground)', marginBottom: '1rem' }}>Security & Password</label>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <Input 
-                  type="password" 
-                  label="Current Password" 
-                  placeholder="Required for password changes"
-                  value={editFormData.currentPassword} 
-                  onChange={(e) => setEditFormData({ ...editFormData, currentPassword: e.target.value })}
-              />
-              <Input 
-                  type="password" 
-                  label="New Password" 
-                  placeholder="Min 6 characters"
-                  value={editFormData.newPassword} 
-                  onChange={(e) => setEditFormData({ ...editFormData, newPassword: e.target.value })}
-              />
-              <Input 
-                  type="password" 
-                  label="Confirm New Password" 
-                  placeholder="Repeat new password"
-                  value={editFormData.confirmPassword} 
-                  onChange={(e) => setEditFormData({ ...editFormData, confirmPassword: e.target.value })}
-              />
-            </div>
-          </div>
-          <Button type="submit" fullWidth disabled={updating}>
-            {updating ? 'Saving Changes...' : 'Save Profile'}
-          </Button>
-        </form>
-      </Modal>
+      <EditProfileModal
+        isOpen={isEditProfileOpen}
+        onClose={() => setIsEditProfileOpen(false)}
+        onSubmit={handleProfileUpdate}
+        updating={updating}
+        formData={editFormData}
+        previewUrl={previewUrl}
+        fileInputRef={fileInputRef}
+        onFileTrigger={handleFileTrigger}
+        onFileChange={handleFileChange}
+        onFieldChange={handleEditFormChange}
+      />
     </>
   );
 }
