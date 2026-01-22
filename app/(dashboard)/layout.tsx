@@ -198,9 +198,8 @@ export default function DashboardLayout({
       <div className={styles.layout}>
         {/* Mobile Overlay */}
         {sidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black/50 z-40 md:hidden glass"
-            style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(0,0,0,0.5)' }}
+          <div
+            className={`${styles.mobileOverlay} glass`}
             onClick={() => setSidebarOpen(false)}
           />
         )}
@@ -211,34 +210,31 @@ export default function DashboardLayout({
 
         <main className={styles.main}>
           <header className={styles.header}>
-            <div className="md:hidden" style={{ marginRight: '1rem' }}>
-              {/* Simple Hamburger Icon */}
+            <div className={styles.mobileMenu}>
               <Button
                 variant="ghost"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="md:hidden"
+                className={styles.mobileMenuButton}
                 aria-label="Open navigation menu"
               >
                 ☰
               </Button>
             </div>
-            <h2 style={{ fontWeight: 600 }}>Overview</h2>
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <h2 className={styles.headerTitle}>Overview</h2>
+            <div className={styles.headerActions}>
               <button
                 type="button"
-                style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginRight: '0.5rem', cursor: 'pointer', padding: '0.25rem 0.5rem', borderRadius: '4px', transition: 'background 0.2s', background: 'transparent', border: 'none' }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                className={styles.profileButton}
                 onClick={() => setIsEditProfileOpen(true)}
                 title="Edit Profile"
               >
-                <span style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
-                  Welcome, <strong style={{ color: 'var(--foreground)' }}>{profile?.full_name || 'User'}</strong>
+                <span className={styles.profileGreeting}>
+                  Welcome, <strong className={styles.profileName}>{profile?.full_name || 'User'}</strong>
                 </span>
                 <Avatar src={profile?.avatar_url} name={profile?.full_name} size={32} />
               </button>
-              <div style={{ height: '20px', width: '1px', background: 'var(--border)' }}></div>
-              <Button variant="ghost" onClick={handleLogout} style={{ fontSize: '0.875rem' }}>Logout</Button>
+              <div className={styles.headerDivider} />
+              <Button variant="ghost" onClick={handleLogout} className={styles.logoutButton}>Logout</Button>
             </div>
           </header>
           <div className={styles.content}>
