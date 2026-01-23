@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { User, PayrollRecord } from '../utils/types';
 import { tables, forms } from '@/styles/modules';
+import styles from './AdminComponents.module.css';
 
 interface GeneratePayrollModalProps {
     isOpen: boolean;
@@ -73,18 +74,11 @@ export function GeneratePayrollModal({
             onClose={onClose}
             title={`Generate Payroll: ${month}`}
         >
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <form onSubmit={handleSubmit} className={styles.modalFormLarge}>
 
                 {/* Global Settings */}
-                <div style={{
-                    paddingBottom: '1rem',
-                    borderBottom: '1px solid var(--border)',
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    alignItems: 'flex-end',
-                    gap: '1rem'
-                }}>
-                    <div style={{ flex: '1 1 200px', maxWidth: '220px' }}>
+                <div className={styles.generatePayrollHeader}>
+                    <div className={styles.generatePayrollField}>
                         <Input
                             label="Standard Work Days for Month"
                             type="number"
@@ -97,14 +91,14 @@ export function GeneratePayrollModal({
                         type="button"
                         variant="secondary"
                         onClick={handleSetAll}
-                        style={{ marginBottom: '1rem', whiteSpace: 'nowrap' }}
+                        className={styles.generatePayrollButton}
                     >
                         Set All
                     </Button>
                 </div>
 
                 {/* User List */}
-                <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                <div className={styles.generatePayrollTable}>
                     <table className={tables.table}>
                         <thead>
                             <tr>
@@ -115,14 +109,13 @@ export function GeneratePayrollModal({
                         <tbody>
                             {users.map(user => (
                                 <tr key={user.id}>
-                                    <td data-label="User" style={{ padding: '0.75rem 0' }}>
-                                        <div style={{ fontWeight: 500 }}>{user.full_name}</div>
+                                    <td data-label="User" className={styles.generatePayrollUserCell}>
+                                        <div className={styles.generatePayrollUserName}>{user.full_name}</div>
                                     </td>
                                     <td data-label="Actual Days">
                                         <input
                                             type="number"
-                                            className={forms.formInput}
-                                            style={{ width: '80px', padding: '0.25rem 0.5rem' }}
+                                            className={`${forms.formInput} ${styles.generatePayrollInput}`}
                                             value={userDays[user.id] ?? 0}
                                             onChange={(e) => handleUserDayChange(user.id, e.target.value)}
                                             min="0"
@@ -135,7 +128,7 @@ export function GeneratePayrollModal({
                     </table>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+                <div className={styles.modalButtonGroupEnd}>
                     <Button type="button" variant="ghost" onClick={onClose} disabled={loading}>
                         Cancel
                     </Button>

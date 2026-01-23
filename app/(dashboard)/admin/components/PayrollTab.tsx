@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { PayrollRecord, User } from '../utils/types';
 import { forms, cards, tables, filters, layouts } from '@/styles/modules';
+import styles from './AdminComponents.module.css';
 import { formatCurrency } from '@/utils/currency';
 
 interface PayrollTabProps {
@@ -62,21 +63,20 @@ export function PayrollTab({
             </div>
 
             <Card>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end', justifyContent: 'center', padding: '0.5rem' }}>
-                    <div className={filters.filterGroup} style={{ flex: '1 1 200px', maxWidth: '300px' }}>
+                <div className={styles.payrollMonthSelector}>
+                    <div className={`${filters.filterGroup} ${styles.payrollMonthField}`}>
                         <label className={filters.filterLabel}>Select Month</label>
                         <input
                             type="month"
                             value={month}
                             onChange={(e) => onMonthChange(e.target.value)}
                             onClick={(e) => e.currentTarget.showPicker()}
-                            className={filters.filterInput}
-                            style={{ width: '100%' }}
+                            className={`${filters.filterInput} ${styles.payrollMonthFieldInput}`}
                         />
                     </div>
 
-                    <div style={{ flex: '0 1 auto' }}>
-                        <Button onClick={onGenerate} variant="primary" style={{ whiteSpace: 'nowrap' }}>
+                    <div className={styles.payrollMonthButton}>
+                        <Button onClick={onGenerate} variant="primary" className={styles.buttonNoWrap}>
                             Generate Payroll for {month}
                         </Button>
                     </div>
@@ -119,7 +119,7 @@ export function PayrollTab({
                                             </div>
                                         </td>
                                         <td data-label="Role">
-                                            <span style={{ textTransform: 'capitalize' }}>{record.user?.role || 'N/A'}</span>
+                                            <span className={styles.productTypeBadge}>{record.user?.role || 'N/A'}</span>
                                         </td>
                                         <td data-label="Base Salary">
                                             {formatCurrency(record.user?.base_salary || 0)}

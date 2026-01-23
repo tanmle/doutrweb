@@ -32,14 +32,8 @@ export function ProductsTable({ products, onEdit, onDelete }: ProductsTableProps
                             <td data-label="Base Price">{formatUSD(p.base_price)}</td>
                             <td data-label="Selling Price">{formatUSD(p.selling_price)}</td>
                             <td data-label="Type">
-                                <span style={{
-                                    textTransform: 'capitalize',
-                                    padding: '2px 8px',
-                                    borderRadius: '4px',
-                                    background: p.type === 'company' ? 'rgba(99, 102, 241, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                                    color: p.type === 'company' ? '#818cf8' : '#34d399',
-                                    fontSize: '0.75rem'
-                                }}>
+                                <span className={`${styles.productTypeBadge} ${p.type === 'company' ? styles.productTypeBadgeCompany : styles.productTypeBadgeSelf
+                                    }`}>
                                     {p.type === 'self_researched' ? 'Self-Research' : 'Company'}
                                 </span>
                             </td>
@@ -48,14 +42,14 @@ export function ProductsTable({ products, onEdit, onDelete }: ProductsTableProps
                                     <Button
                                         variant="ghost"
                                         onClick={() => onEdit(p)}
-                                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                                        className={styles.buttonExtraSmall}
                                     >
                                         Edit
                                     </Button>
                                     <Button
                                         variant="ghost"
                                         onClick={() => onDelete(p.id)}
-                                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', color: '#ef4444' }}
+                                        className={`${styles.buttonExtraSmall} ${styles.buttonDeleteColor}`}
                                     >
                                         Delete
                                     </Button>

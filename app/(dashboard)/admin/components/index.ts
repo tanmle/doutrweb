@@ -13,4 +13,7 @@ export { TabNavigation } from './TabNavigation';
 export { AdminTableStyles } from './AdminTableStyles';
 export { PayrollTab } from './PayrollTab';
 export { PayrollModal } from './PayrollModal';
+export { PayrollSummaryCard } from './PayrollSummaryCard';
+export { PayrollQRCode } from './PayrollQRCode';
 export { GeneratePayrollModal } from './GeneratePayrollModal';
+

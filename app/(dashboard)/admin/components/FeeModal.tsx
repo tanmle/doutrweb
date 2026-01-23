@@ -37,7 +37,7 @@ export function FeeModal({
             onClose={onClose}
             title={isEdit ? 'Edit Fee' : 'Add New Fee'}
         >
-            <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={onSubmit} className={styles.modalFormCompact}>
                 <Input
                     label="Fee Name"
                     name="name"

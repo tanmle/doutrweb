@@ -342,6 +342,263 @@
     margin-bottom: 2rem;
 }
 
+/* Modal Form Layouts */
+.modalForm {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.modalFormCompact {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.modalFormLarge {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.modalInputGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+}
+
+/* Payroll Summary Card */
+.payrollSummary {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+    padding: 1.25rem;
+    border-radius: 12px;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.payrollSummaryRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.payrollSummaryRowSpaced {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.25rem;
+}
+
+.payrollSummaryRowBordered {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.payrollSummaryLabel {
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+}
+
+.payrollSummaryValue {
+    font-weight: 600;
+}
+
+.payrollSummaryTotalLabel {
+    color: var(--foreground);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.payrollSummaryTotalValue {
+    font-size: 1.4rem;
+    color: #818cf8;
+    font-weight: 800;
+}
+
+.payrollStatusBadge {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+}
+
+.payrollStatusPaid {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.payrollStatusPending {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+}
+
+/* QR Code Section */
+.qrCodeContainer {
+    text-align: center;
+    margin-top: 0.5rem;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px dotted var(--border);
+}
+
+.qrCodeLabel {
+    margin-bottom: 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+}
+
+.qrCodeImage {
+    max-width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.qrCodeError {
+    color: #ef4444;
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 0.75rem;
+    background: rgba(239, 68, 68, 0.05);
+    border-radius: 8px;
+}
+
+/* Button Sizes */
+.buttonSmall {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+}
+
+.buttonExtraSmall {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.buttonNoWrap {
+    white-space: nowrap;
+}
+
+.buttonDeleteColor {
+    color: #ef4444;
+}
+
+.buttonWarningColor {
+    color: #f59e0b;
+}
+
+.buttonSuccess {
+    flex: 1;
+    background-color: #10b981;
+    color: white;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+/* Product Type Badge */
+.productTypeBadge {
+    text-transform: capitalize;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+
+.productTypeBadgeCompany {
+    background: rgba(99, 102, 241, 0.1);
+    color: #818cf8;
+}
+
+.productTypeBadgeSelf {
+    background: rgba(16, 185, 129, 0.1);
+    color: #34d399;
+}
+
+/* Modal Button Groups */
+.modalButtonGroup {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.modalButtonGroupEnd {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.buttonFlex {
+    flex: 1;
+}
+
+/* Payroll Tab Specific */
+.payrollMonthSelector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0.5rem;
+}
+
+.payrollMonthField {
+    flex: 1 1 200px;
+    max-width: 300px;
+}
+
+.payrollMonthFieldInput {
+    width: 100%;
+}
+
+.payrollMonthButton {
+    flex: 0 1 auto;
+}
+
+/* Generate Payroll Modal */
+.generatePayrollHeader {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1rem;
+}
+
+.generatePayrollField {
+    flex: 1 1 200px;
+    max-width: 220px;
+}
+
+.generatePayrollButton {
+    margin-bottom: 1rem;
+    white-space: nowrap;
+}
+
+.generatePayrollTable {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.generatePayrollUserCell {
+    padding: 0.75rem 0;
+}
+
+.generatePayrollUserName {
+    font-weight: 500;
+}
+
+.generatePayrollInput {
+    width: 80px;
+    padding: 0.25rem 0.5rem;
+}
+
 /* Responsive Styles */
 @media (max-width: 640px) {
     .adminTable thead {

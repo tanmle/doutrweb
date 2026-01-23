@@ -52,7 +52,7 @@ export function FeesTab({
                             onDateRangeChange={onDateRangeChange}
                         />
                     </div>
-                    <Button onClick={onAddFee} style={{ alignSelf: 'flex-start', whiteSpace: 'nowrap' }}>
+                    <Button onClick={onAddFee} className={styles.buttonNoWrap}>
                         + Add New Fee
                     </Button>
                 </div>

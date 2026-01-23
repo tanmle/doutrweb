@@ -30,35 +30,35 @@ export function FeeFilters({
                 <Button
                     variant={feeFilter === 'all' ? 'primary' : 'secondary'}
                     onClick={() => onFeeFilterChange('all')}
-                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
+                    className={styles.buttonSmall}
                 >
                     All
                 </Button>
                 <Button
                     variant={feeFilter === 'today' ? 'primary' : 'secondary'}
                     onClick={() => onFeeFilterChange('today')}
-                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
+                    className={styles.buttonSmall}
                 >
                     Today
                 </Button>
                 <Button
                     variant={feeFilter === 'this_month' ? 'primary' : 'secondary'}
                     onClick={() => onFeeFilterChange('this_month')}
-                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
+                    className={styles.buttonSmall}
                 >
                     This Month
                 </Button>
                 <Button
                     variant={feeFilter === 'last_month' ? 'primary' : 'secondary'}
                     onClick={() => onFeeFilterChange('last_month')}
-                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
+                    className={styles.buttonSmall}
                 >
                     Last Month
                 </Button>
                 <Button
                     variant={feeFilter === 'range' ? 'primary' : 'secondary'}
                     onClick={() => onFeeFilterChange('range')}
-                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
+                    className={styles.buttonSmall}
                 >
                     Date Range
                 </Button>

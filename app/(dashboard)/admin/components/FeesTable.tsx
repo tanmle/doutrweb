@@ -52,14 +52,14 @@ export function FeesTable({ fees, totalFeePrice, onEdit, onDelete }: FeesTablePr
                                             <Button
                                                 variant="ghost"
                                                 onClick={() => onEdit(f)}
-                                                style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                                                className={styles.buttonExtraSmall}
                                             >
                                                 Edit
                                             </Button>
                                             <Button
                                                 variant="ghost"
                                                 onClick={() => onDelete(f.id)}
-                                                style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', color: '#ef4444' }}
+                                                className={`${styles.buttonExtraSmall} ${styles.buttonDeleteColor}`}
                                             >
                                                 Delete
                                             </Button>

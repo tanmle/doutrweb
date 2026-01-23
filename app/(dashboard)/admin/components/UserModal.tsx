@@ -54,7 +54,7 @@ export function UserModal({
             onClose={onClose}
             title={isEdit ? 'Edit User' : 'Create New User'}
         >
-            <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={onSubmit} className={styles.modalFormCompact}>
                 {isEdit && selectedUser && (
                     <div className={styles.userEditInfo}>
                         <p className={styles.userEditInfoText}>

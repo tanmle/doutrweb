@@ -33,7 +33,7 @@ export function ProductModal({
             onClose={onClose}
             title={isEdit ? 'Edit Product' : 'Add New Product'}
         >
-            <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={onSubmit} className={styles.modalFormCompact}>
                 <Input
                     label="Product Name"
                     name="name"

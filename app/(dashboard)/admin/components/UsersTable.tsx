@@ -42,8 +42,8 @@ export function UsersTable({
                             <td data-label="Role">
                                 <div className={styles.roleBadgeContainer}>
                                     <span className={`${styles.roleBadge} ${u.role === 'admin' ? styles.roleBadgeAdmin :
-                                            u.role === 'leader' ? styles.roleBadgeLeader :
-                                                styles.roleBadgeMember
+                                        u.role === 'leader' ? styles.roleBadgeLeader :
+                                            styles.roleBadgeMember
                                         }`}>
                                         {u.role}
                                     </span>
@@ -63,21 +63,21 @@ export function UsersTable({
                                         <Button
                                             variant="ghost"
                                             onClick={() => onEdit(u)}
-                                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                                            className={styles.buttonExtraSmall}
                                         >
                                             Edit
                                         </Button>
                                         <Button
                                             variant="ghost"
                                             onClick={() => onResetPassword(u.id, u.email)}
-                                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', color: '#f59e0b' }}
+                                            className={`${styles.buttonExtraSmall} ${styles.buttonWarningColor}`}
                                         >
                                             Reset
                                         </Button>
                                         <Button
                                             variant="ghost"
                                             onClick={() => onDelete(u.id, u.email)}
-                                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', color: '#ef4444' }}
+                                            className={`${styles.buttonExtraSmall} ${styles.buttonDeleteColor}`}
                                         >
                                             Delete
                                         </Button>
