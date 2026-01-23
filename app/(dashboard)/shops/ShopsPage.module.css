@@ -36,6 +36,30 @@
     font-size: 0.875rem;
 }
 
+/* Checkbox Styles */
+.checkboxContainer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 60px;
+    /* Align with inputs */
+    padding-bottom: 5px;
+}
+
+.checkboxLabel {
+    font-size: 0.875rem;
+    color: var(--foreground);
+    cursor: pointer;
+    user-select: none;
+}
+
+.checkboxInput {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
 /* ✅ Mobile */
 @media (max-width: 640px) {
     .headerBar {
@@ -61,5 +85,11 @@
 
     .newButton {
         width: 100%;
+    }
+
+    .checkboxContainer {
+        height: auto;
+        padding-top: 0;
+        padding-bottom: 0.5rem;
     }
 }

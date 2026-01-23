@@ -1,13 +1,17 @@
 export { ProductsTab } from './ProductsTab';
 export { UsersTab } from './UsersTab';
-export { FeesTab } from './FeesTab';
+export { SellingFeesTab } from './SellingFeesTab';
+export { MonthlyFeesTab } from './MonthlyFeesTab';
 export { ConfigurationTab } from './ConfigurationTab';
 export { ProductsTable } from './ProductsTable';
 export { UsersTable } from './UsersTable';
-export { FeesTable } from './FeesTable';
-export { FeeFilters } from './FeeFilters';
+export { SellingFeesTable } from './SellingFeesTable';
+export { MonthlyFeesTable } from './MonthlyFeesTable';
+export { SellingFeeFilters } from './SellingFeeFilters';
+export { MonthlyFeeFilters } from './MonthlyFeeFilters';
 export { ProductModal } from './ProductModal';
-export { FeeModal } from './FeeModal';
+export { SellingFeeModal } from './SellingFeeModal';
+export { MonthlyFeeModal } from './MonthlyFeeModal';
 export { UserModal } from './UserModal';
 export { TabNavigation } from './TabNavigation';
 export { AdminTableStyles } from './AdminTableStyles';
@@ -16,4 +20,3 @@ export { PayrollModal } from './PayrollModal';
 export { PayrollSummaryCard } from './PayrollSummaryCard';
 export { PayrollQRCode } from './PayrollQRCode';
 export { GeneratePayrollModal } from './GeneratePayrollModal';
-

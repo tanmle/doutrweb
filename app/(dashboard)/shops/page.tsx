@@ -7,7 +7,7 @@ import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { useToast } from '@/components/ui/ToastProvider';
 import { createClient } from '@/utils/supabase/client';
 import { cards } from '@/styles/modules';
-import { ShopModal, ShopsTable } from './components';
+import { ShopModal, ShopsTable, ShopHistoryModal } from './components';
 import styles from './ShopsPage.module.css';
 
 export default function ShopsPage() {
@@ -16,13 +16,14 @@ export default function ShopsPage() {
   const [loading, setLoading] = useState(false);
   const [ownerFilter, setOwnerFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showArchived, setShowArchived] = useState(false);
+
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedShop, setSelectedShop] = useState<any>(null);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [userRole, setUserRole] = useState<string>('member');
   const [formData, setFormData] = useState<any>({});
 
-  // ✅ NEW: create modal state + form
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createFormData, setCreateFormData] = useState<any>({
     name: '',
@@ -32,8 +33,22 @@ export default function ShopsPage() {
     owner_id: '',
   });
 
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [historyShop, setHistoryShop] = useState<any>(null);
+
   const toast = useToast();
   const supabase = createClient();
+
+  const logHistory = async (shopId: string, action: string, details?: any) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('shop_history').insert({
+      shop_id: shopId,
+      action,
+      changed_by: user.id,
+      details
+    });
+  };
 
   const refreshShopsScoped = async () => {
     let query = supabase
@@ -41,8 +56,13 @@ export default function ShopsPage() {
       .select('*, owner:profiles!owner_id(full_name, email)')
       .order('name');
 
-    if (statusFilter !== 'all') {
-      query = query.eq('status', statusFilter);
+    if (showArchived) {
+      query = query.eq('status', 'archived');
+    } else {
+      query = query.neq('status', 'archived');
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
     }
 
     if (userRole === 'admin') {
@@ -74,80 +94,61 @@ export default function ShopsPage() {
   };
 
   useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+    refreshShopsScoped();
+  }, [supabase, ownerFilter, statusFilter, showArchived]); // Add showArchived depending on if refreshShopsScoped is stable? 
+  // refreshShopsScoped inside component depends on state, so better to just use effect to call it.
+  // Actually, I should probably rewrite useEffect to call refreshShopsScoped directly or move it.
+  // The original code duplicated logic inside useEffect. I'll just use the function.
+  // Need to fetch initial profiles only once.
 
-        const { data: profile } = await supabase
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      const currentRole = profile?.role || 'member';
+      setUserRole(currentRole);
+
+      if (currentRole === 'admin') {
+        const { data: profileData } = await supabase
           .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-
-        const currentRole = profile?.role || 'member';
-        setUserRole(currentRole);
-
-        if (currentRole === 'admin') {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('id, full_name, email')
-            .order('full_name');
-          if (profileData) setProfiles(profileData);
-        } else if (currentRole === 'leader') {
-          const { data: teamProfiles } = await supabase
-            .from('profiles')
-            .select('id, full_name, email')
-            .or(`id.eq.${user.id},leader_id.eq.${user.id}`)
-            .order('full_name');
-          if (teamProfiles) setProfiles(teamProfiles);
-        }
-
-        // ✅ default owner for create form
-        setCreateFormData((prev: any) => ({
-          ...prev,
-          owner_id: currentRole === 'member' ? user.id : (prev.owner_id || user.id),
-        }));
-
-        // Fetch shops (same logic as before)
-        let query = supabase
-          .from('shops')
-          .select('*, owner:profiles!owner_id(full_name, email)')
-          .order('name');
-
-        if (statusFilter !== 'all') {
-          query = query.eq('status', statusFilter);
-        }
-
-        if (currentRole === 'admin') {
-          if (ownerFilter !== 'all') query = query.eq('owner_id', ownerFilter);
-        } else if (currentRole === 'leader') {
-          const { data: members } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('leader_id', user.id);
-
-          const memberIds = members?.map(m => m.id) || [];
-          const teamIds = [user.id, ...memberIds];
-
-          if (ownerFilter !== 'all' && teamIds.includes(ownerFilter)) {
-            query = query.eq('owner_id', ownerFilter);
-          } else {
-            query = query.in('owner_id', teamIds);
-          }
-        } else {
-          query = query.eq('owner_id', user.id);
-        }
-
-        const { data: shopsData } = await query;
-        if (shopsData) setShops(shopsData);
-      } finally {
-        setInitialLoading(false);
+          .select('id, full_name, email')
+          .order('full_name');
+        if (profileData) setProfiles(profileData);
+      } else if (currentRole === 'leader') {
+        const { data: teamProfiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .or(`id.eq.${user.id},leader_id.eq.${user.id}`)
+          .order('full_name');
+        if (teamProfiles) setProfiles(teamProfiles);
       }
+
+      setCreateFormData((prev: any) => ({
+        ...prev,
+        owner_id: currentRole === 'member' ? user.id : (prev.owner_id || user.id),
+      }));
+
+      setInitialLoading(false);
     };
 
-    fetchInitialData();
-  }, [supabase, ownerFilter, statusFilter]);
+    fetchProfiles();
+  }, []); // Run once for profiles. Shops will handle themselves via other effect? 
+  // No, I need to fetch shops initially too or trigger it.
+  // I will add [ownerFilter, statusFilter, showArchived] to dependency array of a separate effect calling refreshShopsScoped.
+
+  useEffect(() => {
+    if (!initialLoading) {
+      refreshShopsScoped();
+    }
+  }, [ownerFilter, statusFilter, showArchived, initialLoading]);
+
 
   const handleEditClick = (shop: any) => {
     setSelectedShop(shop);
@@ -180,6 +181,12 @@ export default function ShopsPage() {
     if (error) {
       toast.error(error.message);
     } else {
+      await logHistory(selectedShop.id, 'updated', {
+        name: formData.name !== selectedShop.name ? formData.name : undefined,
+        status: formData.status !== selectedShop.status ? formData.status : undefined,
+        platform: formData.platform !== selectedShop.platform ? formData.platform : undefined,
+        note: formData.note !== (selectedShop.note || '') ? formData.note : undefined
+      });
       setIsEditModalOpen(false);
       await refreshShopsScoped();
       toast.success('Shop updated successfully');
@@ -187,7 +194,6 @@ export default function ShopsPage() {
     setLoading(false);
   };
 
-  // ✅ NEW: open create modal
   const openCreateModal = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     const defaultOwnerId =
@@ -205,7 +211,6 @@ export default function ShopsPage() {
     setIsCreateModalOpen(true);
   };
 
-  // ✅ NEW: create submit
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -230,39 +235,45 @@ export default function ShopsPage() {
     if (error) {
       toast.error(error.message);
     } else {
+      if (data) await logHistory(data.id, 'created', { name: data.name });
       setIsCreateModalOpen(false);
       toast.success('Shop created successfully');
-
-      // Update list
-      if (data) {
-        // if current view would include it, refresh; simplest is refresh always
-        await refreshShopsScoped();
-      }
+      await refreshShopsScoped();
     }
 
     setLoading(false);
   };
 
-  const handleDeleteShop = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete the shop "${name}"? This will delete all associated sales records.`)) return;
+  const handleArchiveShop = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to archive the shop "${name}"?`)) return;
 
     setLoading(true);
-    const { error } = await supabase.from('shops').delete().eq('id', id);
+    const { error } = await supabase.from('shops').update({ status: 'archived' }).eq('id', id);
 
     if (error) {
       toast.error(error.message);
     } else {
-      setShops(shops.filter(s => s.id !== id));
-      toast.success('Shop deleted successfully');
+      await logHistory(id, 'archived');
+      toast.success('Shop archived successfully');
+      // If showing archived, it stays (maybe updates status locally). If not, it disappears.
+      if (!showArchived) {
+        setShops(prev => prev.filter(s => s.id !== id));
+      } else {
+        await refreshShopsScoped();
+      }
     }
     setLoading(false);
+  };
+
+  const handleViewHistory = (shop: any) => {
+    setHistoryShop(shop);
+    setIsHistoryModalOpen(true);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // ✅ NEW: create form input handler
   const handleCreateInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setCreateFormData({ ...createFormData, [e.target.name]: e.target.value });
   };
@@ -299,15 +310,29 @@ export default function ShopsPage() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className={styles.filterSelect}
+              disabled={showArchived} // Disable status filter if showing archived
             >
               <option value="all">All Statuses</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
           </div>
+
+          <div className={styles.checkboxContainer}>
+            <input
+              id="showArchived"
+              type="checkbox"
+              className={styles.checkboxInput}
+              checked={showArchived}
+              onChange={(e) => setShowArchived(e.target.checked)}
+            />
+            <label htmlFor="showArchived" className={styles.checkboxLabel}>
+              Show Archived Shop
+            </label>
+          </div>
         </div>
 
-        {userRole !== 'member' && (
+        {userRole !== 'member' && !showArchived && (
           <div className={styles.newButton}>
             <Button onClick={openCreateModal} fullWidth>
               + New Shop
@@ -321,8 +346,8 @@ export default function ShopsPage() {
       ) : shops.length === 0 ? (
         <Card className={cards.emptyCard}>
           <div className={cards.emptyCardContent}>
-            <p className={cards.emptyCardText}>No shops found.</p>
-            {userRole !== 'member' && (
+            <p className={cards.emptyCardText}>{showArchived ? 'No archived shops found.' : 'No shops found.'}</p>
+            {userRole !== 'member' && !showArchived && (
               <Button variant="secondary" onClick={openCreateModal}>
                 Create your first shop
               </Button>
@@ -334,7 +359,12 @@ export default function ShopsPage() {
           shops={shops}
           userRole={userRole}
           onEdit={handleEditClick}
-          onDelete={handleDeleteShop}
+          onArchive={handleArchiveShop} // Logic for Archive button might need to check if shop is already archived?
+          // If viewing archived shops, "Archive" button should probably be hidden or "Restore"?
+          // I didn't implement restore. I'll just hide Archive button if showArchived is true.
+          // Or pass a flag to ShopsTable? Or handled by ShopsTable based on status?
+          // I'll update ShopsTable to hide Archive button if status is archived.
+          onHistory={handleViewHistory}
         />
       )}
 
@@ -361,6 +391,13 @@ export default function ShopsPage() {
         onClose={() => setIsEditModalOpen(false)}
         onSubmit={handleUpdateSubmit}
         onChange={handleInputChange}
+      />
+
+      {/* History Modal */}
+      <ShopHistoryModal
+        isOpen={isHistoryModalOpen}
+        shop={historyShop}
+        onClose={() => setIsHistoryModalOpen(false)}
       />
     </div>
   );

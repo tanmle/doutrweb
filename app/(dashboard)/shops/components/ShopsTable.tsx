@@ -21,10 +21,11 @@ interface ShopsTableProps {
     shops: Shop[];
     userRole: string;
     onEdit: (shop: Shop) => void;
-    onDelete: (id: string, name: string) => void;
+    onArchive: (id: string, name: string) => void;
+    onHistory: (shop: Shop) => void;
 }
 
-export function ShopsTable({ shops, userRole, onEdit, onDelete }: ShopsTableProps) {
+export function ShopsTable({ shops, userRole, onEdit, onArchive, onHistory }: ShopsTableProps) {
     const getPlatformBadge = (platform: string) => {
         const badges: { [key: string]: string } = {
             tiktok: 'TikTok Shop',
@@ -38,6 +39,15 @@ export function ShopsTable({ shops, userRole, onEdit, onDelete }: ShopsTableProp
 
     const getStatusBadge = (status: string) => {
         return status.charAt(0).toUpperCase() + status.slice(1);
+    };
+
+    const getStatusClass = (status: string) => {
+        switch (status) {
+            case 'active': return styles.statusActive;
+            case 'inactive': return styles.statusInactive;
+            case 'archived': return styles.statusArchived;
+            default: return styles.statusInactive;
+        }
     };
 
     return (
@@ -65,8 +75,7 @@ export function ShopsTable({ shops, userRole, onEdit, onDelete }: ShopsTableProp
                                 </span>
                             </td>
                             <td data-label="Status">
-                                <span className={`${styles.statusBadge} ${shop.status === 'active' ? styles.statusActive : styles.statusInactive
-                                    }`}>
+                                <span className={`${styles.statusBadge} ${getStatusClass(shop.status)}`}>
                                     {getStatusBadge(shop.status)}
                                 </span>
                             </td>
@@ -88,18 +97,25 @@ export function ShopsTable({ shops, userRole, onEdit, onDelete }: ShopsTableProp
                                 <div className={styles.tableActions}>
                                     <Button
                                         variant="ghost"
+                                        onClick={() => onHistory(shop)}
+                                        className={styles.buttonExtraSmall}
+                                    >
+                                        History
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
                                         onClick={() => onEdit(shop)}
                                         className={styles.buttonExtraSmall}
                                     >
                                         Edit
                                     </Button>
-                                    {userRole !== 'member' && (
+                                    {userRole !== 'member' && shop.status !== 'archived' && (
                                         <Button
                                             variant="ghost"
-                                            onClick={() => onDelete(shop.id, shop.name)}
+                                            onClick={() => onArchive(shop.id, shop.name)}
                                             className={`${styles.buttonExtraSmall} ${styles.buttonDeleteColor}`}
                                         >
-                                            Delete
+                                            Archive
                                         </Button>
                                     )}
                                 </div>

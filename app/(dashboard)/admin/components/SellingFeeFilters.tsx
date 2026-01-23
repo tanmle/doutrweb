@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import type { FeeFilter, Profile } from '../utils/types';
 import styles from './AdminComponents.module.css';
 
-interface FeeFiltersProps {
+interface SellingFeeFiltersProps {
     feeFilter: FeeFilter;
     ownerFilter: string;
     dateRange: { start: string; end: string };
@@ -15,7 +15,7 @@ interface FeeFiltersProps {
     onDateRangeChange: (range: { start: string; end: string }) => void;
 }
 
-export function FeeFilters({
+export function SellingFeeFilters({
     feeFilter,
     ownerFilter,
     dateRange,
@@ -23,7 +23,7 @@ export function FeeFilters({
     onFeeFilterChange,
     onOwnerFilterChange,
     onDateRangeChange,
-}: FeeFiltersProps) {
+}: SellingFeeFiltersProps) {
     return (
         <>
             <div className={styles.filterButtons}>

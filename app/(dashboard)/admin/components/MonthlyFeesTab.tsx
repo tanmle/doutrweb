@@ -2,27 +2,28 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/Button';
-import { FeeFilters } from './FeeFilters';
-import { FeesTable } from './FeesTable';
-import type { Fee, FeeFilter, Profile } from '../utils/types';
+import { MonthlyFeeFilters } from './MonthlyFeeFilters';
+import { MonthlyFeesTable } from './MonthlyFeesTable';
+import type { MonthlyFee, FeeFilter, Profile } from '../utils/types';
 import styles from './AdminComponents.module.css';
 
-interface FeesTabProps {
-    fees: Fee[];
+interface MonthlyFeesTabProps {
+    fees: MonthlyFee[];
     profiles: Profile[];
     feeFilter: FeeFilter;
     ownerFilter: string;
     dateRange: { start: string; end: string };
     totalFeePrice: number;
     onAddFee: () => void;
-    onEditFee: (fee: Fee) => void;
+    onEditFee: (fee: MonthlyFee) => void;
     onDeleteFee: (id: string) => void;
     onFeeFilterChange: (filter: FeeFilter) => void;
     onOwnerFilterChange: (ownerId: string) => void;
     onDateRangeChange: (range: { start: string; end: string }) => void;
+    title?: string;
 }
 
-export function FeesTab({
+export function MonthlyFeesTab({
     fees,
     profiles,
     feeFilter,
@@ -34,15 +35,16 @@ export function FeesTab({
     onDeleteFee,
     onFeeFilterChange,
     onOwnerFilterChange,
-    onDateRangeChange
-}: FeesTabProps) {
+    onDateRangeChange,
+    title = 'Monthly Fees'
+}: MonthlyFeesTabProps) {
     return (
         <div>
             <div className={styles.feeFiltersContainer}>
                 <div className={styles.feeFiltersHeader}>
                     <div className={styles.feeFiltersSection}>
-                        <h3 className={styles.feeFiltersTitle}>Selling Fees</h3>
-                        <FeeFilters
+                        <h3 className={styles.feeFiltersTitle}>{title}</h3>
+                        <MonthlyFeeFilters
                             feeFilter={feeFilter}
                             ownerFilter={ownerFilter}
                             dateRange={dateRange}
@@ -53,11 +55,11 @@ export function FeesTab({
                         />
                     </div>
                     <Button onClick={onAddFee} className={styles.buttonNoWrap}>
-                        + Add New Fee
+                        + Add New Monthly Fee
                     </Button>
                 </div>
             </div>
-            <FeesTable
+            <MonthlyFeesTable
                 fees={fees}
                 totalFeePrice={totalFeePrice}
                 onEdit={onEditFee}

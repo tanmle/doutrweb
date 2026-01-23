@@ -46,6 +46,7 @@
     gap: 0.5rem;
     position: relative;
     z-index: 1;
+    overflow-y: auto;
 }
 
 .navItem {
@@ -103,4 +104,37 @@
     outline: none;
     border-color: rgba(99, 102, 241, 0.5);
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+}
+
+/* Submenu Styles */
+.subMenu {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-left: 1rem;
+    padding-left: 1rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    margin-top: 0.25rem;
+}
+
+.subNavItem {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-md);
+    color: var(--muted-foreground);
+    font-size: 0.85rem;
+    transition: color 0.15s ease, background 0.15s ease;
+    text-decoration: none;
+}
+
+.subNavItem:hover {
+    color: var(--foreground);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.subNavItem.active {
+    color: #818cf8;
+    background: rgba(99, 102, 241, 0.08);
+    font-weight: 500;
 }

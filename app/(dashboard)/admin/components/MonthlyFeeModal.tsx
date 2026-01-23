@@ -8,7 +8,7 @@ import { formatInputVND } from '../utils/formatters';
 import type { FormData, Profile } from '../utils/types';
 import styles from './AdminComponents.module.css';
 
-interface FeeModalProps {
+interface MonthlyFeeModalProps {
     isOpen: boolean;
     isEdit?: boolean;
     formData: FormData;
@@ -20,7 +20,7 @@ interface FeeModalProps {
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
 }
 
-export function FeeModal({
+export function MonthlyFeeModal({
     isOpen,
     isEdit = false,
     formData,
@@ -30,12 +30,12 @@ export function FeeModal({
     onClose,
     onSubmit,
     onChange
-}: FeeModalProps) {
+}: MonthlyFeeModalProps) {
     return (
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={isEdit ? 'Edit Fee' : 'Add New Fee'}
+            title={isEdit ? 'Edit Monthly Fee' : 'Add New Monthly Fee'}
         >
             <form onSubmit={onSubmit} className={styles.modalFormCompact}>
                 <Input

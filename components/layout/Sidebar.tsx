@@ -5,12 +5,29 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './Sidebar.module.css';
 
-const navItems = [
+type NavItem = {
+  label: string;
+  href: string;
+  children?: { label: string; href: string }[];
+};
+
+const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard' },
   { label: 'Sales Entry', href: '/sales' },
   { label: 'Shops', href: '/shops' },
   { label: 'Reports', href: '/reports' },
-  { label: 'Admin', href: '/admin' },
+  {
+    label: 'Admin',
+    href: '/admin',
+    children: [
+      { label: 'Product Entry', href: '/admin/products' },
+      { label: 'Selling Fee', href: '/admin/selling-fees' },
+      { label: 'Monthly Fee', href: '/admin/monthly-fees' },
+      { label: 'Payroll', href: '/admin/payroll' },
+      { label: 'User Management', href: '/admin/users' },
+      { label: 'Configuration', href: '/admin/configuration' },
+    ]
+  },
 ];
 
 export const Sidebar = ({ isOpen, onClose, role }: { isOpen: boolean; onClose: () => void; role?: string }) => {
@@ -28,16 +45,39 @@ export const Sidebar = ({ isOpen, onClose, role }: { isOpen: boolean; onClose: (
       </div>
 
       <nav className={styles.nav}>
-        {filteredNavItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`${styles.navItem} ${pathname === item.href ? styles.active : ''}`}
-            onClick={onClose} // Close on mobile click
-          >
-            {item.label}
-          </Link>
-        ))}
+        {filteredNavItems.map((item) => {
+          const isActive = pathname === item.href || (item.children && pathname.startsWith(item.href) && item.href !== '/');
+
+          return (
+            <div key={item.href}>
+              <Link
+                href={item.href}
+                className={`${styles.navItem} ${isActive ? styles.active : ''}`}
+                onClick={onClose}
+              >
+                {item.label}
+              </Link>
+
+              {item.children && (
+                <div className={styles.subMenu}>
+                  {item.children.map(child => {
+                    const isChildActive = pathname === child.href || pathname.startsWith(child.href + '/');
+                    return (
+                      <Link
+                        key={child.href}
+                        href={child.href}
+                        className={`${styles.subNavItem} ${isChildActive ? styles.active : ''}`}
+                        onClick={onClose}
+                      >
+                        {child.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </nav>
     </aside>
   );

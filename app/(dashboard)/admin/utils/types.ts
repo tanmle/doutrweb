@@ -2,7 +2,7 @@
  * Type definitions for the admin panel
  */
 
-export type Tab = 'products' | 'users' | 'fees' | 'configuration' | 'payroll';
+export type Tab = 'products' | 'users' | 'fees' | 'monthly_fees' | 'configuration' | 'payroll';
 export type FeeFilter = 'all' | 'today' | 'this_month' | 'last_month' | 'range';
 
 export interface Product {
@@ -35,7 +35,19 @@ export interface User {
   };
 }
 
-export interface Fee {
+export interface SellingFee {
+  id: string;
+  name: string;
+  price: number;
+  owner_id?: string;
+  date: string;
+  note?: string;
+  owner_profile?: {
+    full_name: string;
+  };
+}
+
+export interface MonthlyFee {
   id: string;
   name: string;
   price: number;

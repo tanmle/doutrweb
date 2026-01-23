@@ -3,17 +3,17 @@
 import React from 'react';
 import { Button } from '@/components/ui/Button';
 import { formatVND } from '../utils/formatters';
-import type { Fee } from '../utils/types';
+import type { MonthlyFee } from '../utils/types';
 import styles from './AdminComponents.module.css';
 
-interface FeesTableProps {
-    fees: Fee[];
+interface MonthlyFeesTableProps {
+    fees: MonthlyFee[];
     totalFeePrice: number;
-    onEdit: (fee: Fee) => void;
+    onEdit: (fee: MonthlyFee) => void;
     onDelete: (id: string) => void;
 }
 
-export function FeesTable({ fees, totalFeePrice, onEdit, onDelete }: FeesTableProps) {
+export function MonthlyFeesTable({ fees, totalFeePrice, onEdit, onDelete }: MonthlyFeesTableProps) {
     return (
         <div className={styles.tableContainer}>
             <table className={styles.adminTable}>
@@ -31,7 +31,7 @@ export function FeesTable({ fees, totalFeePrice, onEdit, onDelete }: FeesTablePr
                     {fees.length === 0 ? (
                         <tr>
                             <td colSpan={6} data-label="Status" className={styles.emptyState}>
-                                No fees found for this selection
+                                No monthly fees found for this selection
                             </td>
                         </tr>
                     ) : (

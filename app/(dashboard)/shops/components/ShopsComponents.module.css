@@ -81,6 +81,12 @@
     border: 1px solid rgba(156, 163, 175, 0.2);
 }
 
+.statusArchived {
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
 /* Note Text */
 .noteText {
     color: var(--muted-foreground);
@@ -120,6 +126,44 @@
 .buttonDeleteColor:hover {
     color: #dc2626;
     background: rgba(239, 68, 68, 0.1);
+}
+
+/* History Styles */
+.historyList {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0.5rem 0;
+}
+
+.historyItem {
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.historyHeader {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+}
+
+.historyAction {
+    font-weight: 600;
+    color: var(--primary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.historyDate {
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+}
+
+.historyUser {
+    font-size: 0.85rem;
+    color: var(--foreground);
 }
 
 /* Responsive Styles */
