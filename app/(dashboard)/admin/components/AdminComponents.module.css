@@ -281,10 +281,18 @@
 
 .configInput {
     width: 100%;
-    background: transparent;
-    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    border-radius: 4px;
     color: inherit;
-    padding: 0.25rem;
+    padding: 0.5rem;
+    transition: all 0.2s;
+}
+
+.configInput:focus {
+    border-color: var(--primary);
+    outline: none;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .configPercentContainer {
@@ -295,10 +303,18 @@
 
 .configPercentInput {
     width: 60px;
-    background: transparent;
-    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    border-radius: 4px;
     color: inherit;
-    padding: 0.25rem;
+    padding: 0.5rem;
+    transition: all 0.2s;
+}
+
+.configPercentInput:focus {
+    border-color: var(--primary);
+    outline: none;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 /* Form Fields */

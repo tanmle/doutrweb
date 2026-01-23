@@ -7,15 +7,19 @@ import styles from './AdminComponents.module.css';
 
 interface ConfigurationTabProps {
     commissionRates: CommissionRate[];
+    baseKpi: number;
     loading: boolean;
     onCommissionChange: (id: string, field: string, value: string) => void;
+    onBaseKpiChange: (value: number) => void;
     onSave: () => void;
 }
 
 export function ConfigurationTab({
     commissionRates,
+    baseKpi,
     loading,
     onCommissionChange,
+    onBaseKpiChange,
     onSave
 }: ConfigurationTabProps) {
     const companyRates = commissionRates.filter(r => r.type === 'company');
@@ -24,11 +28,27 @@ export function ConfigurationTab({
     return (
         <div className={styles.configContainer}>
             <div className={styles.configHeader}>
-                <h3 className={styles.configTitle}>Commission Configuration</h3>
+                <h3 className={styles.configTitle}>Configuration</h3>
                 <Button onClick={onSave} disabled={loading}>
                     {loading ? 'Saving…' : 'Save Configuration'}
                 </Button>
             </div>
+
+            <div style={{ marginBottom: '2rem', padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--border)', width: 'fit-content', minWidth: '300px', paddingRight: '3rem' }}>
+                <h4 className={styles.configSectionTitle} style={{ marginBottom: '1rem' }}>General Settings</h4>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <label style={{ fontSize: '0.875rem', color: 'var(--foreground)' }}>Base KPI:</label>
+                    <input
+                        type="number"
+                        value={baseKpi}
+                        onChange={(e) => onBaseKpiChange(parseFloat(e.target.value) || 0)}
+                        className={styles.configInput}
+                        style={{ width: '120px' }}
+                    />
+                </div>
+            </div>
+
+            <h3 className={styles.configTitle} style={{ marginTop: '2rem', marginBottom: '1rem' }}>Commission Rates</h3>
 
             <div className={styles.configGrid}>
                 {/* Company Products Table */}

@@ -20,8 +20,10 @@ type DashboardStats = {
   todayRevenue: number;
   todaySales: number;
   monthlyRevenue: number;
+  monthlyProfit: number;
   targetKPI: number;
   currentKPI: number;
+  currentLevel: number;
 };
 
 type SalesRecord = {
@@ -79,8 +81,10 @@ export default function DashboardPage() {
     todayRevenue: 0,
     todaySales: 0,
     monthlyRevenue: 0,
-    targetKPI: 150000,
-    currentKPI: 0
+    monthlyProfit: 0,
+    targetKPI: 1500, // Default fallback
+    currentKPI: 0,
+    currentLevel: 0
   });
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
   const [memberNames, setMemberNames] = useState<string[]>([]);
@@ -107,6 +111,21 @@ export default function DashboardPage() {
 
         if (!profile) return;
         setRole(profile.role ?? null);
+
+        // Fetch Base KPI
+        const { data: settings } = await supabase
+          .from('app_settings')
+          .select('value')
+          .eq('key', 'base_kpi')
+          .single();
+        const baseKpi = settings ? parseFloat(settings.value) : 500;
+
+        // Fetch Commission Rates (for targets)
+        const { data: rates } = await supabase
+          .from('commission_rates')
+          .select('level, profit_threshold')
+          .eq('type', 'company')
+          .order('level', { ascending: true });
 
         // Fetch data from start of current month OR 30 days ago, whichever is earlier
         const today = new Date();
@@ -156,13 +175,39 @@ export default function DashboardPage() {
           // Monthly KPI Stats (from 1st of current month)
           const monthlyRecords = salesRows.filter(r => new Date(r.date) >= startOfMonth);
           const monthlyRev = monthlyRecords.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
+          const monthlyProfitVal = monthlyRecords.reduce((acc, curr) => acc + (Number(curr.profit) || 0), 0);
+
+          // Determine Target based on Profit
+          let currentLevel = 0;
+          let nextThreshold = rates?.[0]?.profit_threshold || 1000;
+
+          if (rates && rates.length > 0) {
+            for (const r of rates) {
+              if (monthlyProfitVal >= r.profit_threshold) {
+                currentLevel = r.level;
+              } else {
+                nextThreshold = r.profit_threshold;
+                break;
+              }
+            }
+            // Check if maxed out
+            const maxRate = rates[rates.length - 1];
+            if (monthlyProfitVal >= maxRate.profit_threshold) {
+              nextThreshold = maxRate.profit_threshold; // Stay at max or indicate completion
+            }
+          }
+
+          const targetVal = baseKpi + nextThreshold;
 
           setStats(prev => ({
             ...prev,
             todayRevenue: todayRev,
             todaySales: todayItems,
             monthlyRevenue: monthlyRev,
-            currentKPI: monthlyRev // Month-to-date revenue for KPI
+            monthlyProfit: monthlyProfitVal,
+            currentKPI: monthlyProfitVal, // Using Profit for KPI tracking
+            targetKPI: targetVal,
+            currentLevel
           }));
 
           // Process Chart Data (30-day trend context)
@@ -190,6 +235,12 @@ export default function DashboardPage() {
 
           setChartData(chartArray);
           setMemberNames(Array.from(membersSet));
+        } else {
+          // Even if no data, set targets
+          // Determine default target
+          let nextThreshold = rates?.[0]?.profit_threshold || 1000;
+          const targetVal = baseKpi + nextThreshold;
+          setStats(prev => ({ ...prev, targetKPI: targetVal }));
         }
       } catch (error) {
         console.error('Error fetching dashboard stats:', error);
@@ -283,20 +334,39 @@ export default function DashboardPage() {
         </Card>
 
         <Card className={cards.statCard}>
-          <span className={cards.statLabel}>Monthly KPI Progress</span>
+          {/* Enhanced KPI Progress Card */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <span className={cards.statLabel} style={{ marginBottom: 0 }}>Monthly KPI Progress</span>
+
+            {stats.currentLevel > 0 && (
+              <span className={dashboard.kpiLevelBadge} style={{ marginBottom: 0 }}>
+                Level {stats.currentLevel} Achieved! 🎉
+              </span>
+            )}
+          </div>
+
           <div className={`${layouts.flexRowSpaced} ${dashboard.kpiHeader}`}>
             <span className={cards.statValue}>{progress.toFixed(1)}%</span>
-            <span className={layouts.textMuted}>Target: {currencyFormatter.format(stats.targetKPI)}</span>
+            <span className={layouts.textMuted}>Next target: {currencyFormatter.format(stats.targetKPI)}</span>
           </div>
+
           <div className={dashboard.progressBarContainer}>
             <div
               className={dashboard.progressBarFill}
               style={{ width: `${progress}%` }}
             />
           </div>
-          <span className={`${layouts.textMuted} ${dashboard.mtdText}`}>
-            MTD: {currencyFormatter.format(stats.monthlyRevenue)}
-          </span>
+
+          <div className={dashboard.kpiNextTarget}>
+            <span>MTD Profit: {currencyFormatter.format(stats.monthlyProfit)}</span>
+            <span>
+              {progress >= 100 ? (
+                <span className={dashboard.kpiCongratulation}>Target Met!</span>
+              ) : (
+                `$${(stats.targetKPI - stats.currentKPI).toLocaleString()} to Next Level`
+              )}
+            </span>
+          </div>
         </Card>
       </div>
 

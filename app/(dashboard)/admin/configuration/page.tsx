@@ -22,6 +22,8 @@ export default function AdminConfigurationPage() {
         loading: dataLoading,
         commissionRates,
         setCommissionRates,
+        baseKpi,
+        setBaseKpi
     } = useConfiguration(refresh);
 
     const handleCommissionChange = (id: string, field: string, value: string) => {
@@ -32,11 +34,20 @@ export default function AdminConfigurationPage() {
 
     const handleSaveCommission = async () => {
         setLoading(true);
-        const { error } = await supabase.from('commission_rates').upsert(commissionRates);
-        if (error) {
-            toast.error('Error updating commission rates: ' + error.message);
+
+        // Update commission rates
+        const { error: ratesError } = await supabase.from('commission_rates').upsert(commissionRates);
+
+        // Update Base KPI
+        const { error: kpiError } = await supabase.from('app_settings').upsert({
+            key: 'base_kpi',
+            value: baseKpi
+        });
+
+        if (ratesError || kpiError) {
+            toast.error('Error updating configuration: ' + (ratesError?.message || kpiError?.message));
         } else {
-            toast.success('Commission rates updated successfully!');
+            toast.success('Configuration updated successfully!');
             setRefresh(prev => prev + 1);
         }
         setLoading(false);
@@ -51,8 +62,10 @@ export default function AdminConfigurationPage() {
             <Card>
                 <ConfigurationTab
                     commissionRates={commissionRates}
+                    baseKpi={baseKpi}
                     loading={loading}
                     onCommissionChange={handleCommissionChange}
+                    onBaseKpiChange={setBaseKpi}
                     onSave={handleSaveCommission}
                 />
             </Card>
