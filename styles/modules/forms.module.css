@@ -75,6 +75,25 @@
     border-color: var(--primary);
 }
 
+.formTextarea {
+    width: 100%;
+    background: #1a1a1a;
+    border: 1px solid var(--border);
+    color: white;
+    padding: 0.625rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-family: inherit;
+    resize: vertical;
+    transition: border-color 0.2s ease;
+    min-height: 80px;
+}
+
+.formTextarea:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
 /* Form Actions */
 .formActions {
     display: flex;

@@ -5,13 +5,14 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { formatInputVND } from '../utils/formatters';
-import type { FormData } from '../utils/types';
+import type { FormData, Profile } from '../utils/types';
 import styles from './AdminComponents.module.css';
 
 interface ProductModalProps {
     isOpen: boolean;
     isEdit?: boolean;
     formData: FormData;
+    profiles: Profile[];
     loading: boolean;
     onClose: () => void;
     onSubmit: (e: React.FormEvent) => void;
@@ -22,11 +23,14 @@ export function ProductModal({
     isOpen,
     isEdit = false,
     formData,
+    profiles,
     loading,
     onClose,
     onSubmit,
     onChange
 }: ProductModalProps) {
+    const isSelfResearched = formData.type === 'self_researched';
+
     return (
         <Modal
             isOpen={isOpen}
@@ -40,6 +44,13 @@ export function ProductModal({
                     value={formData.name || ''}
                     onChange={onChange}
                     required
+                />
+                <Input
+                    label="Product SKU"
+                    name="sku"
+                    value={formData.sku || ''}
+                    onChange={onChange}
+                    placeholder="e.g. PROD-001"
                 />
                 <Input
                     label="Base Price (USD)"
@@ -69,6 +80,27 @@ export function ProductModal({
                         <option value="self_researched">Self-Research</option>
                     </select>
                 </div>
+
+                {isSelfResearched && (
+                    <div>
+                        <label className={styles.formLabel}>
+                            Owner <span className={styles.requiredIndicator}>*</span>
+                        </label>
+                        <select
+                            name="owner_id"
+                            value={formData.owner_id || ''}
+                            onChange={onChange}
+                            className={styles.formSelect}
+                            required
+                        >
+                            <option value="">Select Owner</option>
+                            {profiles.map(p => (
+                                <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
                 <Button type="submit" disabled={loading}>
                     {loading ? (isEdit ? 'Updating…' : 'Saving...') : (isEdit ? 'Update Product' : 'Save Product')}
                 </Button>

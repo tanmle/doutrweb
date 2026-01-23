@@ -3,13 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
-import { Modal } from '@/components/ui/Modal';
-import { ShopCard } from '@/components/ui/ShopCard';
 import { useToast } from '@/components/ui/ToastProvider';
 import { createClient } from '@/utils/supabase/client';
-import { forms, cards, layouts } from '@/styles/modules';
+import { cards } from '@/styles/modules';
+import { ShopModal, ShopsTable } from './components';
 import styles from './ShopsPage.module.css';
 
 export default function ShopsPage() {
@@ -17,6 +15,7 @@ export default function ShopsPage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [ownerFilter, setOwnerFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedShop, setSelectedShop] = useState<any>(null);
   const [profiles, setProfiles] = useState<any[]>([]);
@@ -29,6 +28,7 @@ export default function ShopsPage() {
     name: '',
     platform: 'tiktok',
     status: 'active',
+    note: '',
     owner_id: '',
   });
 
@@ -40,6 +40,10 @@ export default function ShopsPage() {
       .from('shops')
       .select('*, owner:profiles!owner_id(full_name, email)')
       .order('name');
+
+    if (statusFilter !== 'all') {
+      query = query.eq('status', statusFilter);
+    }
 
     if (userRole === 'admin') {
       if (ownerFilter !== 'all') query = query.eq('owner_id', ownerFilter);
@@ -111,6 +115,10 @@ export default function ShopsPage() {
           .select('*, owner:profiles!owner_id(full_name, email)')
           .order('name');
 
+        if (statusFilter !== 'all') {
+          query = query.eq('status', statusFilter);
+        }
+
         if (currentRole === 'admin') {
           if (ownerFilter !== 'all') query = query.eq('owner_id', ownerFilter);
         } else if (currentRole === 'leader') {
@@ -139,7 +147,7 @@ export default function ShopsPage() {
     };
 
     fetchInitialData();
-  }, [supabase, ownerFilter]);
+  }, [supabase, ownerFilter, statusFilter]);
 
   const handleEditClick = (shop: any) => {
     setSelectedShop(shop);
@@ -147,6 +155,7 @@ export default function ShopsPage() {
       name: shop.name,
       platform: shop.platform,
       status: shop.status,
+      note: shop.note || '',
       owner_id: shop.owner_id,
     });
     setIsEditModalOpen(true);
@@ -163,6 +172,7 @@ export default function ShopsPage() {
         name: formData.name,
         platform: formData.platform,
         status: formData.status,
+        note: formData.note || null,
         owner_id: formData.owner_id,
       })
       .eq('id', selectedShop.id);
@@ -189,6 +199,7 @@ export default function ShopsPage() {
       name: '',
       platform: 'tiktok',
       status: 'active',
+      note: '',
       owner_id: defaultOwnerId,
     });
     setIsCreateModalOpen(true);
@@ -210,6 +221,7 @@ export default function ShopsPage() {
         name: createFormData.name.trim(),
         platform: createFormData.platform,
         status: createFormData.status,
+        note: createFormData.note || null,
         owner_id: createFormData.owner_id,
       })
       .select('*, owner:profiles!owner_id(full_name, email)')
@@ -246,12 +258,12 @@ export default function ShopsPage() {
     setLoading(false);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   // ✅ NEW: create form input handler
-  const handleCreateInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleCreateInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setCreateFormData({ ...createFormData, [e.target.name]: e.target.value });
   };
 
@@ -279,6 +291,20 @@ export default function ShopsPage() {
               </select>
             </div>
           )}
+
+          <div className={styles.filterBox}>
+            <label className={styles.filterLabel}>Filter by Status</label>
+            <select
+              aria-label="Filter by status"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className={styles.filterSelect}
+            >
+              <option value="all">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
         </div>
 
         {userRole !== 'member' && (
@@ -304,132 +330,38 @@ export default function ShopsPage() {
           </div>
         </Card>
       ) : (
-        <div className={cards.cardGrid}>
-          {shops.map((shop) => (
-            <ShopCard
-              key={shop.id}
-              shop={shop}
-              userRole={userRole}
-              onEdit={handleEditClick}
-              onDelete={handleDeleteShop}
-              onReports={() => console.log('Reports clicked for shop:', shop.id)}
-            />
-          ))}
-        </div>
+        <ShopsTable
+          shops={shops}
+          userRole={userRole}
+          onEdit={handleEditClick}
+          onDelete={handleDeleteShop}
+        />
       )}
 
-      {/* ✅ NEW: Create Shop Modal */}
-      <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="New Shop">
-        <form onSubmit={handleCreateSubmit} className={forms.form}>
-          <Input
-            label="Shop Name"
-            name="name"
-            value={createFormData.name || ''}
-            onChange={handleCreateInputChange}
-            required
-          />
-
-          <div className={forms.formGrid}>
-            <div className={forms.formField}>
-              <label className={forms.formLabel}>Platform</label>
-              <select
-                name="platform"
-                className={forms.formSelect}
-                value={createFormData.platform || 'tiktok'}
-                onChange={handleCreateInputChange}
-              >
-                <option value="tiktok">TikTok</option>
-                <option value="amazon">Amazon</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-
-            <div className={forms.formField}>
-              <label className={forms.formLabel}>Status</label>
-              <select
-                name="status"
-                className={forms.formSelect}
-                value={createFormData.status || 'active'}
-                onChange={handleCreateInputChange}
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-          </div>
-
-          {['admin', 'leader'].includes(userRole) && (
-            <div className={forms.formField}>
-              <label className={forms.formLabel}>Assign to Owner</label>
-              <select
-                name="owner_id"
-                className={forms.formSelect}
-                value={createFormData.owner_id || ''}
-                onChange={handleCreateInputChange}
-                required
-              >
-                {profiles.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.full_name || p.email} ({p.email})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div style={{ marginTop: '1rem' }}>
-            <Button type="submit" fullWidth disabled={loading}>
-              {loading ? 'Creating...' : 'Create Shop'}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+      {/* Create Shop Modal */}
+      <ShopModal
+        isOpen={isCreateModalOpen}
+        formData={createFormData}
+        profiles={profiles}
+        userRole={userRole}
+        loading={loading}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateSubmit}
+        onChange={handleCreateInputChange}
+      />
 
       {/* Edit Shop Modal */}
-      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Shop">
-        <form onSubmit={handleUpdateSubmit} className={forms.form}>
-          <Input label="Shop Name" name="name" value={formData.name || ''} onChange={handleInputChange} required />
-
-          <div className={forms.formGrid}>
-            <div className={forms.formField}>
-              <label className={forms.formLabel}>Platform</label>
-              <select name="platform" className={forms.formSelect} value={formData.platform || ''} onChange={handleInputChange}>
-                <option value="tiktok">TikTok Shop</option>
-                <option value="lazada">Lazada</option>
-                <option value="shopee">Shopee</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-
-            <div className={forms.formField}>
-              <label className={forms.formLabel}>Status</label>
-              <select name="status" className={forms.formSelect} value={formData.status || ''} onChange={handleInputChange}>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-          </div>
-
-          {['admin', 'leader'].includes(userRole) && (
-            <div className={forms.formField}>
-              <label className={forms.formLabel}>Assign to Owner</label>
-              <select name="owner_id" className={forms.formSelect} value={formData.owner_id || ''} onChange={handleInputChange} required>
-                {profiles.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.full_name || p.email} ({p.email})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div style={{ marginTop: '1rem' }}>
-            <Button type="submit" fullWidth disabled={loading}>
-              {loading ? 'Saving...' : 'Update Shop'}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+      <ShopModal
+        isOpen={isEditModalOpen}
+        isEdit
+        formData={formData}
+        profiles={profiles}
+        userRole={userRole}
+        loading={loading}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleUpdateSubmit}
+        onChange={handleInputChange}
+      />
     </div>
   );
 }

@@ -103,7 +103,7 @@ export function GeneratePayrollModal({
                         <thead>
                             <tr>
                                 <th>User</th>
-                                <th style={{ width: '120px' }}>Actual Days</th>
+                                <th className={styles.tableHeaderNarrow}>Actual Days</th>
                             </tr>
                         </thead>
                         <tbody>

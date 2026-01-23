@@ -39,9 +39,15 @@ export function useAdminData({
         if (activeTab === 'products') {
           const { data } = await supabase
             .from('products')
-            .select('*')
+            .select('*, owner_profile:profiles!owner_id(full_name, email)')
             .order('created_at', { ascending: false });
           if (data) setProducts(data);
+          
+          // Fetch profiles for the Owner dropdown in ProductModal
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('id, full_name, email, role');
+          if (profileData) setProfiles(profileData);
         } else if (activeTab === 'users') {
           const { data } = await supabase
             .from('profiles')

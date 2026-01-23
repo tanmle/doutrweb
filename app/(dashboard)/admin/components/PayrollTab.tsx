@@ -101,8 +101,8 @@ export function PayrollTab({
                         <tbody>
                             {payrollRecords.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} className={layouts.textCenter} style={{ padding: '3rem' }}>
-                                        <div className={layouts.flexColumn} style={{ alignItems: 'center', gap: '1rem' }}>
+                                    <td colSpan={8} className={`${layouts.textCenter} ${styles.emptyStatePadding}`}>
+                                        <div className={`${layouts.flexColumn} ${styles.centeredFlexColumn}`}>
                                             <span className={layouts.textMuted}>No records found for {month}</span>
                                             <Button variant="secondary" onClick={onGenerate}>
                                                 Generate Now

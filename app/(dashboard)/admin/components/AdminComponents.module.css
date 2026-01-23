@@ -335,6 +335,10 @@
     color: var(--muted-foreground);
 }
 
+.requiredIndicator {
+    color: #ef4444;
+}
+
 /* Page Header */
 .pageHeader {
     font-size: 1.5rem;
@@ -597,6 +601,20 @@
 .generatePayrollInput {
     width: 80px;
     padding: 0.25rem 0.5rem;
+}
+
+/* Utility Classes */
+.emptyStatePadding {
+    padding: 3rem;
+}
+
+.centeredFlexColumn {
+    align-items: center;
+    gap: 1rem;
+}
+
+.tableHeaderNarrow {
+    width: 120px;
 }
 
 /* Responsive Styles */

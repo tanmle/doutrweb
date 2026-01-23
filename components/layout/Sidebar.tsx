@@ -10,7 +10,7 @@ const navItems = [
   { label: 'Sales Entry', href: '/sales' },
   { label: 'Shops', href: '/shops' },
   { label: 'Reports', href: '/reports' },
-  { label: 'Admin', href: '/admin' }, 
+  { label: 'Admin', href: '/admin' },
 ];
 
 export const Sidebar = ({ isOpen, onClose, role }: { isOpen: boolean; onClose: () => void; role?: string }) => {
@@ -26,11 +26,11 @@ export const Sidebar = ({ isOpen, onClose, role }: { isOpen: boolean; onClose: (
       <div className={styles.sidebarHeader}>
         <span className={styles.logo}>Shop Manager</span>
       </div>
-      
+
       <nav className={styles.nav}>
         {filteredNavItems.map((item) => (
-          <Link 
-            key={item.href} 
+          <Link
+            key={item.href}
             href={item.href}
             className={`${styles.navItem} ${pathname === item.href ? styles.active : ''}`}
             onClick={onClose} // Close on mobile click

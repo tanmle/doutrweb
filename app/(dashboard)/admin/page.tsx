@@ -91,9 +91,11 @@ export default function AdminPage() {
     setLoading(true);
     const { error } = await supabase.from('products').insert({
       name: formData.name,
+      sku: formData.sku || null,
       base_price: parseFloat(formData.base_price) || 0,
       selling_price: parseFloat(formData.selling_price) || 0,
       type: formData.type || 'company',
+      owner_id: formData.type === 'self_researched' ? (formData.owner_id || null) : null,
     });
     if (error) toast.error(error.message);
     else {
@@ -110,9 +112,11 @@ export default function AdminPage() {
     setLoading(true);
     const { error } = await supabase.from('products').update({
       name: formData.name,
+      sku: formData.sku || null,
       base_price: parseFloat(formData.base_price) || 0,
       selling_price: parseFloat(formData.selling_price) || 0,
       type: formData.type,
+      owner_id: formData.type === 'self_researched' ? (formData.owner_id || null) : null,
     }).eq('id', selectedProduct.id);
 
     if (error) toast.error(error.message);
@@ -129,9 +133,11 @@ export default function AdminPage() {
     setSelectedProduct(product);
     setFormData({
       name: product.name,
+      sku: product.sku || '',
       base_price: product.base_price.toString(),
       selling_price: product.selling_price.toString(),
       type: product.type || 'company',
+      owner_id: product.owner_id || '',
     });
     setIsEditProductModalOpen(true);
   };
@@ -450,6 +456,7 @@ export default function AdminPage() {
       <ProductModal
         isOpen={isProductModalOpen}
         formData={formData}
+        profiles={profiles}
         loading={loading}
         onClose={() => setIsProductModalOpen(false)}
         onSubmit={handleProductSubmit}
@@ -460,6 +467,7 @@ export default function AdminPage() {
         isOpen={isEditProductModalOpen}
         isEdit
         formData={formData}
+        profiles={profiles}
         loading={loading}
         onClose={() => setIsEditProductModalOpen(false)}
         onSubmit={handleUpdateProductSubmit}

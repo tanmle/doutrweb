@@ -19,9 +19,11 @@ export function ProductsTable({ products, onEdit, onDelete }: ProductsTableProps
                 <thead>
                     <tr>
                         <th>Name</th>
+                        <th>SKU</th>
                         <th>Base Price</th>
                         <th>Selling Price</th>
                         <th>Type</th>
+                        <th>Owner</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -29,6 +31,9 @@ export function ProductsTable({ products, onEdit, onDelete }: ProductsTableProps
                     {products.map(p => (
                         <tr key={p.id}>
                             <td data-label="Name">{p.name}</td>
+                            <td data-label="SKU">
+                                <span className={styles.mutedText}>{p.sku || '-'}</span>
+                            </td>
                             <td data-label="Base Price">{formatUSD(p.base_price)}</td>
                             <td data-label="Selling Price">{formatUSD(p.selling_price)}</td>
                             <td data-label="Type">
@@ -36,6 +41,13 @@ export function ProductsTable({ products, onEdit, onDelete }: ProductsTableProps
                                     }`}>
                                     {p.type === 'self_researched' ? 'Self-Research' : 'Company'}
                                 </span>
+                            </td>
+                            <td data-label="Owner">
+                                {p.type === 'self_researched' && p.owner_profile ? (
+                                    <span>{p.owner_profile.full_name || p.owner_profile.email}</span>
+                                ) : (
+                                    <span className={styles.mutedText}>-</span>
+                                )}
                             </td>
                             <td data-label="Actions">
                                 <div className={styles.tableActions}>

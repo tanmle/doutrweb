@@ -8,10 +8,16 @@ export type FeeFilter = 'all' | 'today' | 'this_month' | 'last_month' | 'range';
 export interface Product {
   id: string;
   name: string;
+  sku?: string;
   base_price: number;
   selling_price: number;
   type?: 'company' | 'self_researched';
+  owner_id?: string;
   created_at: string;
+  owner_profile?: {
+    full_name: string;
+    email: string;
+  };
 }
 
 export interface User {
