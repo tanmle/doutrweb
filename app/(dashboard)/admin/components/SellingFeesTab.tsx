@@ -41,11 +41,9 @@ export function SellingFeesTab({
     onDateRangeChange,
     title = 'Selling Fees'
 }: SellingFeesTabProps) {
-    const averageFee = fees.length > 0 ? totalFeePrice / fees.length : 0;
-
     return (
         <div>
-            <div className={cards.cardGridThreeCol} style={{ marginBottom: '1.5rem' }}>
+            <div className={cards.cardGridThreeCol} style={{ marginBottom: '1.5rem', gridTemplateColumns: 'repeat(2, 1fr)' }}>
                 <Card className={cards.statCard}>
                     <div className={cards.statLabel}>Total Fees Amount</div>
                     <div className={cards.statValue}>{formatVND(totalFeePrice)}</div>
@@ -53,10 +51,6 @@ export function SellingFeesTab({
                 <Card className={cards.statCardSuccess}>
                     <div className={cards.statLabel}>Total Transaction Count</div>
                     <div className={cards.statValue}>{fees.length}</div>
-                </Card>
-                <Card className={cards.statCardWarning}>
-                    <div className={cards.statLabel}>Average Fee</div>
-                    <div className={cards.statValue}>{formatVND(averageFee)}</div>
                 </Card>
             </div>
 
