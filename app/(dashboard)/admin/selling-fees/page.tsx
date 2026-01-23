@@ -20,7 +20,7 @@ export default function AdminSellingFeesPage() {
     const [refresh, setRefresh] = useState(0);
 
     // Filter states
-    const [feeFilter, setFeeFilter] = useState<FeeFilter>('all');
+    const [feeFilter, setFeeFilter] = useState<FeeFilter>('this_month');
     const [ownerFilter, setOwnerFilter] = useState<string>('all');
     const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
 
