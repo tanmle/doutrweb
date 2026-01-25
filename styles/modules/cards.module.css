@@ -117,9 +117,18 @@
 
 @media (max-width: 640px) {
 
-    .cardGrid,
     .cardGridTwoCol,
-    .cardGridThreeCol,
+    .cardGridThreeCol {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    .cardGridTwoCol> :last-child:nth-child(odd),
+    .cardGridThreeCol> :last-child:nth-child(odd) {
+        grid-column: span 2;
+    }
+
+    .cardGrid,
     .cardGridFourCol {
         grid-template-columns: 1fr;
     }

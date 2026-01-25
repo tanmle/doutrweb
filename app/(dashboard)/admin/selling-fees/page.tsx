@@ -14,6 +14,7 @@ import {
 } from '../components';
 import type { SellingFee, FormData, FeeFilter } from '../utils/types';
 import { useRealtime } from '@/hooks/useRealtime';
+import styles from '../components/AdminComponents.module.css';
 
 export default function AdminSellingFeesPage() {
     const [formData, setFormData] = useState<FormData>({});
@@ -139,23 +140,21 @@ export default function AdminSellingFeesPage() {
 
     return (
         <>
-            <Card>
-                <SellingFeesTab
-                    fees={sellingFees}
-                    profiles={profiles}
-                    feeFilter={feeFilter}
-                    ownerFilter={ownerFilter}
-                    dateRange={dateRange}
-                    totalFeePrice={totalFeePrice}
-                    onAddFee={openFeeModal}
-                    onEditFee={openEditFeeModal}
-                    onDeleteFee={handleDeleteFee}
-                    onFeeFilterChange={setFeeFilter}
-                    onOwnerFilterChange={setOwnerFilter}
-                    onDateRangeChange={setDateRange}
-                    title="Selling Fees"
-                />
-            </Card>
+            <SellingFeesTab
+                fees={sellingFees}
+                profiles={profiles}
+                feeFilter={feeFilter}
+                ownerFilter={ownerFilter}
+                dateRange={dateRange}
+                totalFeePrice={totalFeePrice}
+                onAddFee={openFeeModal}
+                onEditFee={openEditFeeModal}
+                onDeleteFee={handleDeleteFee}
+                onFeeFilterChange={setFeeFilter}
+                onOwnerFilterChange={setOwnerFilter}
+                onDateRangeChange={setDateRange}
+                title="Selling Fees"
+            />
 
             <SellingFeeModal
                 isOpen={isFeeModalOpen}

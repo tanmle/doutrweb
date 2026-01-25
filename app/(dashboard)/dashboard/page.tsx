@@ -320,7 +320,7 @@ export default function DashboardPage() {
   if (loading) return <LoadingIndicator label="Loading dashboard…" />;
 
   return (
-    <div className={layouts.pageContainer}>
+    <div>
       <h1 className={layouts.sectionHeader}>Today's Overview</h1>
 
       <div className={cards.cardGridThreeCol}>

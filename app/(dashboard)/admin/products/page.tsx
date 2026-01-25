@@ -13,6 +13,7 @@ import {
 } from '../components';
 import type { Product, FormData } from '../utils/types';
 import { useRealtime } from '@/hooks/useRealtime';
+import styles from '../components/AdminComponents.module.css';
 
 export default function AdminProductsPage() {
     const [formData, setFormData] = useState<FormData>({});
@@ -119,14 +120,12 @@ export default function AdminProductsPage() {
 
     return (
         <>
-            <Card>
-                <ProductsTab
-                    products={products}
-                    onAddProduct={() => setIsProductModalOpen(true)}
-                    onEditProduct={openEditProductModal}
-                    onDeleteProduct={handleDeleteProduct}
-                />
-            </Card>
+            <ProductsTab
+                products={products}
+                onAddProduct={() => setIsProductModalOpen(true)}
+                onEditProduct={openEditProductModal}
+                onDeleteProduct={handleDeleteProduct}
+            />
 
             <ProductModal
                 isOpen={isProductModalOpen}

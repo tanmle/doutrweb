@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { EditProfileModal } from '@/components/layout/EditProfileModal';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Avatar } from '@/components/ui/Avatar';
@@ -36,6 +36,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const toast = useToast();
   const supabase = useSupabase();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -248,7 +249,20 @@ export default function DashboardLayout({
                 ☰
               </Button>
             </div>
-            <h2 className={styles.headerTitle}>Overview</h2>
+            <h2 className={styles.headerTitle}>
+              {(() => {
+                if (pathname?.includes('/sales')) return 'Sales Entry';
+                if (pathname?.includes('/shops')) return 'Shops';
+                if (pathname?.includes('/reports')) return 'Reports';
+                if (pathname?.includes('/admin/products')) return 'Products';
+                if (pathname?.includes('/admin/users')) return 'Users';
+                if (pathname?.includes('/admin/payroll')) return 'Payroll';
+                if (pathname?.includes('/admin/monthly-fees')) return 'Monthly Fees';
+                if (pathname?.includes('/admin/selling-fees')) return 'Selling Fees';
+                if (pathname?.includes('/admin/configuration')) return 'Configuration';
+                return 'Overview';
+              })()}
+            </h2>
             <div className={styles.headerActions}>
               <NotificationBell />
               <button

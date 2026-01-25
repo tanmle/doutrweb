@@ -11,6 +11,7 @@ import {
     AdminTableStyles,
 } from '../components';
 import { useRealtime } from '@/hooks/useRealtime';
+import styles from '../components/AdminComponents.module.css';
 
 export default function AdminConfigurationPage() {
     const [loading, setLoading] = useState(false);
@@ -70,16 +71,14 @@ export default function AdminConfigurationPage() {
 
     return (
         <>
-            <Card>
-                <ConfigurationTab
-                    commissionRates={commissionRates}
-                    baseKpi={baseKpi}
-                    loading={loading}
-                    onCommissionChange={handleCommissionChange}
-                    onBaseKpiChange={setBaseKpi}
-                    onSave={handleSaveCommission}
-                />
-            </Card>
+            <ConfigurationTab
+                commissionRates={commissionRates}
+                baseKpi={baseKpi}
+                loading={loading}
+                onCommissionChange={handleCommissionChange}
+                onBaseKpiChange={setBaseKpi}
+                onSave={handleSaveCommission}
+            />
             <AdminTableStyles />
         </>
     );

@@ -14,6 +14,7 @@ import {
 } from '../components';
 import type { MonthlyFee, FormData, FeeFilter } from '../utils/types';
 import { useRealtime } from '@/hooks/useRealtime';
+import styles from '../components/AdminComponents.module.css';
 
 export default function AdminMonthlyFeesPage() {
     const [formData, setFormData] = useState<FormData>({});
@@ -139,23 +140,21 @@ export default function AdminMonthlyFeesPage() {
 
     return (
         <>
-            <Card>
-                <MonthlyFeesTab
-                    fees={monthlyFees}
-                    profiles={profiles}
-                    feeFilter={feeFilter}
-                    ownerFilter={ownerFilter}
-                    dateRange={dateRange}
-                    totalFeePrice={totalFeePrice}
-                    onAddFee={openFeeModal}
-                    onEditFee={openEditFeeModal}
-                    onDeleteFee={handleDeleteFee}
-                    onFeeFilterChange={setFeeFilter}
-                    onOwnerFilterChange={setOwnerFilter}
-                    onDateRangeChange={setDateRange}
-                    title="Monthly Fees"
-                />
-            </Card>
+            <MonthlyFeesTab
+                fees={monthlyFees}
+                profiles={profiles}
+                feeFilter={feeFilter}
+                ownerFilter={ownerFilter}
+                dateRange={dateRange}
+                totalFeePrice={totalFeePrice}
+                onAddFee={openFeeModal}
+                onEditFee={openEditFeeModal}
+                onDeleteFee={handleDeleteFee}
+                onFeeFilterChange={setFeeFilter}
+                onOwnerFilterChange={setOwnerFilter}
+                onDateRangeChange={setDateRange}
+                title="Monthly Fees"
+            />
 
             <MonthlyFeeModal
                 isOpen={isFeeModalOpen}

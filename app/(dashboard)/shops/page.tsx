@@ -292,8 +292,6 @@ export default function ShopsPage() {
     <div>
       <div className={styles.headerBar}>
         <div className={styles.leftGroup}>
-          <h1 className={styles.title}>Shops</h1>
-
           {['admin', 'leader'].includes(userRole) && (
             <div className={styles.filterBox}>
               <label className={styles.filterLabel}>Filter by Owner</label>

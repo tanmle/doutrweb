@@ -408,10 +408,11 @@ export default function DailyEntryPage() {
   }
 
   return (
-    <div className={layouts.pageContainer}>
-      <div className={layouts.pageHeaderWithActions}>
-        <h1 className={layouts.pageHeader}>Sales Records</h1>
-        <Button onClick={() => setIsModalOpen(true)}>+ Add Daily Sales</Button>
+    <div>
+      <div className={layouts.pageHeaderWithActions} style={{ justifyContent: 'flex-end' }}>
+        <div className={layouts.hideOnMobile}>
+          <Button onClick={() => setIsModalOpen(true)}>+ Add Daily Sales</Button>
+        </div>
       </div>
 
       <div className={cards.cardGridTwoCol}>
@@ -428,99 +429,103 @@ export default function DailyEntryPage() {
 
       <div className={layouts.spacingY}></div>
 
-      <Card>
-        <div className={filters.filterControls}>
+      <div className={filters.filterControls}>
+        <div className={filters.filterField}>
+          <label className={filters.filterLabel}>Shop</label>
+          <select
+            aria-label="Filter by shop"
+            value={shopFilter}
+            onChange={(e) => setShopFilter(e.target.value)}
+            className={filters.filterSelect}
+          >
+            <option value="all">All Shops</option>
+            {shops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </div>
+
+        {['admin', 'leader'].includes(userRole) && (
           <div className={filters.filterField}>
-            <label className={filters.filterLabel}>Shop</label>
+            <label className={filters.filterLabel}>Owner</label>
             <select
-              aria-label="Filter by shop"
-              value={shopFilter}
-              onChange={(e) => setShopFilter(e.target.value)}
+              aria-label="Filter by owner"
+              value={ownerFilter}
+              onChange={(e) => setOwnerFilter(e.target.value)}
               className={filters.filterSelect}
             >
-              <option value="all">All Shops</option>
-              {shops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              <option value="all">All Owners</option>
+              {profiles.map(p => <option key={p.id} value={p.id}>{p.full_name || p.email}</option>)}
             </select>
           </div>
+        )}
 
-          {['admin', 'leader'].includes(userRole) && (
-            <div className={filters.filterField}>
-              <label className={filters.filterLabel}>Owner</label>
-              <select
-                aria-label="Filter by owner"
-                value={ownerFilter}
-                onChange={(e) => setOwnerFilter(e.target.value)}
-                className={filters.filterSelect}
+        <div className={filters.filterGroup}>
+          <label className={filters.filterLabel}>Date Filter</label>
+
+          <div className={layouts.flexColumn}>
+            <div className={filters.filterButtons}>
+              <Button variant={dateFilter === 'today' ? 'primary' : 'secondary'} onClick={() => setDateFilter('today')}>
+                Today
+              </Button>
+              <Button variant={dateFilter === 'this_month' ? 'primary' : 'secondary'} onClick={() => setDateFilter('this_month')}>
+                This Month
+              </Button>
+              <Button variant={dateFilter === 'last_month' ? 'primary' : 'secondary'} onClick={() => setDateFilter('last_month')}>
+                Last Month
+              </Button>
+              <Button variant={dateFilter === 'range' ? 'primary' : 'secondary'} onClick={() => setDateFilter('range')}>
+                Date Range
+              </Button>
+
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  const today = new Date().toISOString().split('T')[0];
+                  setShopFilter('all');
+                  setOwnerFilter('all');
+                  setDateFilter('today');
+                  setDateRange({ start: today, end: today });
+                }}
               >
-                <option value="all">All Owners</option>
-                {profiles.map(p => <option key={p.id} value={p.id}>{p.full_name || p.email}</option>)}
-              </select>
+                Reset
+              </Button>
             </div>
-          )}
 
-          <div className={filters.filterGroup}>
-            <label className={filters.filterLabel}>Date Filter</label>
-
-            <div className={layouts.flexColumn}>
-              <div className={filters.filterButtons}>
-                <Button variant={dateFilter === 'today' ? 'primary' : 'secondary'} onClick={() => setDateFilter('today')}>
-                  Today
-                </Button>
-                <Button variant={dateFilter === 'this_month' ? 'primary' : 'secondary'} onClick={() => setDateFilter('this_month')}>
-                  This Month
-                </Button>
-                <Button variant={dateFilter === 'last_month' ? 'primary' : 'secondary'} onClick={() => setDateFilter('last_month')}>
-                  Last Month
-                </Button>
-                <Button variant={dateFilter === 'range' ? 'primary' : 'secondary'} onClick={() => setDateFilter('range')}>
-                  Date Range
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    const today = new Date().toISOString().split('T')[0];
-                    setShopFilter('all');
-                    setOwnerFilter('all');
-                    setDateFilter('today');
-                    setDateRange({ start: today, end: today });
-                  }}
-                >
-                  Reset
-                </Button>
-              </div>
-
-              {dateFilter === 'range' && (
-                <div className={filters.dateRangeContainer}>
-                  <div className={filters.dateRangeField}>
-                    <label className={filters.filterLabel}>Start Date</label>
-                    <input
-                      aria-label="Start date"
-                      type="date"
-                      value={dateRange.start}
-                      onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                      onClick={(e) => e.currentTarget.showPicker()}
-                      className={filters.filterInput}
-                    />
-                  </div>
-
-                  <div className={filters.dateRangeField}>
-                    <label className={filters.filterLabel}>End Date</label>
-                    <input
-                      aria-label="End date"
-                      type="date"
-                      value={dateRange.end}
-                      onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                      onClick={(e) => e.currentTarget.showPicker()}
-                      className={filters.filterInput}
-                    />
-                  </div>
+            {dateFilter === 'range' && (
+              <div className={filters.dateRangeContainer}>
+                <div className={filters.dateRangeField}>
+                  <label className={filters.filterLabel}>Start Date</label>
+                  <input
+                    aria-label="Start date"
+                    type="date"
+                    value={dateRange.start}
+                    onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                    onClick={(e) => e.currentTarget.showPicker()}
+                    className={filters.filterInput}
+                  />
                 </div>
-              )}
-            </div>
+
+                <div className={filters.dateRangeField}>
+                  <label className={filters.filterLabel}>End Date</label>
+                  <input
+                    aria-label="End date"
+                    type="date"
+                    value={dateRange.end}
+                    onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                    onClick={(e) => e.currentTarget.showPicker()}
+                    className={filters.filterInput}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </Card>
+      </div>
+
+      <div className={layouts.spacingBottom}></div>
+
+      <div className={layouts.showOnMobile}>
+        <Button onClick={() => setIsModalOpen(true)} fullWidth>+ Add Daily Sales</Button>
+      </div>
 
       <div className={layouts.spacingY}></div>
 

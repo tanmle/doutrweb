@@ -14,6 +14,7 @@ import {
 } from '../components';
 import type { PayrollRecord } from '../utils/types';
 import { useRealtime } from '@/hooks/useRealtime';
+import styles from '../components/AdminComponents.module.css';
 
 export default function AdminPayrollPage() {
     const [loading, setLoading] = useState(false);
@@ -87,17 +88,15 @@ export default function AdminPayrollPage() {
 
     return (
         <>
-            <Card>
-                <PayrollTab
-                    payrollRecords={payrollRecords}
-                    users={users}
-                    loading={dataLoading}
-                    month={payrollMonth}
-                    onMonthChange={setPayrollMonth}
-                    onGenerate={handleGeneratePayroll}
-                    onEdit={openEditPayrollModal}
-                />
-            </Card>
+            <PayrollTab
+                payrollRecords={payrollRecords}
+                users={users}
+                loading={dataLoading}
+                month={payrollMonth}
+                onMonthChange={setPayrollMonth}
+                onGenerate={handleGeneratePayroll}
+                onEdit={openEditPayrollModal}
+            />
 
             <GeneratePayrollModal
                 isOpen={isGeneratePayrollModalOpen}

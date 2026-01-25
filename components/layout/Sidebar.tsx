@@ -41,7 +41,9 @@ export const Sidebar = ({ isOpen, onClose, role }: { isOpen: boolean; onClose: (
   return (
     <aside className={styles.sidebarWrapper}>
       <div className={styles.sidebarHeader}>
-        <span className={styles.logo}>Shop Manager</span>
+        <Link href="/dashboard" onClick={onClose} className={styles.logo}>
+          Shop Manager
+        </Link>
       </div>
 
       <nav className={styles.nav}>

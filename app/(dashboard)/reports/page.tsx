@@ -139,25 +139,44 @@ export default function ReportsPage() {
     };
 
     return (
-        <div className={layouts.pageContainer}>
-            <div className={layouts.pageHeaderWithActions}>
-                <h1 className={layouts.pageHeader} style={{ margin: 0 }}>Performance Reports</h1>
+        <div>
+            <div className={cards.cardGridTwoCol}>
+                <StatCard
+                    label={`Total Profit (${getFilterLabel()})`}
+                    value={loading ? '...' : formatCurrency(sales.reduce((acc, curr) => acc + (curr.profit || 0), 0))}
+                    subtext={`${sales.length} records`}
+                    variant="success"
+                />
+                <Card className={cards.statCard}>
+                    <div className={cards.statLabel}>Recent Activity</div>
+                    <div className={cards.statValue}>{sales[0]?.date || 'N/A'}</div>
+                    <div className={cards.statChange}>
+                        <span>Last Entry</span>
+                    </div>
+                </Card>
+            </div>
 
-                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                    {['admin', 'leader'].includes(userRole) && (
+            <div className={layouts.spacingY}></div>
+
+            <div className={filters.filterControls}>
+                {['admin', 'leader'].includes(userRole) && (
+                    <div className={filters.filterField}>
+                        <label className={filters.filterLabel}>Filter by User</label>
                         <select
                             value={userFilter}
                             onChange={(e) => setUserFilter(e.target.value)}
                             className={filters.filterSelect}
-                            style={{ width: 'auto', maxWidth: '200px' }}
                         >
                             <option value="all">All Users</option>
                             {profiles.map(p => (
                                 <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
                             ))}
                         </select>
-                    )}
+                    </div>
+                )}
 
+                <div className={filters.filterGroup}>
+                    <label className={filters.filterLabel}>Period</label>
                     <div className={filters.filterButtons}>
                         <Button
                             variant={filter === 'daily' ? 'primary' : 'secondary'}
@@ -181,25 +200,9 @@ export default function ReportsPage() {
                 </div>
             </div>
 
-            <div className={layouts.grid}>
-                <StatCard
-                    label={`Total Profit (${getFilterLabel()})`}
-                    value={loading ? '...' : formatCurrency(sales.reduce((acc, curr) => acc + (curr.profit || 0), 0))}
-                    subtext={`${sales.length} records`}
-                    variant="success"
-                />
-                <Card className={cards.statCard}>
-                    <div className={cards.statLabel}>Recent Activity</div>
-                    <div className={cards.statValue}>{sales[0]?.date || 'N/A'}</div>
-                    <div className={cards.statChange}>
-                        <span>Last Entry</span>
-                    </div>
-                </Card>
-            </div>
-
             <div className={layouts.spacingYLarge}></div>
 
-            <Card>
+            <div>
                 <h3 className={layouts.sectionHeader}>Sales Records ({getFilterLabel()})</h3>
                 <div className={tables.tableWrapper}>
                     <table className={tables.table}>
@@ -235,7 +238,7 @@ export default function ReportsPage() {
                         </tbody>
                     </table>
                 </div>
-            </Card>
+            </div>
         </div>
     );
 }

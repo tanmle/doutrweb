@@ -91,9 +91,6 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
                                     Mark as read
                                 </button>
                             )}
-                            <button className={styles.menuItem} onClick={(e) => { e.stopPropagation(); /* TODO: Delete/Archive */ }}>
-                                Format Time
-                            </button>
                         </div>
                     )}
                 </div>

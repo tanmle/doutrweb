@@ -197,12 +197,35 @@
         align-items: stretch;
     }
 
-    .gridTwoCol,
+    .gridTwoCol {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
     .gridThreeCol {
         grid-template-columns: 1fr;
     }
 
     .gridAutoFit {
         grid-template-columns: 1fr;
+    }
+}
+
+/* Visibility Utilities */
+.showOnMobile {
+    display: none;
+}
+
+.hideOnMobile {
+    display: block;
+}
+
+@media (max-width: 640px) {
+    .showOnMobile {
+        display: block;
+    }
+
+    .hideOnMobile {
+        display: none;
     }
 }

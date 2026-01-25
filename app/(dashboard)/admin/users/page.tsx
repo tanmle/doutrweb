@@ -15,6 +15,7 @@ import {
 } from '../components';
 import type { User, FormData } from '../utils/types';
 import { useRealtime } from '@/hooks/useRealtime';
+import styles from '../components/AdminComponents.module.css';
 
 import { SendNotificationModal } from '@/components/admin/SendNotificationModal';
 
@@ -153,18 +154,16 @@ export default function AdminUsersPage() {
 
     return (
         <>
-            <Card>
-                <UsersTab
-                    users={users}
-                    profiles={profiles}
-                    canEditUser={canEditUser}
-                    onAddUser={() => setIsUserModalOpen(true)}
-                    onEditUser={openEditUserModal}
-                    onResetPassword={handleResetPassword}
-                    onDeleteUser={handleDeleteUser}
-                    onSendNotification={() => setIsSendNotificationOpen(true)}
-                />
-            </Card>
+            <UsersTab
+                users={users}
+                profiles={profiles}
+                canEditUser={canEditUser}
+                onAddUser={() => setIsUserModalOpen(true)}
+                onEditUser={openEditUserModal}
+                onResetPassword={handleResetPassword}
+                onDeleteUser={handleDeleteUser}
+                onSendNotification={() => setIsSendNotificationOpen(true)}
+            />
 
             <UserModal
                 isOpen={isUserModalOpen}

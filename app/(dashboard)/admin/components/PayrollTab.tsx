@@ -85,80 +85,78 @@ export function PayrollTab({
                 </div>
             </Card>
 
-            <Card>
-                <div className={tables.tableWrapper}>
-                    <table className={tables.table}>
-                        <thead>
+            <div className={tables.tableWrapper}>
+                <table className={tables.table}>
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Base Salary</th>
+                            <th>Work Days (Std/Act)</th>
+                            <th>Bonus</th>
+                            <th>Total Salary</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {payrollRecords.length === 0 ? (
                             <tr>
-                                <th>User</th>
-                                <th>Base Salary</th>
-                                <th>Work Days (Std/Act)</th>
-                                <th>Bonus</th>
-                                <th>Total Salary</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+                                <td colSpan={7} className={`${layouts.textCenter} ${styles.emptyStatePadding}`}>
+                                    <div className={`${layouts.flexColumn} ${styles.centeredFlexColumn}`}>
+                                        <span className={layouts.textMuted}>No records found for {month}</span>
+                                        <Button variant="secondary" onClick={onGenerate}>
+                                            Generate Now
+                                        </Button>
+                                    </div>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {payrollRecords.length === 0 ? (
-                                <tr>
-                                    <td colSpan={7} className={`${layouts.textCenter} ${styles.emptyStatePadding}`}>
-                                        <div className={`${layouts.flexColumn} ${styles.centeredFlexColumn}`}>
-                                            <span className={layouts.textMuted}>No records found for {month}</span>
-                                            <Button variant="secondary" onClick={onGenerate}>
-                                                Generate Now
+                        ) : (
+                            payrollRecords.map(record => (
+                                <tr key={record.id}>
+                                    <td data-label="User">
+                                        <div className={tables.userCell}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <span className={tables.userName}>{record.user?.full_name || 'Unknown'}</span>
+                                                {record.user?.role && (
+                                                    <RoleBadge role={record.user.role as UserRole} />
+                                                )}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td data-label="Base Salary">
+                                        {formatCurrency(record.user?.base_salary || 0)}
+                                    </td>
+                                    <td data-label="Work Days">
+                                        <span>{record.standard_work_days} / <strong>{record.actual_work_days}</strong></span>
+                                    </td>
+                                    <td data-label="Bonus">
+                                        {formatCurrency(record.bonus || 0)}
+                                    </td>
+                                    <td data-label="Total Salary">
+                                        <strong>{formatCurrency(record.total_salary || 0)}</strong>
+                                    </td>
+                                    <td data-label="Status">
+                                        <span className={`${tables.tableBadge} ${getStatusClass(record.status)}`}>
+                                            {record.status.toUpperCase()}
+                                        </span>
+                                    </td>
+                                    <td data-label="Actions">
+                                        <div className={tables.tableActionsSmall}>
+                                            <Button
+                                                variant="secondary"
+                                                onClick={() => onEdit(record)}
+                                                fullWidth
+                                            >
+                                                Edit / Pay
                                             </Button>
                                         </div>
                                     </td>
                                 </tr>
-                            ) : (
-                                payrollRecords.map(record => (
-                                    <tr key={record.id}>
-                                        <td data-label="User">
-                                            <div className={tables.userCell}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    <span className={tables.userName}>{record.user?.full_name || 'Unknown'}</span>
-                                                    {record.user?.role && (
-                                                        <RoleBadge role={record.user.role as UserRole} />
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td data-label="Base Salary">
-                                            {formatCurrency(record.user?.base_salary || 0)}
-                                        </td>
-                                        <td data-label="Work Days">
-                                            <span>{record.standard_work_days} / <strong>{record.actual_work_days}</strong></span>
-                                        </td>
-                                        <td data-label="Bonus">
-                                            {formatCurrency(record.bonus || 0)}
-                                        </td>
-                                        <td data-label="Total Salary">
-                                            <strong>{formatCurrency(record.total_salary || 0)}</strong>
-                                        </td>
-                                        <td data-label="Status">
-                                            <span className={`${tables.tableBadge} ${getStatusClass(record.status)}`}>
-                                                {record.status.toUpperCase()}
-                                            </span>
-                                        </td>
-                                        <td data-label="Actions">
-                                            <div className={tables.tableActionsSmall}>
-                                                <Button
-                                                    variant="secondary"
-                                                    onClick={() => onEdit(record)}
-                                                    fullWidth
-                                                >
-                                                    Edit / Pay
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </Card>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }
