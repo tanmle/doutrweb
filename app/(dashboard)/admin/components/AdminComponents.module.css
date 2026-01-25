@@ -66,31 +66,33 @@
     flex-wrap: wrap;
 }
 
-/* Role Badge */
+/* Role Badge Container */
 .roleBadgeContainer {
     position: relative;
     display: inline-block;
 }
 
-.roleBadge {
+/* Role Text with Premium Colors */
+.roleText {
     text-transform: capitalize;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: 0.02em;
 }
 
-.roleBadgeAdmin {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
+.roleTextAdmin {
+    color: var(--role-admin-primary);
+    text-shadow: 0 0 8px var(--role-admin-glow);
 }
 
-.roleBadgeLeader {
-    background: rgba(99, 102, 241, 0.1);
-    color: #6366f1;
+.roleTextLeader {
+    color: var(--role-leader-primary);
+    text-shadow: 0 0 8px var(--role-leader-glow);
 }
 
-.roleBadgeMember {
-    background: rgba(255, 255, 255, 0.05);
+.roleTextMember {
+    color: var(--role-member-primary);
+    text-shadow: 0 0 8px var(--role-member-glow);
 }
 
 .leaderCount {

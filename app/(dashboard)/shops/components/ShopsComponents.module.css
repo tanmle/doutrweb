@@ -44,8 +44,20 @@
 
 /* Shop Name */
 .shopName {
+    font-weight: 600;
+    color: var(--foreground);
+}
+
+.ownerCell {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.ownerName {
     font-weight: 500;
-    color: white;
+    color: var(--foreground);
 }
 
 /* Platform Badge */

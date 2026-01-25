@@ -21,6 +21,21 @@
   --border: #27272a;
   --input: #27272a;
 
+  /* Role Colors - Admin (Gold) */
+  --role-admin-primary: #fbbf24;
+  --role-admin-secondary: #f59e0b;
+  --role-admin-glow: rgba(251, 191, 36, 0.3);
+
+  /* Role Colors - Leader (Pink) */
+  --role-leader-primary: #f093fb;
+  --role-leader-secondary: #f5576c;
+  --role-leader-glow: rgba(240, 147, 251, 0.3);
+
+  /* Role Colors - Member (Blue) */
+  --role-member-primary: #4facfe;
+  --role-member-secondary: #00f2fe;
+  --role-member-glow: rgba(79, 172, 254, 0.3);
+
   /* Glassmorphism */
   --glass-bg: rgba(20, 20, 20, 0.7);
   --glass-border: rgba(255, 255, 255, 0.08);
@@ -154,12 +169,12 @@ select option {
     gap: 0.5rem;
   }
 
-  .sales-date-range > div {
+  .sales-date-range>div {
     flex: 1 1 100%;
     min-width: 0;
   }
 
-    .sales-date-filter-row {
+  .sales-date-filter-row {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;

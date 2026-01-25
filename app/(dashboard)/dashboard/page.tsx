@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { StatCard } from '@/components/ui/StatCard';
+import { RoleBadge } from '@/components/ui/RoleBadge';
+import type { UserRole } from '@/components/ui/RoleBadge';
 import { KPICard } from './components/KPICard';
 import { useSupabase } from '@/contexts/SupabaseContext';
 import { formatCurrency, formatDateKey, parseDateKey } from '@/utils/formatters';
@@ -70,6 +72,7 @@ export default function DashboardPage() {
   });
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
   const [memberNames, setMemberNames] = useState<string[]>([]);
+  const [memberRoles, setMemberRoles] = useState<Record<string, UserRole>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<ChartFilter>('today');
   const [memberFilter, setMemberFilter] = useState('all');
@@ -194,6 +197,7 @@ export default function DashboardPage() {
 
           // Process Chart Data (30-day trend context)
           const membersSet = new Set<string>();
+          const rolesMap: Record<string, UserRole> = {};
           const groupedData = salesRows.reduce<Record<string, ChartPoint>>((acc, curr) => {
             const owner = curr.shop?.owner;
             if (owner?.role === 'admin') return acc;
@@ -202,6 +206,11 @@ export default function DashboardPage() {
             const name = owner?.full_name || 'Unknown';
             const rev = Number(curr.revenue) || 0;
             membersSet.add(name);
+
+            // Capture role
+            if (owner?.role && (owner.role === 'leader' || owner.role === 'member')) {
+              rolesMap[name] = owner.role as UserRole;
+            }
 
             if (!acc[date]) {
               acc[date] = { date };
@@ -217,6 +226,7 @@ export default function DashboardPage() {
 
           setChartData(chartArray);
           setMemberNames(Array.from(membersSet));
+          setMemberRoles(rolesMap);
         } else {
           // Even if no data, set targets
           // Determine default target
@@ -415,7 +425,27 @@ export default function DashboardPage() {
                     labelStyle={{ fontWeight: 'bold', marginBottom: '4px', color: 'var(--primary)' }}
                     formatter={(value: any, name?: string) => [formatCurrency(Number(value || 0)), name || 'Revenue']}
                   />
-                  <Legend verticalAlign="top" height={40} iconType="circle" />
+                  <Legend
+                    verticalAlign="top"
+                    height={40}
+                    iconType="circle"
+                    content={(props) => {
+                      const { payload } = props;
+                      return (
+                        <div className={dashboard.chartLegend}>
+                          {payload?.map((entry: any, index: number) => (
+                            <div key={`legend-${index}`} className={dashboard.chartLegendItem}>
+                              <div className={dashboard.chartLegendDot} style={{ backgroundColor: entry.color }} />
+                              <span className={dashboard.chartLegendLabel}>
+                                {entry.value}
+                                {memberRoles[entry.value] && <RoleBadge role={memberRoles[entry.value]} />}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }}
+                  />
                   {memberNamesToRender.map((name, index) => (
                     <Area
                       key={name}

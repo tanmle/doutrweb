@@ -6,6 +6,8 @@ import { EditProfileModal } from '@/components/layout/EditProfileModal';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
+import { RoleBadge } from '@/components/ui/RoleBadge';
+import type { UserRole } from '@/components/ui/RoleBadge';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useSupabase } from '@/contexts/SupabaseContext';
 import { APP_CONSTANTS } from '@/constants/app';
@@ -249,14 +251,15 @@ export default function DashboardLayout({
             <div className={styles.headerActions}>
               <button
                 type="button"
-                className={styles.profileButton}
+                className={`${styles.profileButton} ${profile?.role ? styles[`profileButton${profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}`] : ''}`}
                 onClick={() => setIsEditProfileOpen(true)}
                 title="Edit Profile"
               >
-                <span className={styles.profileGreeting}>
-                  Welcome, <strong className={styles.profileName}>{profile?.full_name || 'User'}</strong>
-                </span>
-                <Avatar src={profile?.avatar_url} name={profile?.full_name} size={32} />
+                <div className={styles.profileInfo}>
+                  <span className={styles.profileGreeting}>Welcome back,</span>
+                  <strong className={styles.profileName}>{profile?.full_name || 'User'}</strong>
+                </div>
+                <Avatar src={profile?.avatar_url} name={profile?.full_name} size={40} />
               </button>
               <div className={styles.headerDivider} />
               <Button variant="ghost" onClick={handleLogout} className={styles.logoutButton}>Logout</Button>

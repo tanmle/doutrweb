@@ -1,0 +1,60 @@
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.75rem;
+    border-radius: 50%;
+    position: relative;
+    top: -0.25rem;
+    margin-left: -0.125rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    cursor: help;
+    flex-shrink: 0;
+}
+
+/* Role variants with modern, professional colors */
+.admin {
+    background: linear-gradient(135deg, var(--role-admin-primary) 0%, var(--role-admin-secondary) 100%);
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+}
+
+.admin:hover {
+    transform: scale(1.15);
+    box-shadow: 0 2px 8px var(--role-admin-glow);
+}
+
+.leader {
+    background: linear-gradient(135deg, var(--role-leader-primary) 0%, var(--role-leader-secondary) 100%);
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+}
+
+.leader:hover {
+    transform: scale(1.15);
+    box-shadow: 0 2px 8px var(--role-leader-glow);
+}
+
+.member {
+    background: linear-gradient(135deg, var(--role-member-primary) 0%, var(--role-member-secondary) 100%);
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+}
+
+.member:hover {
+    transform: scale(1.15);
+    box-shadow: 0 2px 8px var(--role-member-glow);
+}
+
+/* Accessibility */
+.badge:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .badge {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+}

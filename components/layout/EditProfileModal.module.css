@@ -9,6 +9,7 @@
 }
 
 @keyframes editProfileFloat {
+
   0%,
   100% {
     transform: translateY(0);
@@ -43,6 +44,7 @@
   animation: editProfileFloat 3s ease-in-out infinite;
 }
 
+/* Default Avatar Halo */
 .avatarHalo {
   position: absolute;
   inset: -8px;
@@ -51,6 +53,19 @@
   filter: blur(1px);
   opacity: 0.8;
   animation: editProfileHaloSpin 6s linear infinite;
+}
+
+/* Role-Specific Avatar Halos */
+.avatarAdmin .avatarHalo {
+  background: conic-gradient(from 120deg, var(--role-admin-primary), var(--role-admin-secondary), var(--role-admin-primary));
+}
+
+.avatarLeader .avatarHalo {
+  background: conic-gradient(from 120deg, var(--role-leader-primary), var(--role-leader-secondary), var(--role-leader-primary));
+}
+
+.avatarMember .avatarHalo {
+  background: conic-gradient(from 120deg, var(--role-member-primary), var(--role-member-secondary), var(--role-member-primary));
 }
 
 .avatarFrame {

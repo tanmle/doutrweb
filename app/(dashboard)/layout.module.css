@@ -54,32 +54,93 @@
     justify-content: flex-end;
 }
 
+/* Premium Profile Button with Role-Based Styling */
 .profileButton {
     display: inline-flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.35rem 0.65rem;
+    gap: 0.875rem;
+    padding: 0.5rem 0.875rem;
     border-radius: 999px;
     cursor: pointer;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(255, 255, 255, 0.02);
-    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.profileButton::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.profileButton:hover::before {
+    left: 100%;
 }
 
 .profileButton:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(99, 102, 241, 0.35);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15), 0 0 0 1px rgba(99, 102, 241, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Role-Specific Styling */
+.profileButtonAdmin {
+    border-color: var(--role-admin-glow);
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(245, 158, 11, 0.08));
+}
+
+.profileButtonAdmin:hover {
+    border-color: var(--role-admin-primary);
+    box-shadow: 0 8px 24px var(--role-admin-glow), 0 0 0 1px var(--role-admin-glow);
+}
+
+.profileButtonLeader {
+    border-color: var(--role-leader-glow);
+    background: linear-gradient(135deg, rgba(240, 147, 251, 0.08), rgba(245, 87, 108, 0.05));
+}
+
+.profileButtonLeader:hover {
+    border-color: var(--role-leader-secondary);
+    box-shadow: 0 8px 24px var(--role-leader-glow), 0 0 0 1px var(--role-leader-glow);
+}
+
+.profileButtonMember {
+    border-color: var(--role-member-glow);
+    background: linear-gradient(135deg, rgba(79, 172, 254, 0.08), rgba(0, 242, 254, 0.05));
+}
+
+.profileButtonMember:hover {
+    border-color: var(--role-member-primary);
+    box-shadow: 0 8px 24px var(--role-member-glow), 0 0 0 1px var(--role-member-glow);
+}
+
+.profileInfo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.125rem;
 }
 
 .profileGreeting {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     color: var(--muted-foreground);
+    font-weight: 500;
+    letter-spacing: 0.01em;
 }
 
 .profileName {
     color: var(--foreground);
     font-weight: 600;
+    font-size: 0.9375rem;
+    letter-spacing: -0.01em;
 }
 
 .headerDivider {
@@ -144,6 +205,19 @@
         width: 100%;
         justify-content: space-between;
     }
+
+    .profileButton {
+        padding: 0.4rem 0.65rem;
+        gap: 0.625rem;
+    }
+
+    .profileGreeting {
+        font-size: 0.7rem;
+    }
+
+    .profileName {
+        font-size: 0.875rem;
+    }
 }
 
 @media (min-width: 769px) {
@@ -155,4 +229,3 @@
         display: none;
     }
 }
-

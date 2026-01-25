@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/Button';
+import { RoleBadge } from '@/components/ui/RoleBadge';
+import type { UserRole } from '@/components/ui/RoleBadge';
 import styles from './ShopsComponents.module.css';
 
 interface Shop {
@@ -14,6 +16,7 @@ interface Shop {
     owner?: {
         full_name?: string;
         email: string;
+        role?: UserRole;
     };
 }
 
@@ -30,8 +33,6 @@ export function ShopsTable({ shops, userRole, onEdit, onArchive, onHistory }: Sh
         const badges: { [key: string]: string } = {
             tiktok: 'TikTok Shop',
             amazon: 'Amazon',
-            shopee: 'Shopee',
-            lazada: 'Lazada',
             other: 'Other'
         };
         return badges[platform] || platform;
@@ -81,7 +82,14 @@ export function ShopsTable({ shops, userRole, onEdit, onArchive, onHistory }: Sh
                             </td>
                             <td data-label="Owner">
                                 {shop.owner ? (
-                                    <span>{shop.owner.full_name || shop.owner.email}</span>
+                                    <div className={styles.ownerCell}>
+                                        <span className={styles.ownerName}>
+                                            {shop.owner.full_name || shop.owner.email}
+                                        </span>
+                                        {shop.owner.role && (
+                                            <RoleBadge role={shop.owner.role} />
+                                        )}
+                                    </div>
                                 ) : (
                                     <span className={styles.mutedText}>-</span>
                                 )}

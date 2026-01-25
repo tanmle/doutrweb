@@ -41,14 +41,11 @@ export function UsersTable({
                             <td data-label="Full Name">{u.full_name || 'N/A'}</td>
                             <td data-label="Role">
                                 <div className={styles.roleBadgeContainer}>
-                                    <span className={`${styles.roleBadge} ${u.role === 'admin' ? styles.roleBadgeAdmin :
-                                        u.role === 'leader' ? styles.roleBadgeLeader :
-                                            styles.roleBadgeMember
-                                        }`}>
+                                    <span className={`${styles.roleText} ${styles[`roleText${u.role.charAt(0).toUpperCase() + u.role.slice(1)}`]}`}>
                                         {u.role}
                                     </span>
                                     {u.role === 'leader' && (
-                                        <span className={styles.leaderCount}>
+                                        <span className={styles.leaderCount} title='Total member assigned'>
                                             {users.filter(user => user.leader_id === u.id).length}
                                         </span>
                                     )}

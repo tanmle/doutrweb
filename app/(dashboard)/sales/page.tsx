@@ -10,6 +10,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useSupabase } from '@/contexts/SupabaseContext';
 import { formatCurrency } from '@/utils/formatters';
+import { SalesTable } from './components';
 import { forms, cards, tables, filters, layouts, sales } from '@/styles/modules';
 import type {
   Shop,
@@ -147,7 +148,7 @@ export default function DailyEntryPage() {
                 id,
                 name, 
                 owner_id,
-                profiles!owner_id(full_name, email)
+                profiles!owner_id(full_name, email, role)
               ),
               product:products(id, name)
             `)
@@ -439,63 +440,12 @@ export default function DailyEntryPage() {
 
       <div className={layouts.spacingY}></div>
 
-      <Card>
-        <div className={tables.tableWrapper}>
-          <table className={tables.table}>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Shop</th>
-                <th>Owner</th>
-                <th>Product</th>
-                <th>QTY</th>
-                <th>Revenue</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {records.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className={`${layouts.textCenter} ${sales.emptyStateCell}`}>
-                    <span className={layouts.textMuted}>No records found.</span>
-                  </td>
-                </tr>
-              ) : (
-                records.map((r) => (
-                  <tr key={r.id}>
-                    <td data-label="Date">{new Date(r.date).toLocaleDateString('vi-VN')}</td>
-                    <td data-label="Shop">{r.shop?.name}</td>
-                    <td data-label="Owner">
-                      {(() => {
-                        const shopData = r.shop;
-                        const profile = Array.isArray(shopData?.profiles) ? shopData.profiles[0] : shopData?.profiles;
-
-                        if (profile) {
-                          return profile.full_name || profile.email || 'No Name';
-                        }
-                        return shopData?.owner_id ? `ID: ${shopData.owner_id.substring(0, 8)}...` : 'N/A';
-                      })()}
-                    </td>
-                    <td data-label="Product">{r.product?.name}</td>
-                    <td data-label="QTY">{r.items_sold}</td>
-                    <td data-label="Revenue">{formatCurrency(r.revenue)}</td>
-                    <td data-label="Actions">
-                      <div className={tables.tableActionsSmall}>
-                        <Button variant="ghost" onClick={() => openEditModal(r)} className={sales.actionButtonSmall}>
-                          Edit
-                        </Button>
-                        <Button variant="ghost" onClick={() => handleDelete(r.id)} className={sales.deleteButtonSmall}>
-                          Delete
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <SalesTable
+        records={records}
+        loading={false}
+        onEdit={openEditModal}
+        onDelete={handleDelete}
+      />
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Daily Sales Entry">
         <form onSubmit={handleSubmit} className={forms.form}>

@@ -2,6 +2,8 @@ import React from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
+import { RoleBadge } from '@/components/ui/RoleBadge';
+import type { UserRole } from '@/components/ui/RoleBadge';
 import { PayrollRecord, User } from '../utils/types';
 import { forms, cards, tables, filters, layouts } from '@/styles/modules';
 import styles from './AdminComponents.module.css';
@@ -89,7 +91,6 @@ export function PayrollTab({
                         <thead>
                             <tr>
                                 <th>User</th>
-                                <th>Role</th>
                                 <th>Base Salary</th>
                                 <th>Work Days (Std/Act)</th>
                                 <th>Bonus</th>
@@ -101,7 +102,7 @@ export function PayrollTab({
                         <tbody>
                             {payrollRecords.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} className={`${layouts.textCenter} ${styles.emptyStatePadding}`}>
+                                    <td colSpan={7} className={`${layouts.textCenter} ${styles.emptyStatePadding}`}>
                                         <div className={`${layouts.flexColumn} ${styles.centeredFlexColumn}`}>
                                             <span className={layouts.textMuted}>No records found for {month}</span>
                                             <Button variant="secondary" onClick={onGenerate}>
@@ -115,11 +116,13 @@ export function PayrollTab({
                                     <tr key={record.id}>
                                         <td data-label="User">
                                             <div className={tables.userCell}>
-                                                <span className={tables.userName}>{record.user?.full_name || 'Unknown'}</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <span className={tables.userName}>{record.user?.full_name || 'Unknown'}</span>
+                                                    {record.user?.role && (
+                                                        <RoleBadge role={record.user.role as UserRole} />
+                                                    )}
+                                                </div>
                                             </div>
-                                        </td>
-                                        <td data-label="Role">
-                                            <span className={styles.productTypeBadge}>{record.user?.role || 'N/A'}</span>
                                         </td>
                                         <td data-label="Base Salary">
                                             {formatCurrency(record.user?.base_salary || 0)}

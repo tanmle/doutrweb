@@ -53,7 +53,7 @@ export default function ShopsPage() {
   const refreshShopsScoped = async () => {
     let query = supabase
       .from('shops')
-      .select('*, owner:profiles!owner_id(full_name, email)')
+      .select('*, owner:profiles!owner_id(full_name, email, role)')
       .order('name');
 
     if (showArchived) {

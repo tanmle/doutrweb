@@ -27,6 +27,7 @@ type EditProfileModalProps = {
   onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onFieldChange: (field: keyof EditFormData, value: string) => void;
   banks: any[];
+  role?: string | null;
 };
 
 export const EditProfileModal: React.FC<EditProfileModalProps> = ({
@@ -41,12 +42,18 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   onFileChange,
   onFieldChange,
   banks,
+  role,
 }) => {
+  const getRoleClass = () => {
+    if (!role) return '';
+    return styles[`avatar${role.charAt(0).toUpperCase() + role.slice(1)}`] || '';
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Edit Profile">
       <form onSubmit={onSubmit} className={styles.form}>
         <div className={styles.avatarSection}>
-          <div className={styles.avatarWrapper}>
+          <div className={`${styles.avatarWrapper} ${getRoleClass()}`}>
             <div className={styles.avatarHalo} aria-hidden="true" />
             <div className={styles.avatarFrame}>
               <Avatar src={previewUrl} name={formData.fullName} size={88} />
