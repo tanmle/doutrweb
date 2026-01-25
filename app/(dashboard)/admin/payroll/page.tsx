@@ -13,6 +13,7 @@ import {
     AdminTableStyles,
 } from '../components';
 import type { PayrollRecord } from '../utils/types';
+import { useRealtime } from '@/hooks/useRealtime';
 
 export default function AdminPayrollPage() {
     const [loading, setLoading] = useState(false);
@@ -30,6 +31,11 @@ export default function AdminPayrollPage() {
         payrollRecords,
         users,
     } = usePayroll(payrollMonth, refresh);
+
+    useRealtime({
+        table: 'payroll_records',
+        onData: () => setRefresh(prev => prev + 1)
+    });
 
     const handleGeneratePayroll = () => {
         setIsGeneratePayrollModalOpen(true);

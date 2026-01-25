@@ -1,0 +1,83 @@
+.container {
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--foreground);
+}
+
+.headerActions {
+    display: flex;
+    gap: 1rem;
+}
+
+.markReadButton {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.notificationList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.emptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 5rem 2rem;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-lg);
+    border: 1px dashed var(--border);
+}
+
+.emptyIcon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+}
+
+.emptyTitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.emptyDesc {
+    color: var(--muted-foreground);
+}
+
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5rem;
+    color: var(--muted-foreground);
+    gap: 0.5rem;
+}
+
+@media (max-width: 640px) {
+    .container {
+        padding: 1rem;
+    }
+}

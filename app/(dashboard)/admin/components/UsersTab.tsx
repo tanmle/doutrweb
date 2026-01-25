@@ -14,6 +14,7 @@ interface UsersTabProps {
     onEditUser: (user: User) => void;
     onResetPassword: (id: string, email: string) => void;
     onDeleteUser: (id: string, email: string) => void;
+    onSendNotification: () => void;
 }
 
 export function UsersTab({
@@ -23,13 +24,17 @@ export function UsersTab({
     onAddUser,
     onEditUser,
     onResetPassword,
-    onDeleteUser
+    onDeleteUser,
+    onSendNotification,
 }: UsersTabProps) {
     return (
         <div>
             <div className={styles.tabHeader}>
                 <h3 className={styles.tabTitle}>User List</h3>
-                <Button onClick={onAddUser}>+ Add New User</Button>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <Button variant="secondary" onClick={onSendNotification}>📢 Send Notification</Button>
+                    <Button onClick={onAddUser}>+ Add New User</Button>
+                </div>
             </div>
             <UsersTable
                 users={users}

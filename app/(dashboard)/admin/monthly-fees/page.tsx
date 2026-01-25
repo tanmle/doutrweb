@@ -13,6 +13,7 @@ import {
     AdminTableStyles,
 } from '../components';
 import type { MonthlyFee, FormData, FeeFilter } from '../utils/types';
+import { useRealtime } from '@/hooks/useRealtime';
 
 export default function AdminMonthlyFeesPage() {
     const [formData, setFormData] = useState<FormData>({});
@@ -43,6 +44,11 @@ export default function AdminMonthlyFeesPage() {
         ownerFilter,
         dateRange,
         refresh
+    });
+
+    useRealtime({
+        table: 'monthly_fees',
+        onData: () => setRefresh(prev => prev + 1)
     });
 
     const totalFeePrice = monthlyFees.reduce((acc, curr) => acc + (parseFloat(curr.price as any) || 0), 0);

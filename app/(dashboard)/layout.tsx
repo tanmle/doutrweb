@@ -6,6 +6,7 @@ import { EditProfileModal } from '@/components/layout/EditProfileModal';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
+import { NotificationBell } from '@/components/ui/NotificationBell';
 import { RoleBadge } from '@/components/ui/RoleBadge';
 import type { UserRole } from '@/components/ui/RoleBadge';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -249,6 +250,7 @@ export default function DashboardLayout({
             </div>
             <h2 className={styles.headerTitle}>Overview</h2>
             <div className={styles.headerActions}>
+              <NotificationBell />
               <button
                 type="button"
                 className={`${styles.profileButton} ${profile?.role ? styles[`profileButton${profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}`] : ''}`}

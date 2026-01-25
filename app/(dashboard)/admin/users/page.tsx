@@ -14,6 +14,9 @@ import {
     AdminTableStyles,
 } from '../components';
 import type { User, FormData } from '../utils/types';
+import { useRealtime } from '@/hooks/useRealtime';
+
+import { SendNotificationModal } from '@/components/admin/SendNotificationModal';
 
 export default function AdminUsersPage() {
     const [formData, setFormData] = useState<FormData>({});
@@ -22,17 +25,24 @@ export default function AdminUsersPage() {
 
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
     const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
+    const [isSendNotificationOpen, setIsSendNotificationOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
     const supabase = createClient();
     const toast = useToast();
-    const { canEditUser, isLoading: authLoading } = useAuth();
+    const { canEditUser, isLoading: authLoading, currentUser, currentUserRole } = useAuth();
 
     const {
         loading: dataLoading,
         users,
         profiles,
     } = useUsers(refresh);
+
+    // Real-time updates for user profiles
+    useRealtime({
+        table: 'profiles',
+        onData: () => setRefresh(prev => prev + 1)
+    });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -152,6 +162,7 @@ export default function AdminUsersPage() {
                     onEditUser={openEditUserModal}
                     onResetPassword={handleResetPassword}
                     onDeleteUser={handleDeleteUser}
+                    onSendNotification={() => setIsSendNotificationOpen(true)}
                 />
             </Card>
 
@@ -175,6 +186,14 @@ export default function AdminUsersPage() {
                 onClose={() => setIsEditUserModalOpen(false)}
                 onSubmit={handleUpdateUserSubmit}
                 onChange={handleInputChange}
+            />
+
+            <SendNotificationModal
+                isOpen={isSendNotificationOpen}
+                onClose={() => setIsSendNotificationOpen(false)}
+                senderId={currentUser?.id || ''}
+                senderRole={currentUserRole}
+                users={users}
             />
 
             <AdminTableStyles />

@@ -13,6 +13,15 @@ export interface Product {
     name: string;
     base_price: number;
     selling_price: number;
+    type?: 'company' | 'self_researched';
+}
+
+export interface CommissionRate {
+    id: string;
+    level: number;
+    type: 'company' | 'self_researched';
+    profit_threshold: number;
+    commission_percent: number;
 }
 
 export interface Profile {

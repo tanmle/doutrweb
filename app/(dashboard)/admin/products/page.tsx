@@ -12,6 +12,7 @@ import {
     AdminTableStyles,
 } from '../components';
 import type { Product, FormData } from '../utils/types';
+import { useRealtime } from '@/hooks/useRealtime';
 
 export default function AdminProductsPage() {
     const [formData, setFormData] = useState<FormData>({});
@@ -31,6 +32,11 @@ export default function AdminProductsPage() {
         products,
         profiles,
     } = useProducts(refresh);
+
+    useRealtime({
+        table: 'products',
+        onData: () => setRefresh(prev => prev + 1)
+    });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;

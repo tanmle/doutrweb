@@ -21,6 +21,7 @@ import {
   Tooltip,
   Legend
 } from 'recharts';
+import { useRealtime } from '@/hooks/useRealtime';
 
 type DashboardStats = {
   todayRevenue: number;
@@ -81,6 +82,25 @@ export default function DashboardPage() {
 
   const supabase = useSupabase();
 
+  // Real-time: Refresh on sales record changes
+  useRealtime({
+    table: 'sales_records',
+    onData: () => {
+      // Re-trigger fetch by toggling reloading state or a separate refresh trigger
+      // Since fetching is in useEffect with [] dep, we need to extract fetchData or force strict reload
+      // But we can just use a version state
+      setVersion(v => v + 1);
+    }
+  });
+
+  // Real-time: Refresh on config changes (KPI)
+  useRealtime({
+    table: 'app_settings',
+    onData: () => setVersion(v => v + 1)
+  });
+
+  const [version, setVersion] = useState(0);
+
   useEffect(() => {
     const fetchStats = async () => {
       setLoading(true);
@@ -102,7 +122,7 @@ export default function DashboardPage() {
           .from('app_settings')
           .select('value')
           .eq('key', 'base_kpi')
-          .single();
+          .maybeSingle();
         const baseKpi = settings ? parseFloat(settings.value) : APP_CONSTANTS.DEFAULT_BASE_KPI;
 
         // Fetch Commission Rates (for targets)
@@ -241,7 +261,7 @@ export default function DashboardPage() {
       }
     };
     fetchStats();
-  }, []); // Removed supabase - it's stable from context
+  }, [version]); // Removed supabase - it's stable from context
 
   const progress = Math.min((stats.currentKPI / stats.targetKPI) * 100, 100);
 

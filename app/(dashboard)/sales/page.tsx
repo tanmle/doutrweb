@@ -20,8 +20,11 @@ import type {
   SalesFormData,
   SalesItem,
   DateFilterType,
-  DateRange
+  DateRange,
+  CommissionRate
 } from './types';
+import { sendAchievementNotification, checkThresholdCrossed } from '@/utils/notifications';
+import { useRealtime } from '@/hooks/useRealtime';
 
 export default function DailyEntryPage() {
   const [loading, setLoading] = useState(false);
@@ -58,6 +61,15 @@ export default function DailyEntryPage() {
     date: '',
     productId: '',
     quantity: ''
+  });
+
+  // Real-time subscription for sales records
+  useRealtime({
+    table: 'sales_records',
+    onData: () => {
+      // Trigger a re-fetch when data changes
+      setRefresh(prev => prev + 1);
+    }
   });
 
   useEffect(() => {
@@ -245,12 +257,84 @@ export default function DailyEntryPage() {
       return;
     }
 
+    // Auto-Achievement Checks: Pre-fetch previous stats
+    // We fetch existing stats BEFORE insertion to establish a baseline
+    let companyRates: CommissionRate[] = [];
+    let selfRates: CommissionRate[] = [];
+    let prevCompanyProfit = 0;
+    let prevSelfProfit = 0;
+
+    try {
+      const today = new Date();
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString();
+
+      const [ratesData, salesData] = await Promise.all([
+        supabase.from('commission_rates').select('*'),
+        supabase.from('sales_records')
+          .select('profit, product:products(type)')
+          .eq('created_by', user.id)
+          .gte('date', startOfMonth)
+          .lte('date', endOfMonth)
+      ]);
+
+      if (ratesData.data) {
+        companyRates = ratesData.data.filter(r => r.type === 'company');
+        selfRates = ratesData.data.filter(r => r.type === 'self_researched');
+      }
+
+      if (salesData.data) {
+        salesData.data.forEach((sale: any) => {
+          const type = sale.product?.type || 'company';
+          if (type === 'self_researched') {
+            prevSelfProfit += sale.profit || 0;
+          } else {
+            prevCompanyProfit += sale.profit || 0;
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Error preparing achievement check:', err);
+    }
+
     const { error } = await supabase.from('sales_records').insert(records);
 
     if (error) {
       toast.error('Error saving records: ' + error.message);
     } else {
       toast.success('Daily records submitted successfully!');
+
+      // Calculate newly added profit
+      let addedCompanyProfit = 0;
+      let addedSelfProfit = 0;
+
+      records.forEach(r => {
+        const product = products.find(p => p.id === r.product_id);
+        const type = product?.type || 'company';
+        if (type === 'self_researched') {
+          addedSelfProfit += r.profit;
+        } else {
+          addedCompanyProfit += r.profit;
+        }
+      });
+
+      // Check thresholds
+      if (addedCompanyProfit > 0 && companyRates.length > 0) {
+        const current = prevCompanyProfit + addedCompanyProfit;
+        const crossed = checkThresholdCrossed(prevCompanyProfit, current, companyRates);
+        if (crossed) {
+          sendAchievementNotification(user.id, crossed.level, current, crossed.threshold);
+        }
+      }
+
+      if (addedSelfProfit > 0 && selfRates.length > 0) {
+        const current = prevSelfProfit + addedSelfProfit;
+        const crossed = checkThresholdCrossed(prevSelfProfit, current, selfRates);
+        if (crossed) {
+          sendAchievementNotification(user.id, crossed.level, current, crossed.threshold);
+        }
+      }
+
       setItems([{ productId: products[0]?.id || '', quantity: '' }]);
       setIsModalOpen(false);
       setRefresh(prev => prev + 1);

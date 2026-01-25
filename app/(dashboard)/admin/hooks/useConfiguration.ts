@@ -8,7 +8,7 @@ export function useConfiguration(refresh: number) {
   const [loading, setLoading] = useState(false);
   const [commissionRates, setCommissionRates] = useState<CommissionRate[]>([]);
   const [baseKpi, setBaseKpi] = useState<number>(500);
-  
+
   const supabase = createClient();
 
   useEffect(() => {
@@ -25,13 +25,13 @@ export function useConfiguration(refresh: number) {
           .from('app_settings')
           .select('value')
           .eq('key', 'base_kpi')
-          .single();
+          .maybeSingle();
         if (settings) setBaseKpi(parseFloat(settings.value));
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, [supabase, refresh]);
 

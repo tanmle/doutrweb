@@ -10,6 +10,7 @@ import {
     ConfigurationTab,
     AdminTableStyles,
 } from '../components';
+import { useRealtime } from '@/hooks/useRealtime';
 
 export default function AdminConfigurationPage() {
     const [loading, setLoading] = useState(false);
@@ -25,6 +26,16 @@ export default function AdminConfigurationPage() {
         baseKpi,
         setBaseKpi
     } = useConfiguration(refresh);
+
+    useRealtime({
+        table: 'commission_rates',
+        onData: () => setRefresh(prev => prev + 1)
+    });
+
+    useRealtime({
+        table: 'app_settings',
+        onData: () => setRefresh(prev => prev + 1)
+    });
 
     const handleCommissionChange = (id: string, field: string, value: string) => {
         setCommissionRates(prev => prev.map(rate =>

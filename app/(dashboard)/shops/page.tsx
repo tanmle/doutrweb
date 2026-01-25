@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { createClient } from '@/utils/supabase/client';
 import { cards } from '@/styles/modules';
 import { ShopModal, ShopsTable, ShopHistoryModal } from './components';
+import { useRealtime } from '@/hooks/useRealtime';
 import styles from './ShopsPage.module.css';
 
 export default function ShopsPage() {
@@ -148,6 +149,15 @@ export default function ShopsPage() {
       refreshShopsScoped();
     }
   }, [ownerFilter, statusFilter, showArchived, initialLoading]);
+
+  // Real-time subscription for shops
+  useRealtime({
+    table: 'shops',
+    onData: () => {
+      // Refresh the list when any change happens to shops
+      refreshShopsScoped();
+    }
+  });
 
 
   const handleEditClick = (shop: any) => {
