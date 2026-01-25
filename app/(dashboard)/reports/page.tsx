@@ -6,17 +6,68 @@ import { Button } from '@/components/ui/Button';
 import { createClient } from '@/utils/supabase/client';
 import { layouts, cards, tables, filters } from '@/styles/modules';
 
+type FilterType = 'daily' | 'weekly' | 'monthly';
+
 export default function ReportsPage() {
     const [sales, setSales] = useState<any[]>([]);
+    const [filter, setFilter] = useState<FilterType>('monthly');
+    const [userFilter, setUserFilter] = useState<string>('all');
+    const [loading, setLoading] = useState(false);
+    const [profiles, setProfiles] = useState<any[]>([]);
+    const [userRole, setUserRole] = useState<string>('member');
+
     const supabase = createClient();
 
+    // Fetch Profiles for Filter
     useEffect(() => {
-        const fetchSales = async () => {
+        const fetchProfiles = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
             const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-            if (!profile) return;
+            const role = profile?.role || 'member';
+            setUserRole(role);
+
+            if (role === 'admin') {
+                const { data } = await supabase
+                    .from('profiles')
+                    .select('id, full_name, email')
+                    .neq('role', 'admin')
+                    .order('full_name');
+                if (data) setProfiles(data);
+            } else if (role === 'leader') {
+                const { data } = await supabase
+                    .from('profiles')
+                    .select('id, full_name, email')
+                    .or(`id.eq.${user.id},leader_id.eq.${user.id}`)
+                    .order('full_name');
+                if (data) setProfiles(data);
+            }
+        };
+        fetchProfiles();
+    }, [supabase]);
+
+    useEffect(() => {
+        const fetchSales = async () => {
+            setLoading(true);
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            // Determine start date based on filter
+            const startDate = new Date();
+            startDate.setHours(0, 0, 0, 0); // Start of today
+
+            if (filter === 'weekly') {
+                // This Week (Monday start)
+                const day = startDate.getDay();
+                const diff = startDate.getDate() - day + (day === 0 ? -6 : 1);
+                startDate.setDate(diff);
+            } else if (filter === 'monthly') {
+                // This Month
+                startDate.setDate(1);
+            }
+
+            const dateStr = startDate.toISOString().split('T')[0];
 
             let query = supabase
                 .from('sales_records')
@@ -24,44 +75,98 @@ export default function ReportsPage() {
                 id, date, revenue, profit, status,
                 shops!inner (name, owner_id)
             `)
-                .order('date', { ascending: false })
-                .limit(20);
+                .gte('date', dateStr)
+                .order('date', { ascending: false });
 
-            if (profile.role === 'admin') {
-                // Admin sees all
-            } else if (profile.role === 'leader') {
-                const { data: members } = await supabase.from('profiles').select('id').eq('leader_id', user.id);
-                const teamIds = [user.id, ...(members?.map(m => m.id) || [])];
-                query = query.in('shops.owner_id', teamIds);
+            // Apply User Filter (if specific user selected)
+            if (userFilter !== 'all') {
+                query = query.eq('shops.owner_id', userFilter);
             } else {
-                // Member
-                query = query.eq('shops.owner_id', user.id);
+                // Apply Role Logic if 'all' is selected (or restricted by default)
+                if (userRole === 'admin') {
+                    // Admin sees all (no extra filter needed)
+                } else if (userRole === 'leader') {
+                    const { data: members } = await supabase.from('profiles').select('id').eq('leader_id', user.id);
+                    const teamIds = [user.id, ...(members?.map(m => m.id) || [])];
+                    query = query.in('shops.owner_id', teamIds);
+                } else {
+                    // Member sees self
+                    query = query.eq('shops.owner_id', user.id);
+                }
             }
 
             const { data, error } = await query;
             if (error) console.error('Error fetching report sales:', error);
             if (data) setSales(data);
+            setLoading(false);
         };
+
+        // Only fetch if userRole is determined (or default member handles it, 
+        // but better to wait for profile fetch to know if we can show filter)
+        // Actually, userRole 'member' default is safe, it just restricts.
         fetchSales();
-    }, [supabase]);
+    }, [supabase, filter, userFilter, userRole]);
+
+    const getFilterLabel = () => {
+        switch (filter) {
+            case 'daily': return 'Today';
+            case 'weekly': return 'This Week';
+            case 'monthly': return 'This Month';
+            default: return '';
+        }
+    };
 
     return (
         <div className={layouts.pageContainer}>
             <div className={layouts.pageHeaderWithActions}>
                 <h1 className={layouts.pageHeader} style={{ margin: 0 }}>Performance Reports</h1>
-                <div className={filters.filterButtons}>
-                    <Button variant="secondary">Daily</Button>
-                    <Button variant="secondary">Weekly</Button>
-                    <Button variant="primary">Monthly</Button>
+
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    {['admin', 'leader'].includes(userRole) && (
+                        <select
+                            value={userFilter}
+                            onChange={(e) => setUserFilter(e.target.value)}
+                            className={filters.filterSelect}
+                            style={{ width: 'auto', maxWidth: '200px' }}
+                        >
+                            <option value="all">All Users</option>
+                            {profiles.map(p => (
+                                <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
+                            ))}
+                        </select>
+                    )}
+
+                    <div className={filters.filterButtons}>
+                        <Button
+                            variant={filter === 'daily' ? 'primary' : 'secondary'}
+                            onClick={() => setFilter('daily')}
+                        >
+                            Daily
+                        </Button>
+                        <Button
+                            variant={filter === 'weekly' ? 'primary' : 'secondary'}
+                            onClick={() => setFilter('weekly')}
+                        >
+                            Weekly
+                        </Button>
+                        <Button
+                            variant={filter === 'monthly' ? 'primary' : 'secondary'}
+                            onClick={() => setFilter('monthly')}
+                        >
+                            Monthly
+                        </Button>
+                    </div>
                 </div>
             </div>
 
             <div className={cards.cardGridTwoCol}>
                 <Card className={cards.statCard}>
-                    <div className={cards.statLabel}>Team Leader View</div>
-                    <div className={cards.statValue}>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(sales.reduce((acc, curr) => acc + (curr.profit || 0), 0))}</div>
+                    <div className={cards.statLabel}>Total Profit ({getFilterLabel()})</div>
+                    <div className={cards.statValue}>
+                        {loading ? '...' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(sales.reduce((acc, curr) => acc + (curr.profit || 0), 0))}
+                    </div>
                     <div className={cards.statChange}>
-                        <span className={cards.statChangePositive}>Total Profit (All Time)</span>
+                        <span className={cards.statChangePositive}>{sales.length} records</span>
                     </div>
                 </Card>
                 <Card className={cards.statCard}>
@@ -76,7 +181,7 @@ export default function ReportsPage() {
             <div className={layouts.spacingYLarge}></div>
 
             <Card>
-                <h3 className={layouts.sectionHeader}>Recent Sales Records (Real-time)</h3>
+                <h3 className={layouts.sectionHeader}>Sales Records ({getFilterLabel()})</h3>
                 <div className={tables.tableWrapper}>
                     <table className={tables.table}>
                         <thead>
@@ -85,22 +190,22 @@ export default function ReportsPage() {
                                 <th>Shop</th>
                                 <th>Revenue</th>
                                 <th>Profit</th>
-                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             {sales.length === 0 ? (
-                                <tr><td colSpan={5} className={layouts.textCenter} style={{ padding: '2rem' }}>No records found</td></tr>
+                                <tr><td colSpan={4} className={layouts.textCenter} style={{ padding: '2rem' }}>
+                                    {loading ? 'Loading...' : 'No records found for this period'}
+                                </td></tr>
                             ) : (
                                 sales.map((sale) => (
                                     <tr key={sale.id}>
                                         <td data-label="Date">{sale.date}</td>
                                         <td data-label="Shop">{sale.shops?.name || 'Unknown Shop'}</td>
-                                        <td data-label="Revenue">${sale.revenue.toLocaleString()}</td>
+                                        <td data-label="Revenue">${Number(sale.revenue).toLocaleString()}</td>
                                         <td data-label="Profit" style={{ color: sale.profit > 0 ? '#10b981' : '#f87171' }}>
-                                            {sale.profit > 0 ? '+' : ''}${sale.profit.toLocaleString()}
+                                            {sale.profit > 0 ? '+' : ''}${Number(sale.profit).toLocaleString()}
                                         </td>
-                                        <td data-label="Status" style={{ textTransform: 'capitalize' }}>{sale.status}</td>
                                     </tr>
                                 ))
                             )}
