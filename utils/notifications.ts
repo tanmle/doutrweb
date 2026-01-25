@@ -41,13 +41,23 @@ export async function sendAchievementNotification(
             .replace('{profit}', profit.toFixed(2))
             .replace('{threshold}', threshold.toFixed(2));
 
+        // Fetch admins to also notify them
+        const { data: admins } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('role', 'admin');
+
+        const adminIds = admins?.map(a => a.id) || [];
+        // Combine userId and adminIds, removing duplicates
+        const recipients = Array.from(new Set([userId, ...adminIds]));
+
         // Send notification using the database function
         const { data, error } = await supabase.rpc('send_notification', {
             p_sender_id: null, // System notification
             p_title: title,
             p_message: message,
             p_type: 'achievement',
-            p_recipient_ids: [userId],
+            p_recipient_ids: recipients,
             p_metadata: {
                 level,
                 profit,

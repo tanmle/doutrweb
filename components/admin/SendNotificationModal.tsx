@@ -70,6 +70,9 @@ export function SendNotificationModal({
                 recipientIds = selectedUsers;
             }
 
+            // Exclude sender from receiving their own notification
+            recipientIds = recipientIds.filter(id => id !== senderId);
+
             if (recipientIds.length === 0) {
                 toast.error('No recipients selected');
                 setSending(false);

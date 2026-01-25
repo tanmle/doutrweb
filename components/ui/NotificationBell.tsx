@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { useNotifications } from '@/hooks/useNotifications';
-import { NotificationItem } from './NotificationItem';
+import { NotificationItem } from '@/components/ui/NotificationItem';
 import styles from './NotificationBell.module.css';
 
 export function NotificationBell() {
@@ -12,10 +12,22 @@ export function NotificationBell() {
     const dropdownRef = useRef<HTMLDivElement>(null);
     const { notifications, unreadCount, loading, markAllAsRead } = useNotifications();
     const [mounted, setMounted] = useState(false);
+    const [isRinging, setIsRinging] = useState(false);
+    const prevUnreadCount = useRef(unreadCount);
 
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    // Trigger ring effect when unread count increases
+    useEffect(() => {
+        if (unreadCount > prevUnreadCount.current) {
+            setIsRinging(true);
+            const timer = setTimeout(() => setIsRinging(false), 2000); // multiple cycles of 1.5s animation
+            return () => clearTimeout(timer);
+        }
+        prevUnreadCount.current = unreadCount;
+    }, [unreadCount]);
 
     // Calculate position on open
     useEffect(() => {
@@ -79,7 +91,17 @@ export function NotificationBell() {
         await markAllAsRead();
     };
 
-    const recentNotifications = notifications.slice(0, 5);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth <= 640);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    const limit = isMobile ? 3 : 5;
+    const recentNotifications = notifications.slice(0, limit);
 
     const DropdownContent = (
         <div
@@ -147,7 +169,7 @@ export function NotificationBell() {
         <>
             <button
                 ref={bellRef}
-                className={`${styles.notificationBell} ${unreadCount > 0 ? styles.hasUnread : ''}`}
+                className={`${styles.notificationBell} ${unreadCount > 0 ? styles.hasUnread : ''} ${isRinging ? styles.ringing : ''}`}
                 onClick={() => setIsOpen(!isOpen)}
                 aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
             >

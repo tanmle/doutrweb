@@ -12,12 +12,35 @@ type NotificationItemProps = {
 
 export function NotificationItem({ notification, onClick }: NotificationItemProps) {
     const { markAsRead } = useNotifications();
+    const [menuOpen, setMenuOpen] = React.useState(false);
+    const menuRef = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setMenuOpen(false);
+            }
+        };
+        if (menuOpen) document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [menuOpen]);
 
     const handleClick = () => {
         if (!notification.read_at) {
             markAsRead(notification.id);
         }
         onClick?.();
+    };
+
+    const handleMenuClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setMenuOpen(!menuOpen);
+    };
+
+    const handleMarkRead = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        markAsRead(notification.id);
+        setMenuOpen(false);
     };
 
     const getIcon = (type: string) => {
@@ -55,7 +78,24 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
             <div className={styles.content}>
                 <div className={styles.header}>
                     <h4 className={styles.title}>{notification.title}</h4>
-                    {!notification.read_at && <div className={styles.unreadDot} />}
+                    <button
+                        className={`${styles.menuButton} ${menuOpen ? styles.menuOpen : ''}`}
+                        onClick={handleMenuClick}
+                    >
+                        ⋮
+                    </button>
+                    {menuOpen && (
+                        <div className={styles.menuDropdown} ref={menuRef}>
+                            {!notification.read_at && (
+                                <button className={styles.menuItem} onClick={handleMarkRead}>
+                                    Mark as read
+                                </button>
+                            )}
+                            <button className={styles.menuItem} onClick={(e) => { e.stopPropagation(); /* TODO: Delete/Archive */ }}>
+                                Format Time
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <p className={styles.message}>{notification.message}</p>

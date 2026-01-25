@@ -1,106 +1,115 @@
-.notificationBell {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.notificationBell:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: var(--primary);
-    transform: scale(1.05);
-}
-
-.notificationBell.hasUnread {
-    animation: bellShake 0.5s ease;
-}
-
-@keyframes bellShake {
-
-    0%,
-    100% {
-        transform: rotate(0deg);
+@keyframes ring {
+    0% {
+        transform: rotate(0);
     }
 
-    25% {
+    10% {
+        transform: rotate(15deg);
+    }
+
+    20% {
         transform: rotate(-15deg);
     }
 
-    75% {
-        transform: rotate(15deg);
+    30% {
+        transform: rotate(12deg);
+    }
+
+    40% {
+        transform: rotate(-12deg);
+    }
+
+    50% {
+        transform: rotate(9deg);
+    }
+
+    60% {
+        transform: rotate(-9deg);
+    }
+
+    70% {
+        transform: rotate(6deg);
+    }
+
+    80% {
+        transform: rotate(-6deg);
+    }
+
+    90% {
+        transform: rotate(3deg);
+    }
+
+    100% {
+        transform: rotate(0);
     }
 }
 
-.bellIcon {
-    font-size: 1.25rem;
-    color: var(--muted-foreground);
-    transition: color 0.2s ease;
+.notificationBell {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: all 0.2s;
 }
 
-.notificationBell:hover .bellIcon {
-    color: var(--primary);
+.notificationBell:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+}
+
+.bellIcon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+.ringing .bellIcon {
+    animation: ring 1.5s ease-in-out infinite;
+    transform-origin: top center;
 }
 
 .badge {
     position: absolute;
-    top: -4px;
-    right: -4px;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    background: linear-gradient(135deg, #ef4444, #dc2626);
+    top: 4px;
+    right: 4px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: #ff4d4f;
     color: white;
-    font-size: 0.65rem;
+    font-size: 10px;
     font-weight: 700;
-    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     border: 2px solid var(--background);
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
-    animation: badgePop 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-@keyframes badgePop {
-    0% {
-        transform: scale(0);
-    }
-
-    50% {
-        transform: scale(1.2);
-    }
-
-    100% {
-        transform: scale(1);
-    }
 }
 
 .dropdown {
     position: fixed;
-    /* Calculated via JS for desktop, 0 for mobile */
-    width: 380px;
-    max-height: 500px;
-    background: linear-gradient(135deg, rgba(15, 15, 17, 0.98), rgba(8, 8, 10, 0.98));
+    z-index: 1000;
+    width: 360px;
+    background: #1a1b1e;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(12px);
-    overflow: hidden;
-    z-index: 9999;
-    animation: dropdownSlide 0.2s ease;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
+    animation: slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes dropdownSlide {
+@keyframes slideIn {
     from {
         opacity: 0;
-        transform: translateY(-10px);
+        transform: translateY(-8px);
     }
 
     to {
@@ -109,52 +118,60 @@
     }
 }
 
+@media (max-width: 640px) {
+    .dropdown {
+        position: fixed;
+        width: auto;
+        left: 16px !important;
+        right: 16px !important;
+        top: 70px !important;
+        height: auto;
+        max-height: 75vh;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+}
+
 .dropdownHeader {
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(15, 15, 17, 0.98);
+    background: rgba(255, 255, 255, 0.02);
 }
 
 .dropdownTitle {
-    font-size: 0.95rem;
+    margin: 0;
+    font-size: 16px;
     font-weight: 600;
-    color: var(--foreground);
+    color: var(--text-primary);
 }
 
 .markAllRead {
-    font-size: 0.75rem;
-    color: var(--primary);
     background: none;
     border: none;
+    color: var(--primary);
+    font-size: 12px;
     cursor: pointer;
-    padding: 0.25rem 0.5rem;
+    font-weight: 500;
+    padding: 4px 8px;
     border-radius: 4px;
-    transition: all 0.2s ease;
 }
 
 .markAllRead:hover {
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .closeButton {
     display: none;
     background: none;
     border: none;
-    color: var(--muted-foreground);
-    font-size: 1.5rem;
-    padding: 0.5rem;
-    line-height: 1;
+    color: var(--text-secondary);
+    font-size: 20px;
     cursor: pointer;
-    border-radius: 50%;
-    transition: background 0.2s;
-}
-
-.closeButton:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--foreground);
+    padding: 4px;
 }
 
 @media (max-width: 640px) {
@@ -164,103 +181,49 @@
 }
 
 .notificationList {
-    max-height: 400px;
+    flex: 1;
     overflow-y: auto;
-}
-
-.notificationList::-webkit-scrollbar {
-    width: 6px;
-}
-
-.notificationList::-webkit-scrollbar-thumb {
-    background: var(--muted);
-    border-radius: 3px;
+    padding: 0;
 }
 
 .emptyState {
-    padding: 3rem 1.5rem;
+    padding: 32px 16px;
     text-align: center;
-    color: var(--muted-foreground);
+    color: var(--text-tertiary);
 }
 
 .emptyIcon {
-    font-size: 3rem;
-    margin-bottom: 0.5rem;
-    opacity: 0.3;
+    font-size: 32px;
+    margin-bottom: 8px;
+    opacity: 0.5;
 }
 
 .emptyText {
-    font-size: 0.875rem;
+    margin: 0;
+    font-size: 14px;
 }
 
 .viewAll {
-    padding: 0.75rem 1.25rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    text-align: center;
+    padding: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.02);
 }
 
 .viewAllLink {
-    font-size: 0.875rem;
-    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 8px;
+    color: var(--text-secondary);
     text-decoration: none;
+    font-size: 13px;
     font-weight: 500;
-    transition: color 0.2s ease;
+    border-radius: 6px;
+    transition: all 0.2s;
 }
 
 .viewAllLink:hover {
-    color: var(--accent);
-}
-
-@media (max-width: 640px) {
-    .notificationBell {
-        position: static;
-    }
-
-    .dropdown {
-        position: fixed !important;
-        /* Important to override inline styles from portal positioning */
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        bottom: 0 !important;
-        width: 100vw;
-        height: 100vh;
-        max-height: 100vh;
-        border-radius: 0;
-        border: none;
-        background: #09090b;
-        /* Solid background for mobile */
-        display: flex;
-        flex-direction: column;
-        animation: mobileSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes mobileSlideIn {
-        from {
-            transform: translateY(100%);
-            opacity: 0;
-        }
-
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    }
-
-    .dropdownHeader {
-        padding: 1rem 1.25rem;
-        height: 64px;
-        flex-shrink: 0;
-    }
-
-    .notificationList {
-        flex: 1;
-        max-height: none;
-    }
-
-    .viewAll {
-        background: #09090b;
-        padding-bottom: max(2rem, env(safe-area-inset-bottom));
-        flex-shrink: 0;
-    }
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
 }

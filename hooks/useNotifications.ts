@@ -4,16 +4,26 @@ import { useEffect, useState, useCallback } from 'react';
 import { useSupabase } from '@/contexts/SupabaseContext';
 import type { NotificationWithStatus } from '@/types/notifications';
 
+import { useRealtime } from '@/hooks/useRealtime';
+
 export function useNotifications() {
     const supabase = useSupabase();
     const [notifications, setNotifications] = useState<NotificationWithStatus[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+    useEffect(() => {
+        const getUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) setCurrentUserId(user.id);
+        };
+        getUser();
+    }, [supabase]);
 
     const fetchNotifications = useCallback(async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+            if (!currentUserId) return;
 
             const { data, error } = await supabase
                 .from('notification_recipients')
@@ -33,7 +43,7 @@ export function useNotifications() {
             metadata
           )
         `)
-                .eq('recipient_id', user.id)
+                .eq('recipient_id', currentUserId)
                 .order('created_at', { ascending: false })
                 .limit(50);
 
@@ -52,7 +62,7 @@ export function useNotifications() {
         } finally {
             setLoading(false);
         }
-    }, [supabase]);
+    }, [supabase, currentUserId]);
 
     const markAsRead = useCallback(async (notificationId: string) => {
         try {
@@ -110,53 +120,20 @@ export function useNotifications() {
         }
     }, [supabase, notifications]);
 
-    // Subscribe to real-time updates
+    // Initial fetch when user ID is available
     useEffect(() => {
-        fetchNotifications();
+        if (currentUserId) {
+            fetchNotifications();
+        }
+    }, [currentUserId, fetchNotifications]);
 
-        let channel: ReturnType<typeof supabase.channel> | null = null;
-
-        const setupRealtimeSubscription = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            channel = supabase
-                .channel('notifications')
-                .on(
-                    'postgres_changes',
-                    {
-                        event: 'INSERT',
-                        schema: 'public',
-                        table: 'notification_recipients',
-                        filter: `recipient_id=eq.${user.id}`,
-                    },
-                    () => {
-                        fetchNotifications();
-                    }
-                )
-                .on(
-                    'postgres_changes',
-                    {
-                        event: 'UPDATE',
-                        schema: 'public',
-                        table: 'notification_recipients',
-                        filter: `recipient_id=eq.${user.id}`,
-                    },
-                    () => {
-                        fetchNotifications();
-                    }
-                )
-                .subscribe();
-        };
-
-        setupRealtimeSubscription();
-
-        return () => {
-            if (channel) {
-                supabase.removeChannel(channel);
-            }
-        };
-    }, [supabase, fetchNotifications]);
+    // Robust Real-time subscription using universal hook (relying on RLS)
+    useRealtime({
+        table: 'notification_recipients',
+        onData: () => {
+            fetchNotifications();
+        }
+    }, [currentUserId]);
 
     return {
         notifications,
