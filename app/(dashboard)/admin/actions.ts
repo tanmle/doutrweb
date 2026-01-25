@@ -1,44 +1,56 @@
 'use server';
 
 import { createAdminClient } from '@/utils/supabase/admin';
+import { createUserSchema } from '@/lib/validations';
+import { z } from 'zod';
 
-export async function createUser(data: any) {
-  const supabase = createAdminClient();
-  const { email, password, full_name, role, leader_id, bank_name, bank_number, base_salary } = data;
+export async function createUser(rawData: unknown) {
+  try {
+    // Validate input
+    const data = createUserSchema.parse(rawData);
 
-  // 1. Create User in Supabase Auth
-  const { data: userData, error: userError } = await supabase.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: { full_name }
-  });
+    const supabase = createAdminClient();
+    const { email, password, full_name, role, leader_id, bank_name, bank_number, base_salary } = data;
 
-  if (userError) {
-    return { error: userError.message };
-  }
+    // 1. Create User in Supabase Auth
+    const { data: userData, error: userError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name }
+    });
 
-  if (userData.user) {
-    // 2. Profile creation is handled by the Trigger.
-    // We update it with the selected role and leader_id.
-    const { error: profileError } = await supabase
+    if (userError) {
+      return { error: userError.message };
+    }
+
+    if (userData.user) {
+      // 2. Profile creation is handled by the Trigger.
+      // We update it with the selected role and leader_id.
+      const { error: profileError } = await supabase
         .from('profiles')
-        .update({ 
-            role: role || 'member',
-            leader_id: (role === 'member' || !role) ? (leader_id || null) : null,
-            bank_name: bank_name || null,
-            bank_number: bank_number || null,
-            base_salary: base_salary || 0
+        .update({
+          role: role || 'member',
+          leader_id: (role === 'member' || !role) ? (leader_id || null) : null,
+          bank_name: bank_name || null,
+          bank_number: bank_number || null,
+          base_salary: base_salary || 0
         })
         .eq('id', userData.user.id);
-    
-    if (profileError) {
-         return { error: 'User created but failed to update profile: ' + profileError.message };
-    }
-    return { success: true };
-  }
 
-  return { error: 'Unknown error occurred' };
+      if (profileError) {
+        return { error: 'User created but failed to update profile: ' + profileError.message };
+      }
+      return { success: true };
+    }
+
+    return { error: 'Unknown error occurred' };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { error: error.issues[0].message };
+    }
+    return { error: 'Validation failed' };
+  }
 }
 
 export async function deleteUser(id: string) {

@@ -3,7 +3,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
-import { createClient } from '@/utils/supabase/client';
+import { StatCard } from '@/components/ui/StatCard';
+import { KPICard } from './components/KPICard';
+import { useSupabase } from '@/contexts/SupabaseContext';
+import { formatCurrency, formatDateKey, parseDateKey } from '@/utils/formatters';
+import { APP_CONSTANTS, AREA_COLORS } from '@/constants/app';
 import { cards, layouts, filters, forms, dashboard } from '@/styles/modules';
 import {
   ResponsiveContainer,
@@ -52,29 +56,7 @@ type DateRange = {
   end: string;
 };
 
-const AREA_COLORS = [
-  'var(--primary)',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
-  '#ec4899',
-  '#06b6d4',
-];
-
 const getAreaColor = (index: number) => AREA_COLORS[index % AREA_COLORS.length];
-
-const formatDateKey = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
-const parseDateKey = (dateKey: string) => {
-  const [year, month, day] = dateKey.split('-').map(Number);
-  return new Date(year, (month ?? 1) - 1, day ?? 1);
-};
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
@@ -94,7 +76,7 @@ export default function DashboardPage() {
   const [role, setRole] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>({ start: '', end: '' });
 
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = useSupabase();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -118,7 +100,7 @@ export default function DashboardPage() {
           .select('value')
           .eq('key', 'base_kpi')
           .single();
-        const baseKpi = settings ? parseFloat(settings.value) : 500;
+        const baseKpi = settings ? parseFloat(settings.value) : APP_CONSTANTS.DEFAULT_BASE_KPI;
 
         // Fetch Commission Rates (for targets)
         const { data: rates } = await supabase
@@ -249,14 +231,9 @@ export default function DashboardPage() {
       }
     };
     fetchStats();
-  }, [supabase]);
+  }, []); // Removed supabase - it's stable from context
 
   const progress = Math.min((stats.currentKPI / stats.targetKPI) * 100, 100);
-
-  const currencyFormatter = useMemo(() => new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  }), []);
 
   const filteredChartData = useMemo(() => {
     if (chartData.length === 0) return chartData;
@@ -317,57 +294,24 @@ export default function DashboardPage() {
       <h1 className={layouts.sectionHeader}>Today's Overview</h1>
 
       <div className={cards.cardGridThreeCol}>
-        <Card className={cards.statCard}>
-          <span className={cards.statLabel}>Today's Sales: </span>
-          <span className={cards.statValue}>{stats.todaySales.toLocaleString()} items</span>
-          <span className={cards.statChange}>
-            <span className={cards.statChangePositive}>Units Sold Today</span>
-          </span>
-        </Card>
+        <StatCard
+          label="Today's Sales"
+          value={stats.todaySales}
+          subtext="Items Sold Today"
+        />
 
-        <Card className={cards.statCard}>
-          <span className={cards.statLabel}>Today's Revenue: </span>
-          <span className={cards.statValue}>{currencyFormatter.format(stats.todayRevenue)}</span>
-          <span className={cards.statChange}>
-            <span>Gross Revenue Today</span>
-          </span>
-        </Card>
+        <StatCard
+          label="Today's Revenue"
+          value={formatCurrency(stats.todayRevenue)}
+          subtext="Gross Revenue Today"
+        />
 
-        <Card className={cards.statCard}>
-          {/* Enhanced KPI Progress Card */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span className={cards.statLabel} style={{ marginBottom: 0 }}>Monthly KPI Progress</span>
-
-            {stats.currentLevel > 0 && (
-              <span className={dashboard.kpiLevelBadge} style={{ marginBottom: 0 }}>
-                Level {stats.currentLevel} Achieved! 🎉
-              </span>
-            )}
-          </div>
-
-          <div className={`${layouts.flexRowSpaced} ${dashboard.kpiHeader}`}>
-            <span className={cards.statValue}>{progress.toFixed(1)}%</span>
-            <span className={layouts.textMuted}>Next target: {currencyFormatter.format(stats.targetKPI)}</span>
-          </div>
-
-          <div className={dashboard.progressBarContainer}>
-            <div
-              className={dashboard.progressBarFill}
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-
-          <div className={dashboard.kpiNextTarget}>
-            <span>MTD Profit: {currencyFormatter.format(stats.monthlyProfit)}</span>
-            <span>
-              {progress >= 100 ? (
-                <span className={dashboard.kpiCongratulation}>Target Met!</span>
-              ) : (
-                `$${(stats.targetKPI - stats.currentKPI).toLocaleString()} to Next Level`
-              )}
-            </span>
-          </div>
-        </Card>
+        <KPICard
+          currentKPI={stats.currentKPI}
+          targetKPI={stats.targetKPI}
+          monthlyProfit={stats.monthlyProfit}
+          currentLevel={stats.currentLevel}
+        />
       </div>
 
       <div className={layouts.spacingYLarge}></div>
@@ -469,7 +413,7 @@ export default function DashboardPage() {
                     contentStyle={{ background: '#1a1a1a', border: '1px solid var(--border)', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)' }}
                     itemStyle={{ fontSize: '12px', padding: '2px 0' }}
                     labelStyle={{ fontWeight: 'bold', marginBottom: '4px', color: 'var(--primary)' }}
-                    formatter={(value: any, name?: string) => [currencyFormatter.format(Number(value || 0)), name || 'Revenue']}
+                    formatter={(value: any, name?: string) => [formatCurrency(Number(value || 0)), name || 'Revenue']}
                   />
                   <Legend verticalAlign="top" height={40} iconType="circle" />
                   {memberNamesToRender.map((name, index) => (

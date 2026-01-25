@@ -3,20 +3,42 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { createClient } from '@/utils/supabase/client';
+import { StatCard } from '@/components/ui/StatCard';
+import { useSupabase } from '@/contexts/SupabaseContext';
+import { formatCurrency } from '@/utils/formatters';
 import { layouts, cards, tables, filters } from '@/styles/modules';
 
 type FilterType = 'daily' | 'weekly' | 'monthly';
 
+interface Profile {
+    id: string;
+    full_name: string | null;
+    email: string;
+}
+
+interface Shop {
+    name: string;
+    owner_id: string;
+}
+
+interface SalesRecord {
+    id: string;
+    date: string;
+    revenue: number;
+    profit: number;
+    status?: string;
+    shops: Shop | Shop[] | null; // Supabase can return array with !inner join
+}
+
 export default function ReportsPage() {
-    const [sales, setSales] = useState<any[]>([]);
+    const [sales, setSales] = useState<SalesRecord[]>([]);
     const [filter, setFilter] = useState<FilterType>('monthly');
     const [userFilter, setUserFilter] = useState<string>('all');
     const [loading, setLoading] = useState(false);
-    const [profiles, setProfiles] = useState<any[]>([]);
+    const [profiles, setProfiles] = useState<Profile[]>([]);
     const [userRole, setUserRole] = useState<string>('member');
 
-    const supabase = createClient();
+    const supabase = useSupabase();
 
     // Fetch Profiles for Filter
     useEffect(() => {
@@ -45,7 +67,7 @@ export default function ReportsPage() {
             }
         };
         fetchProfiles();
-    }, [supabase]);
+    }, []); // Removed supabase - it's stable from context
 
     useEffect(() => {
         const fetchSales = async () => {
@@ -97,7 +119,7 @@ export default function ReportsPage() {
 
             const { data, error } = await query;
             if (error) console.error('Error fetching report sales:', error);
-            if (data) setSales(data);
+            if (data) setSales(data as SalesRecord[]);
             setLoading(false);
         };
 
@@ -105,7 +127,7 @@ export default function ReportsPage() {
         // but better to wait for profile fetch to know if we can show filter)
         // Actually, userRole 'member' default is safe, it just restricts.
         fetchSales();
-    }, [supabase, filter, userFilter, userRole]);
+    }, [filter, userFilter, userRole]); // Removed supabase - it's stable from context
 
     const getFilterLabel = () => {
         switch (filter) {
@@ -159,16 +181,13 @@ export default function ReportsPage() {
                 </div>
             </div>
 
-            <div className={cards.cardGridTwoCol}>
-                <Card className={cards.statCard}>
-                    <div className={cards.statLabel}>Total Profit ({getFilterLabel()})</div>
-                    <div className={cards.statValue}>
-                        {loading ? '...' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(sales.reduce((acc, curr) => acc + (curr.profit || 0), 0))}
-                    </div>
-                    <div className={cards.statChange}>
-                        <span className={cards.statChangePositive}>{sales.length} records</span>
-                    </div>
-                </Card>
+            <div className={layouts.grid}>
+                <StatCard
+                    label={`Total Profit (${getFilterLabel()})`}
+                    value={loading ? '...' : formatCurrency(sales.reduce((acc, curr) => acc + (curr.profit || 0), 0))}
+                    subtext={`${sales.length} records`}
+                    variant="success"
+                />
                 <Card className={cards.statCard}>
                     <div className={cards.statLabel}>Recent Activity</div>
                     <div className={cards.statValue}>{sales[0]?.date || 'N/A'}</div>
@@ -201,7 +220,11 @@ export default function ReportsPage() {
                                 sales.map((sale) => (
                                     <tr key={sale.id}>
                                         <td data-label="Date">{sale.date}</td>
-                                        <td data-label="Shop">{sale.shops?.name || 'Unknown Shop'}</td>
+                                        <td data-label="Shop">
+                                            {Array.isArray(sale.shops)
+                                                ? sale.shops[0]?.name || 'Unknown Shop'
+                                                : sale.shops?.name || 'Unknown Shop'}
+                                        </td>
                                         <td data-label="Revenue">${Number(sale.revenue).toLocaleString()}</td>
                                         <td data-label="Profit" style={{ color: sale.profit > 0 ? '#10b981' : '#f87171' }}>
                                             {sale.profit > 0 ? '+' : ''}${Number(sale.profit).toLocaleString()}

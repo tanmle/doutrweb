@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ToastProvider } from "@/components/ui/ToastProvider";
+import { SupabaseProvider } from "@/contexts/SupabaseContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import "./globals.css";
 
 const inter = Inter({
@@ -21,9 +23,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable}`}>
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <ErrorBoundary>
+          <SupabaseProvider>
+            <ToastProvider>
+              {children}
+            </ToastProvider>
+          </SupabaseProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

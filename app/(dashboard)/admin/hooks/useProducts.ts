@@ -1,15 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { useSupabase } from '@/contexts/SupabaseContext';
 import type { Product, Profile } from '../utils/types';
 
 export function useProducts(refresh: number) {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  
-  const supabase = createClient();
+
+  const supabase = useSupabase();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -20,7 +20,7 @@ export function useProducts(refresh: number) {
           .select('*, owner_profile:profiles!owner_id(full_name, email)')
           .order('created_at', { ascending: false });
         if (data) setProducts(data);
-        
+
         const { data: profileData } = await supabase
           .from('profiles')
           .select('id, full_name, email, role');
@@ -29,9 +29,9 @@ export function useProducts(refresh: number) {
         setLoading(false);
       }
     };
-    
+
     fetchData();
-  }, [supabase, refresh]);
+  }, [refresh]); // Removed supabase - it's stable from context
 
   return { loading, products, profiles };
 }

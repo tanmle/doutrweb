@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { EditProfileModal } from '@/components/layout/EditProfileModal';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/ToastProvider';
-import { createClient } from '@/utils/supabase/client';
+import { useSupabase } from '@/contexts/SupabaseContext';
+import { APP_CONSTANTS } from '@/constants/app';
 import styles from './layout.module.css';
 
 type Profile = {
@@ -33,6 +34,7 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const toast = useToast();
+  const supabase = useSupabase();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
@@ -50,7 +52,6 @@ export default function DashboardLayout({
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [updating, setUpdating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     const getProfile = async () => {
@@ -84,10 +85,10 @@ export default function DashboardLayout({
       }
     };
     getProfile();
-  }, [supabase]);
+  }, []); // Remove supabase from dependencies - it's stable from context
 
   useEffect(() => {
-    fetch('https://api.vietqr.io/v2/banks')
+    fetch(APP_CONSTANTS.VIETQR_BANKS_API)
       .then(res => res.json())
       .then(data => {
         if (data.code === '00') {

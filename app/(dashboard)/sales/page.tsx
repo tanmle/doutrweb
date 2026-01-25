@@ -6,33 +6,58 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Modal } from '@/components/ui/Modal';
+import { StatCard } from '@/components/ui/StatCard';
 import { useToast } from '@/components/ui/ToastProvider';
-import { createClient } from '@/utils/supabase/client';
+import { useSupabase } from '@/contexts/SupabaseContext';
+import { formatCurrency } from '@/utils/formatters';
 import { forms, cards, tables, filters, layouts, sales } from '@/styles/modules';
+import type {
+  Shop,
+  Product,
+  Profile,
+  SalesRecordWithRelations,
+  SalesFormData,
+  SalesItem,
+  DateFilterType,
+  DateRange
+} from './types';
 
 export default function DailyEntryPage() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<any>(null);
-  const [shops, setShops] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
-  const [profiles, setProfiles] = useState<any[]>([]);
-  const [records, setRecords] = useState<any[]>([]);
+  const [selectedRecord, setSelectedRecord] = useState<SalesRecordWithRelations | null>(null);
+  const [shops, setShops] = useState<Shop[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [records, setRecords] = useState<SalesRecordWithRelations[]>([]);
   const [refresh, setRefresh] = useState(0);
   const [userRole, setUserRole] = useState<string>('member');
 
   // Grid Filters
   const [shopFilter, setShopFilter] = useState('all');
   const [ownerFilter, setOwnerFilter] = useState('all');
-  const [dateFilter, setDateFilter] = useState<'today' | 'this_month' | 'last_month' | 'range'>('today');
-  const [dateRange, setDateRange] = useState(() => {
+  const [dateFilter, setDateFilter] = useState<DateFilterType>('today');
+  const [dateRange, setDateRange] = useState<DateRange>(() => {
     const today = new Date().toISOString().split('T')[0];
     return { start: today, end: today };
   });
 
   const toast = useToast();
+  const router = useRouter();
+  const supabase = useSupabase();
+
+  // Form State
+  const [shopId, setShopId] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [items, setItems] = useState<SalesItem[]>([{ productId: '', quantity: '' }]);
+  const [formData, setFormData] = useState<SalesFormData>({
+    shopId: '',
+    date: '',
+    productId: '',
+    quantity: ''
+  });
 
   useEffect(() => {
     if (dateFilter === 'range') return;
@@ -61,13 +86,6 @@ export default function DailyEntryPage() {
       end: endOfLastMonth.toISOString().split('T')[0]
     });
   }, [dateFilter]);
-  const router = useRouter();
-  const supabase = createClient();
-
-  // Form State
-  const [shopId, setShopId] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [items, setItems] = useState([{ productId: '', quantity: '' }]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -171,14 +189,7 @@ export default function DailyEntryPage() {
       }
     };
     fetchData();
-  }, [supabase, refresh, shopFilter, ownerFilter, dateRange, shopId, items]);
-
-  const formatUSD = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
+  }, [refresh, shopFilter, ownerFilter, dateRange.start, dateRange.end]); // Fixed: removed unstable dependencies
 
   const addItem = () => {
     setItems([...items, { productId: products[0]?.id || '', quantity: '' }]);
@@ -304,13 +315,6 @@ export default function DailyEntryPage() {
     setLoading(false);
   };
 
-  const [formData, setFormData] = useState<any>({
-    shopId: '',
-    date: '',
-    productId: '',
-    quantity: ''
-  });
-
   const totalQty = records.reduce((sum, r) => sum + (r.items_sold || 0), 0);
   const totalRevenue = records.reduce((sum, r) => sum + (r.revenue || 0), 0);
 
@@ -326,14 +330,15 @@ export default function DailyEntryPage() {
       </div>
 
       <div className={cards.cardGridTwoCol}>
-        <Card className={cards.statCard}>
-          <div className={cards.statLabel}>Total QTY</div>
-          <div className={cards.statValue}>{totalQty.toLocaleString()}</div>
-        </Card>
-        <Card className={cards.statCardSuccess}>
-          <div className={cards.statLabel}>Total Revenue</div>
-          <div className={cards.statValue}>{formatUSD(totalRevenue)}</div>
-        </Card>
+        <StatCard
+          label="Total QTY"
+          value={totalQty.toLocaleString()}
+        />
+        <StatCard
+          label="Total Revenue"
+          value={formatCurrency(totalRevenue)}
+          variant="success"
+        />
       </div>
 
       <div className={layouts.spacingY}></div>
@@ -473,7 +478,7 @@ export default function DailyEntryPage() {
                     </td>
                     <td data-label="Product">{r.product?.name}</td>
                     <td data-label="QTY">{r.items_sold}</td>
-                    <td data-label="Revenue">{formatUSD(r.revenue)}</td>
+                    <td data-label="Revenue">{formatCurrency(r.revenue)}</td>
                     <td data-label="Actions">
                       <div className={tables.tableActionsSmall}>
                         <Button variant="ghost" onClick={() => openEditModal(r)} className={sales.actionButtonSmall}>

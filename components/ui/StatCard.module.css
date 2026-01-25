@@ -1,0 +1,53 @@
+.statCard {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.icon {
+  font-size: 2rem;
+  opacity: 0.8;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.label {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
+.value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--foreground);
+}
+
+.subtext {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  margin-top: 0.25rem;
+}
+
+/* Variants */
+.success .value {
+  color: var(--success);
+}
+
+.warning .value {
+  color: var(--warning);
+}
+
+.error .value {
+  color: var(--error);
+}
+
+.default .value {
+  color: var(--primary);
+}
