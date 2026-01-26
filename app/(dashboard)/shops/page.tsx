@@ -36,6 +36,8 @@ export default function ShopsPage() {
 
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [historyShop, setHistoryShop] = useState<any>(null);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
 
   const toast = useToast();
   const supabase = createClient();
@@ -136,6 +138,9 @@ export default function ShopsPage() {
         owner_id: currentRole === 'member' ? user.id : (prev.owner_id || user.id),
       }));
 
+      const { data: productsData } = await supabase.from('products').select('id, name').order('name');
+      if (productsData) setAllProducts(productsData);
+
       setInitialLoading(false);
     };
 
@@ -160,7 +165,7 @@ export default function ShopsPage() {
   });
 
 
-  const handleEditClick = (shop: any) => {
+  const handleEditClick = async (shop: any) => {
     setSelectedShop(shop);
     setFormData({
       name: shop.name,
@@ -169,6 +174,14 @@ export default function ShopsPage() {
       note: shop.note || '',
       owner_id: shop.owner_id,
     });
+
+    // Fetch products associated with this shop
+    const { data: associations } = await supabase
+      .from('shop_products')
+      .select('product_id')
+      .eq('shop_id', shop.id);
+
+    setSelectedProductIds(associations ? associations.map(a => a.product_id) : []);
     setIsEditModalOpen(true);
   };
 
@@ -191,12 +204,34 @@ export default function ShopsPage() {
     if (error) {
       toast.error(error.message);
     } else {
+      // Fetch original products for history comparison
+      const { data: oldAssociations } = await supabase
+        .from('shop_products')
+        .select('product_id')
+        .eq('shop_id', selectedShop.id);
+
+      const oldIds = oldAssociations ? oldAssociations.map(a => a.product_id) : [];
+      const newIds = selectedProductIds;
+
+      const added = newIds.filter(id => !oldIds.includes(id));
+      const removed = oldIds.filter(id => !newIds.includes(id));
+
+      const productChanges: any = {};
+      if (added.length > 0) {
+        productChanges.added = added.map(id => allProducts.find(p => p.id === id)?.name || id);
+      }
+      if (removed.length > 0) {
+        productChanges.removed = removed.map(id => allProducts.find(p => p.id === id)?.name || id);
+      }
+
       await logHistory(selectedShop.id, 'updated', {
         name: formData.name !== selectedShop.name ? formData.name : undefined,
         status: formData.status !== selectedShop.status ? formData.status : undefined,
         platform: formData.platform !== selectedShop.platform ? formData.platform : undefined,
-        note: formData.note !== (selectedShop.note || '') ? formData.note : undefined
+        note: formData.note !== (selectedShop.note || '') ? formData.note : undefined,
+        ...((added.length > 0 || removed.length > 0) ? { products: productChanges } : {})
       });
+      await saveShopProducts(selectedShop.id, selectedProductIds);
       setIsEditModalOpen(false);
       await refreshShopsScoped();
       toast.success('Shop updated successfully');
@@ -218,6 +253,7 @@ export default function ShopsPage() {
       note: '',
       owner_id: defaultOwnerId,
     });
+    setSelectedProductIds([]); // Reset selection
     setIsCreateModalOpen(true);
   };
 
@@ -245,7 +281,10 @@ export default function ShopsPage() {
     if (error) {
       toast.error(error.message);
     } else {
-      if (data) await logHistory(data.id, 'created', { name: data.name });
+      if (data) {
+        await logHistory(data.id, 'created', { name: data.name });
+        await saveShopProducts(data.id, selectedProductIds);
+      }
       setIsCreateModalOpen(false);
       toast.success('Shop created successfully');
       await refreshShopsScoped();
@@ -286,6 +325,17 @@ export default function ShopsPage() {
 
   const handleCreateInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setCreateFormData({ ...createFormData, [e.target.name]: e.target.value });
+  };
+
+  const saveShopProducts = async (shopId: string, productIds: string[]) => {
+    const { error: delError } = await supabase.from('shop_products').delete().eq('shop_id', shopId);
+    if (delError) console.error('Error clearing shop products:', delError);
+
+    if (productIds.length > 0) {
+      const records = productIds.map(pid => ({ shop_id: shopId, product_id: pid }));
+      const { error: insError } = await supabase.from('shop_products').insert(records);
+      if (insError) console.error('Error saving shop products:', insError);
+    }
   };
 
   return (
@@ -386,6 +436,9 @@ export default function ShopsPage() {
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateSubmit}
         onChange={handleCreateInputChange}
+        allProducts={allProducts}
+        selectedProductIds={selectedProductIds}
+        onSelectedProductsChange={setSelectedProductIds}
       />
 
       {/* Edit Shop Modal */}
@@ -399,6 +452,9 @@ export default function ShopsPage() {
         onClose={() => setIsEditModalOpen(false)}
         onSubmit={handleUpdateSubmit}
         onChange={handleInputChange}
+        allProducts={allProducts}
+        selectedProductIds={selectedProductIds}
+        onSelectedProductsChange={setSelectedProductIds}
       />
 
       {/* History Modal */}

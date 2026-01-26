@@ -47,6 +47,22 @@ export function ShopHistoryModal({ isOpen, shop, onClose }: ShopHistoryModalProp
 
         return Object.entries(details).map(([key, value]) => {
             if (value === undefined || value === null) return null;
+
+            if (key === 'products') {
+                const p = value as any;
+                return (
+                    <div key={key} style={{ marginTop: '0.4rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '0.2rem' }}>
+                        <strong>Products Updated:</strong>
+                        {p.added && p.added.length > 0 && (
+                            <div style={{ color: '#4ade80' }}>+ Added: {p.added.join(', ')}</div>
+                        )}
+                        {p.removed && p.removed.length > 0 && (
+                            <div style={{ color: '#f87171' }}>- Removed: {p.removed.join(', ')}</div>
+                        )}
+                    </div>
+                );
+            }
+
             // Format key for display (e.g. owner_id -> Owner)
             const displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 

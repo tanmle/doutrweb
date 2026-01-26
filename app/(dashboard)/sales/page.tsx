@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -36,6 +36,7 @@ export default function DailyEntryPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [records, setRecords] = useState<SalesRecordWithRelations[]>([]);
+  const [shopProductRelations, setShopProductRelations] = useState<{ shop_id: string; product_id: string }[]>([]);
   const [refresh, setRefresh] = useState(0);
   const [userRole, setUserRole] = useState<string>('member');
 
@@ -147,13 +148,12 @@ export default function DailyEntryPage() {
         const { data: productsData } = await supabase.from('products').select('*').order('name');
         if (productsData) {
           setProducts(productsData);
-          if (productsData.length > 0 && items[0].productId === '') {
-            setItems([{
-              productId: productsData[0].id,
-              quantity: '',
-              price: productsData[0].selling_price.toString()
-            }]);
-          }
+        }
+
+        // Fetch shop-product relations
+        const { data: relations } = await supabase.from('shop_products').select('shop_id, product_id');
+        if (relations) {
+          setShopProductRelations(relations);
         }
 
         // Fetch records with filters based on role hierarchy
@@ -209,11 +209,38 @@ export default function DailyEntryPage() {
     fetchData();
   }, [refresh, shopFilter, ownerFilter, dateRange.start, dateRange.end]); // Fixed: removed unstable dependencies
 
+  const availableProducts = useMemo(() => {
+    if (!shopId) return products;
+    const relatedIds = shopProductRelations
+      .filter(r => r.shop_id === shopId)
+      .map(r => r.product_id);
+
+    if (relatedIds.length > 0) {
+      return products.filter(p => relatedIds.includes(p.id));
+    }
+    return products; // Fallback to all if none assigned
+  }, [shopId, products, shopProductRelations]);
+
+  // Update items when availableProducts changes (e.g. shop change)
+  useEffect(() => {
+    if (availableProducts.length > 0 && !initialLoading) {
+      // If current items have products not in available list (or generic init), reset?
+      // For now, let's just ensure defaults are valid if empty
+      if (items.length === 1 && items[0].productId === '' && items[0].quantity === '') {
+        setItems([{
+          productId: availableProducts[0].id,
+          quantity: '',
+          price: availableProducts[0].selling_price.toString()
+        }]);
+      }
+    }
+  }, [availableProducts, initialLoading]);
+
   const addItem = () => {
     setItems([...items, {
-      productId: products[0]?.id || '',
+      productId: availableProducts[0]?.id || '',
       quantity: '',
-      price: products[0]?.selling_price?.toString() || ''
+      price: availableProducts[0]?.selling_price?.toString() || ''
     }]);
   };
 
@@ -621,7 +648,7 @@ export default function DailyEntryPage() {
                           onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
                           required
                         >
-                          {products.map(p => (
+                          {availableProducts.map(p => (
                             <option key={p.id} value={p.id}>{p.name}</option>
                           ))}
                         </select>
@@ -725,7 +752,7 @@ export default function DailyEntryPage() {
               onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
               required
             >
-              {products.map(p => (
+              {availableProducts.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
