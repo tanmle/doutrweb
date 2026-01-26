@@ -10,7 +10,7 @@ export function NotificationBell() {
     const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
     const bellRef = useRef<HTMLButtonElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const { notifications, unreadCount, loading, markAllAsRead } = useNotifications();
+    const { notifications, unreadCount, loading, markAllAsRead, markAsRead } = useNotifications();
     const [mounted, setMounted] = useState(false);
     const [isRinging, setIsRinging] = useState(false);
     const prevUnreadCount = useRef(unreadCount);
@@ -150,6 +150,7 @@ export function NotificationBell() {
                             key={notification.id}
                             notification={notification}
                             onClick={() => setIsOpen(false)}
+                            onMarkRead={markAsRead}
                         />
                     ))
                 )}

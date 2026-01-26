@@ -2,17 +2,16 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation'; // Added import
-import { useNotifications } from '@/hooks/useNotifications';
 import type { NotificationWithStatus } from '@/types/notifications';
 import styles from './NotificationItem.module.css';
 
 type NotificationItemProps = {
     notification: NotificationWithStatus;
     onClick?: () => void;
+    onMarkRead?: (id: string) => void;
 };
 
-export function NotificationItem({ notification, onClick }: NotificationItemProps) {
-    const { markAsRead } = useNotifications();
+export function NotificationItem({ notification, onClick, onMarkRead }: NotificationItemProps) {
     const router = useRouter(); // Added hook
     const [menuOpen, setMenuOpen] = React.useState(false);
     const menuRef = React.useRef<HTMLDivElement>(null);
@@ -29,7 +28,7 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
 
     const handleClick = () => {
         if (!notification.read_at) {
-            markAsRead(notification.id);
+            onMarkRead?.(notification.id);
         }
 
         // Smart Navigation
@@ -62,7 +61,7 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
 
     const handleMarkRead = (e: React.MouseEvent) => {
         e.stopPropagation();
-        markAsRead(notification.id);
+        onMarkRead?.(notification.id);
         setMenuOpen(false);
     };
 
