@@ -409,11 +409,7 @@ export default function DailyEntryPage() {
 
   return (
     <div>
-      <div className={layouts.pageHeaderWithActions} style={{ justifyContent: 'flex-end' }}>
-        <div className={layouts.hideOnMobile}>
-          <Button onClick={() => setIsModalOpen(true)}>+ Add Daily Sales</Button>
-        </div>
-      </div>
+
 
       <div className={cards.cardGridTwoCol}>
         <StatCard
@@ -518,6 +514,9 @@ export default function DailyEntryPage() {
               </div>
             )}
           </div>
+        </div>
+        <div className={layouts.hideOnMobile} style={{ marginLeft: 'auto', paddingBottom: '2px' }}>
+          <Button onClick={() => setIsModalOpen(true)}>+ Add Daily Sales</Button>
         </div>
       </div>
 

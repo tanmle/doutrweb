@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation'; // Added import
 import { useNotifications } from '@/hooks/useNotifications';
 import type { NotificationWithStatus } from '@/types/notifications';
 import styles from './NotificationItem.module.css';
@@ -12,6 +13,7 @@ type NotificationItemProps = {
 
 export function NotificationItem({ notification, onClick }: NotificationItemProps) {
     const { markAsRead } = useNotifications();
+    const router = useRouter(); // Added hook
     const [menuOpen, setMenuOpen] = React.useState(false);
     const menuRef = React.useRef<HTMLDivElement>(null);
 
@@ -29,6 +31,27 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
         if (!notification.read_at) {
             markAsRead(notification.id);
         }
+
+        // Smart Navigation
+        switch (notification.type) {
+            case 'achievement':
+                router.push('/reports');
+                break;
+            case 'manual':
+                // Assuming 'manual' notifications are mostly about tasks like Sales Entry
+                router.push('/dashboard');
+                break;
+            default:
+                // Fallback for system or other notifications
+                // Check keywords to guess destination
+                if (notification.title.toLowerCase().includes('shop') || notification.message.toLowerCase().includes('shop')) {
+                    router.push('/shops');
+                } else if (notification.title.toLowerCase().includes('sale') || notification.message.toLowerCase().includes('sale')) {
+                    router.push('/sales');
+                }
+                break;
+        }
+
         onClick?.();
     };
 
@@ -78,20 +101,22 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
             <div className={styles.content}>
                 <div className={styles.header}>
                     <h4 className={styles.title}>{notification.title}</h4>
-                    <button
-                        className={`${styles.menuButton} ${menuOpen ? styles.menuOpen : ''}`}
-                        onClick={handleMenuClick}
-                    >
-                        ⋮
-                    </button>
-                    {menuOpen && (
-                        <div className={styles.menuDropdown} ref={menuRef}>
-                            {!notification.read_at && (
-                                <button className={styles.menuItem} onClick={handleMarkRead}>
-                                    Mark as read
-                                </button>
+                    {!notification.read_at && (
+                        <>
+                            <button
+                                className={`${styles.menuButton} ${menuOpen ? styles.menuOpen : ''}`}
+                                onClick={handleMenuClick}
+                            >
+                                ⋮
+                            </button>
+                            {menuOpen && (
+                                <div className={styles.menuDropdown} ref={menuRef}>
+                                    <button className={styles.menuItem} onClick={handleMarkRead}>
+                                        Mark as read
+                                    </button>
+                                </div>
                             )}
-                        </div>
+                        </>
                     )}
                 </div>
 
