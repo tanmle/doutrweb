@@ -54,11 +54,13 @@ export interface SalesFormData {
     date: string;
     productId: string;
     quantity: string;
+    price: string;
 }
 
 export interface SalesItem {
     productId: string;
     quantity: string;
+    price: string;
 }
 
 export type DateFilterType = 'today' | 'this_month' | 'last_month' | 'range';

@@ -55,12 +55,13 @@ export default function DailyEntryPage() {
   // Form State
   const [shopId, setShopId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [items, setItems] = useState<SalesItem[]>([{ productId: '', quantity: '' }]);
+  const [items, setItems] = useState<SalesItem[]>([{ productId: '', quantity: '', price: '' }]);
   const [formData, setFormData] = useState<SalesFormData>({
     shopId: '',
     date: '',
     productId: '',
-    quantity: ''
+    quantity: '',
+    price: ''
   });
 
   // Real-time subscription for sales records
@@ -147,7 +148,11 @@ export default function DailyEntryPage() {
         if (productsData) {
           setProducts(productsData);
           if (productsData.length > 0 && items[0].productId === '') {
-            setItems([{ productId: productsData[0].id, quantity: '' }]);
+            setItems([{
+              productId: productsData[0].id,
+              quantity: '',
+              price: productsData[0].selling_price.toString()
+            }]);
           }
         }
 
@@ -205,7 +210,11 @@ export default function DailyEntryPage() {
   }, [refresh, shopFilter, ownerFilter, dateRange.start, dateRange.end]); // Fixed: removed unstable dependencies
 
   const addItem = () => {
-    setItems([...items, { productId: products[0]?.id || '', quantity: '' }]);
+    setItems([...items, {
+      productId: products[0]?.id || '',
+      quantity: '',
+      price: products[0]?.selling_price?.toString() || ''
+    }]);
   };
 
   const removeItem = (index: number) => {
@@ -217,6 +226,13 @@ export default function DailyEntryPage() {
   const handleItemChange = (index: number, field: string, value: string) => {
     const newItems = [...items];
     (newItems[index] as any)[field] = value;
+
+    if (field === 'productId') {
+      const product = products.find(p => p.id === value);
+      if (product) {
+        newItems[index].price = product.selling_price.toString();
+      }
+    }
     setItems(newItems);
   };
 
@@ -236,7 +252,8 @@ export default function DailyEntryPage() {
       if (!product) return null;
 
       const quantity = parseInt(item.quantity) || 0;
-      const revenue = quantity * (product.selling_price || 0);
+      const unitPrice = parseFloat(item.price) || 0;
+      const revenue = quantity * unitPrice;
       const cost = quantity * (product.base_price || 0);
 
       return {
@@ -335,7 +352,7 @@ export default function DailyEntryPage() {
         }
       }
 
-      setItems([{ productId: products[0]?.id || '', quantity: '' }]);
+      setItems([{ productId: products[0]?.id || '', quantity: '', price: products[0]?.selling_price?.toString() || '' }]);
       setIsModalOpen(false);
       setRefresh(prev => prev + 1);
     }
@@ -355,7 +372,8 @@ export default function DailyEntryPage() {
     }
 
     const quantity = parseInt(formData.quantity) || 0;
-    const revenue = quantity * (product.selling_price || 0);
+    const unitPrice = parseFloat(formData.price) || 0;
+    const revenue = quantity * unitPrice;
     const cost = quantity * (product.base_price || 0);
 
     const { error } = await supabase.from('sales_records').update({
@@ -379,11 +397,13 @@ export default function DailyEntryPage() {
 
   const openEditModal = (record: any) => {
     setSelectedRecord(record);
+    const unitPrice = record.items_sold > 0 ? (record.revenue / record.items_sold) : 0;
     setFormData({
       shopId: record.shop_id,
       date: record.date,
       productId: record.product_id,
-      quantity: record.items_sold.toString()
+      quantity: record.items_sold.toString(),
+      price: unitPrice.toString()
     });
     setIsEditModalOpen(true);
   };
@@ -575,51 +595,88 @@ export default function DailyEntryPage() {
               </Button>
             </div>
 
+            {items.length > 0 && (
+              <div style={{ padding: '0 0.75rem 0.5rem', display: 'flex', gap: '0.75rem' }}>
+                <label className={forms.formLabel} style={{ flex: 3.5, marginBottom: 0 }}>Product</label>
+                <label className={forms.formLabel} style={{ flex: 1.2, marginBottom: 0 }}>Price($)</label>
+                <label className={forms.formLabel} style={{ flex: 1.2, marginBottom: 0 }}>QTY</label>
+                <div style={{ width: '32px' }}></div>
+              </div>
+            )}
+
             <div className={sales.productsList}>
-              {items.map((item, index) => (
-                <div key={index} className={sales.productRow}>
-                  <div>
-                    {index === 0 && <label className={`${forms.formLabel} ${sales.productRowLabel}`}>Product</label>}
-                    <select
-                      aria-label="Select product"
-                      className={forms.formSelect}
-                      value={item.productId}
-                      onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
-                      required
-                    >
-                      {products.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                  </div>
+              {items.map((item, index) => {
+                const qty = parseInt(item.quantity) || 0;
+                const price = parseFloat(item.price) || 0;
+                const total = qty * price;
 
-                  <div>
-                    {index === 0 && <label className={`${forms.formLabel} ${sales.productRowLabel}`}>QTY</label>}
-                    <input
-                      aria-label="Quantity"
-                      type="number"
-                      placeholder="0"
-                      value={item.quantity}
-                      onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                      required
-                      className={forms.formInput}
-                    />
-                  </div>
+                return (
+                  <div key={index} className={sales.productRow}>
+                    <div style={{ display: 'flex', gap: '0.75rem', width: '100%', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 3.5 }}>
+                        <select
+                          aria-label="Select product"
+                          className={forms.formSelect}
+                          value={item.productId}
+                          onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
+                          required
+                        >
+                          {products.map(p => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                  <div className={index === 0 ? sales.removeButtonContainerWithLabel : sales.removeButtonContainer}>
-                    {items.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeItem(index)}
-                        aria-label="Remove product row"
-                        className={sales.removeButton}
-                      >
-                        ✕
-                      </button>
-                    )}
+                      <div style={{ flex: 1.2 }}>
+                        <input
+                          aria-label="Selling Price"
+                          type="number"
+                          placeholder="0"
+                          value={item.price}
+                          onChange={(e) => handleItemChange(index, 'price', e.target.value)}
+                          required
+                          className={forms.formInput}
+                        />
+                      </div>
+
+                      <div style={{ flex: 1.2 }}>
+                        <input
+                          aria-label="Quantity"
+                          type="number"
+                          placeholder="0"
+                          value={item.quantity}
+                          onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                          required
+                          className={forms.formInput}
+                        />
+                      </div>
+
+                      <div className={sales.removeButtonContainer} style={{ width: '32px', paddingTop: '0.6rem' }}>
+                        {items.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeItem(index)}
+                            aria-label="Remove product row"
+                            className={sales.removeButton}
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{
+                      width: '100%',
+                      textAlign: 'right',
+                      fontSize: '0.8rem',
+                      color: 'var(--muted-foreground)',
+                      paddingRight: '2.5rem'
+                    }}>
+                      Total: <span style={{ color: '#60a5fa', fontWeight: 600 }}>{formatCurrency(total)}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -672,6 +729,18 @@ export default function DailyEntryPage() {
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
+          </div>
+
+          <div className={forms.formField}>
+            <label className={forms.formLabel}>Selling Price</label>
+            <input
+              aria-label="Selling Price"
+              type="number"
+              value={formData.price}
+              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+              required
+              className={forms.formInput}
+            />
           </div>
 
           <div className={forms.formField}>

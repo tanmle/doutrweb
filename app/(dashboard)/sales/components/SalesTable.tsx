@@ -39,7 +39,7 @@ export function SalesTable({ records, loading, onEdit, onDelete }: SalesTablePro
                         <th>Owner</th>
                         <th>Product</th>
                         <th>QTY</th>
-                        <th>Revenue</th>
+                        <th>Revenue($)</th>
                         <th>Actions</th>
                     </tr>
                 </thead>

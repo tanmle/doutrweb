@@ -24,10 +24,9 @@
 }
 
 .productRow {
-    display: grid;
-    grid-template-columns: minmax(140px, 1fr) 70px 36px;
-    gap: 0.75rem;
-    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
     background: rgba(255, 255, 255, 0.02);
     padding: 0.75rem;
     border-radius: 8px;
