@@ -31,7 +31,7 @@ export function UsersTab({
         <div>
             <div className={styles.tabHeader}>
                 <h3 className={styles.tabTitle}>User List</h3>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <div className={styles.headerButtonGroup}>
                     <Button variant="secondary" onClick={onSendNotification}>📢 Send Notification</Button>
                     <Button onClick={onAddUser}>+ Add New User</Button>
                 </div>

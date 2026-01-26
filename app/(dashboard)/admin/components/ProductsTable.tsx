@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { formatUSD } from '../utils/formatters';
 import type { Product } from '../utils/types';
 import styles from './AdminComponents.module.css';
+import { tables } from '@/styles/modules';
 
 interface ProductsTableProps {
     products: Product[];
@@ -14,8 +15,8 @@ interface ProductsTableProps {
 
 export function ProductsTable({ products, onEdit, onDelete }: ProductsTableProps) {
     return (
-        <div className={styles.tableContainer}>
-            <table className={styles.adminTable}>
+        <div className={tables.tableWrapper}>
+            <table className={tables.table}>
                 <thead>
                     <tr>
                         <th>Name</th>

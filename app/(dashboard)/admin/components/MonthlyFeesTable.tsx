@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { formatVND } from '../utils/formatters';
 import type { MonthlyFee } from '../utils/types';
 import styles from './AdminComponents.module.css';
+import { tables } from '@/styles/modules';
 
 interface MonthlyFeesTableProps {
     fees: MonthlyFee[];
@@ -15,8 +16,8 @@ interface MonthlyFeesTableProps {
 
 export function MonthlyFeesTable({ fees, totalFeePrice, onEdit, onDelete }: MonthlyFeesTableProps) {
     return (
-        <div className={styles.tableContainer}>
-            <table className={styles.adminTable}>
+        <div className={tables.tableWrapper}>
+            <table className={tables.table}>
                 <thead>
                     <tr>
                         <th>Fee Name</th>

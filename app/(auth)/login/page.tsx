@@ -60,11 +60,33 @@ export default function LoginPage() {
   return (
     <div className={styles.container}>
       <Card className={styles.authCard}>
-        <h1 className={styles.title}>Shop Manager</h1>
-        <p className={styles.subtitle}>Sign in to your account</p>
+        <div className={styles.header}>
+          <div className={styles.logoWrapper}>
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16 2L2 9L16 16L30 9L16 2Z" fill="url(#logo-gradient)" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+              <path d="M2 23L16 30L30 23V9L16 16L2 9V23Z" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <defs>
+                <linearGradient id="logo-gradient" x1="2" y1="2" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#fff" />
+                  <stop offset="1" stopColor="#94a3b8" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div className={styles.logoGlow} />
+          </div>
+          <h1 className={styles.title}>
+            <span className={styles.titleThin}>Shop</span> Manager
+          </h1>
+          <p className={styles.subtitle}>Enter your credentials to access the dashboard</p>
+        </div>
 
         {error && (
-          <div style={{ padding: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', color: '#f87171', borderRadius: 'var(--radius-sm)', fontSize: '0.875rem', marginBottom: '1rem' }}>
+          <div className={styles.errorBanner}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
             {error}
           </div>
         )}
@@ -80,6 +102,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            className={styles.inputField}
           />
           <Input
             label="Password"
@@ -90,11 +113,19 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            className={styles.inputField}
           />
 
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Processing…' : 'Sign In'}
+          <div style={{ marginTop: '1rem' }}>
+            <Button type="submit" disabled={loading} fullWidth className={styles.submitButton}>
+              {loading ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                  </svg>
+                  Processing…
+                </span>
+              ) : 'Sign In'}
             </Button>
           </div>
         </form>

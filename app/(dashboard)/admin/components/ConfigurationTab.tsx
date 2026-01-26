@@ -4,6 +4,7 @@ import React from 'react';
 import { Button } from '@/components/ui/Button';
 import type { CommissionRate } from '../utils/types';
 import styles from './AdminComponents.module.css';
+import { tables } from '@/styles/modules';
 
 interface ConfigurationTabProps {
     commissionRates: CommissionRate[];
@@ -34,9 +35,9 @@ export function ConfigurationTab({
                 </Button>
             </div>
 
-            <div style={{ marginBottom: '2rem', padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--border)', width: 'fit-content', minWidth: '300px', paddingRight: '3rem' }}>
+            <div className={styles.generalSettingsCard}>
                 <h4 className={styles.configSectionTitle} style={{ marginBottom: '1rem' }}>General Settings</h4>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <div className={styles.generalSettingsRow}>
                     <label style={{ fontSize: '0.875rem', color: 'var(--foreground)' }}>Base KPI:</label>
                     <input
                         type="number"
@@ -77,9 +78,18 @@ interface CommissionTableProps {
 }
 
 function CommissionTable({ rates, onChange }: CommissionTableProps) {
+    const getLevelClass = (level: number) => {
+        if (level === 1) return styles.level1;
+        if (level === 2) return styles.level2;
+        if (level === 3) return styles.level3;
+        if (level === 4) return styles.level4;
+        if (level >= 5) return styles.level5;
+        return '';
+    };
+
     return (
-        <div className={styles.configTableContainer}>
-            <table className={styles.configTable}>
+        <div className={tables.tableWrapper}>
+            <table className={tables.table}>
                 <thead>
                     <tr>
                         <th>Level</th>
@@ -90,8 +100,12 @@ function CommissionTable({ rates, onChange }: CommissionTableProps) {
                 <tbody>
                     {rates.map(r => (
                         <tr key={r.id}>
-                            <td className={styles.configLevelCell}>Level {r.level}</td>
-                            <td className={styles.configInputCell}>
+                            <td className={styles.configLevelCell} data-label="Level">
+                                <span className={`${styles.levelBadge} ${getLevelClass(r.level)}`}>
+                                    Level {r.level}
+                                </span>
+                            </td>
+                            <td className={styles.configInputCell} data-label="Profit per month ($)">
                                 <input
                                     type="number"
                                     value={r.profit_threshold}
@@ -99,7 +113,7 @@ function CommissionTable({ rates, onChange }: CommissionTableProps) {
                                     className={styles.configInput}
                                 />
                             </td>
-                            <td className={styles.configInputCell}>
+                            <td className={styles.configInputCell} data-label="% Commission">
                                 <div className={styles.configPercentContainer}>
                                     <input
                                         type="number"

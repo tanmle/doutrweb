@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { formatVND } from '../utils/formatters';
 import type { SellingFee } from '../utils/types';
 import styles from './AdminComponents.module.css';
+import { tables } from '@/styles/modules';
 
 interface SellingFeesTableProps {
     fees: SellingFee[];
@@ -15,8 +16,8 @@ interface SellingFeesTableProps {
 
 export function SellingFeesTable({ fees, totalFeePrice, onEdit, onDelete }: SellingFeesTableProps) {
     return (
-        <div className={styles.tableContainer}>
-            <table className={styles.adminTable}>
+        <div className={tables.tableWrapper}>
+            <table className={tables.table}>
                 <thead>
                     <tr>
                         <th>Fee Name</th>

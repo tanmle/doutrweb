@@ -1,12 +1,11 @@
-/* ============================================
-   Tables Module - Shared Table Styles
-   ============================================ */
-
 /* Table Containers */
 .tableWrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    border-radius: 8px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
 }
 
 .table {
@@ -17,80 +16,96 @@
 
 /* Table Headers */
 .table thead tr {
-    color: var(--muted-foreground);
     border-bottom: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0.2);
 }
 
 .table th {
-    padding: 0.75rem;
+    padding: 1rem 1.25rem;
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     white-space: nowrap;
+    color: #a1a1aa;
 }
 
 /* Table Body */
 .table tbody tr {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    transition: background-color 0.2s ease;
+    border-bottom: 1px solid var(--border);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .table tbody tr:hover {
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: rgba(255, 255, 255, 0.03);
 }
 
 .table td {
-    padding: 0.875rem 0.75rem;
+    padding: 1rem 1.25rem;
     font-size: 0.875rem;
+    color: #f1f5f9;
 }
 
 /* Table Actions */
 .tableActions {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.75rem;
     align-items: center;
 }
 
 .tableActionsSmall {
     display: flex;
-    gap: 0.375rem;
+    gap: 0.5rem;
     align-items: center;
 }
 
 /* Table Status Badges */
+/* Table Status Badges */
 .tableBadge {
     padding: 0.25rem 0.625rem;
-    border-radius: 6px;
+    border-radius: 999px;
     font-size: 0.75rem;
     font-weight: 500;
     white-space: nowrap;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.01em;
+    border: 1px solid transparent;
 }
 
 .tableBadgeSuccess {
-    background: rgba(16, 185, 129, 0.15);
-    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+    color: #34d399;
+    border-color: rgba(16, 185, 129, 0.2);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
 }
 
 .tableBadgeWarning {
-    background: rgba(245, 158, 11, 0.15);
-    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.2);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.1);
 }
 
 .tableBadgeDanger {
-    background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.2);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.1);
 }
 
 .tableBadgeInfo {
-    background: rgba(99, 102, 241, 0.15);
-    color: #6366f1;
+    background: rgba(99, 102, 241, 0.1);
+    color: #818cf8;
+    border-color: rgba(99, 102, 241, 0.2);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.1);
 }
 
 .tableBadgeDefault {
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.05);
+    color: #e4e4e7;
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Responsive Mobile Cards */
@@ -148,15 +163,17 @@
 
     .tableActions,
     .tableActionsSmall {
-        flex-direction: row;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+        gap: 0.75rem;
         width: 100%;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        justify-content: flex-end;
+        margin-top: 0.5rem;
     }
 
-    .tableActions>*,
-    .tableActionsSmall>* {
-        width: auto;
+    .tableActions>button,
+    .tableActionsSmall>button {
+        width: 100%;
+        justify-content: center;
+        padding: 0.5rem;
     }
 }

@@ -26,44 +26,6 @@ export function MonthlyFeeFilters({
 }: MonthlyFeeFiltersProps) {
     return (
         <>
-            <div className={styles.filterButtons}>
-                <Button
-                    variant={feeFilter === 'all' ? 'primary' : 'secondary'}
-                    onClick={() => onFeeFilterChange('all')}
-                    className={styles.buttonSmall}
-                >
-                    All
-                </Button>
-                <Button
-                    variant={feeFilter === 'today' ? 'primary' : 'secondary'}
-                    onClick={() => onFeeFilterChange('today')}
-                    className={styles.buttonSmall}
-                >
-                    Today
-                </Button>
-                <Button
-                    variant={feeFilter === 'this_month' ? 'primary' : 'secondary'}
-                    onClick={() => onFeeFilterChange('this_month')}
-                    className={styles.buttonSmall}
-                >
-                    This Month
-                </Button>
-                <Button
-                    variant={feeFilter === 'last_month' ? 'primary' : 'secondary'}
-                    onClick={() => onFeeFilterChange('last_month')}
-                    className={styles.buttonSmall}
-                >
-                    Last Month
-                </Button>
-                <Button
-                    variant={feeFilter === 'range' ? 'primary' : 'secondary'}
-                    onClick={() => onFeeFilterChange('range')}
-                    className={styles.buttonSmall}
-                >
-                    Date Range
-                </Button>
-            </div>
-
             <div className={styles.filterControls}>
                 <div className={styles.filterField}>
                     <label className={styles.filterLabel}>
@@ -82,9 +44,51 @@ export function MonthlyFeeFilters({
                     </select>
                 </div>
 
+                <div style={{ flex: '1 1 auto', width: '100%' }}>
+                    <label className={styles.filterLabel}>Date Filter</label>
+                    <div className={styles.filterButtons}>
+                        <Button
+                            variant={feeFilter === 'all' ? 'primary' : 'secondary'}
+                            onClick={() => onFeeFilterChange('all')}
+                            className={styles.buttonSmall}
+                        >
+                            All
+                        </Button>
+                        <Button
+                            variant={feeFilter === 'today' ? 'primary' : 'secondary'}
+                            onClick={() => onFeeFilterChange('today')}
+                            className={styles.buttonSmall}
+                        >
+                            Today
+                        </Button>
+                        <Button
+                            variant={feeFilter === 'this_month' ? 'primary' : 'secondary'}
+                            onClick={() => onFeeFilterChange('this_month')}
+                            className={styles.buttonSmall}
+                        >
+                            This Month
+                        </Button>
+                        <Button
+                            variant={feeFilter === 'last_month' ? 'primary' : 'secondary'}
+                            onClick={() => onFeeFilterChange('last_month')}
+                            className={styles.buttonSmall}
+                        >
+                            Last Month
+                        </Button>
+                        <Button
+                            variant={feeFilter === 'range' ? 'primary' : 'secondary'}
+                            onClick={() => onFeeFilterChange('range')}
+                            className={styles.buttonSmall}
+                            style={{ gridColumn: 'span 2' }}
+                        >
+                            Date Range
+                        </Button>
+                    </div>
+                </div>
+
                 {feeFilter === 'range' && (
-                    <>
-                        <div className={styles.filterField}>
+                    <div style={{ display: 'flex', gap: '1rem', width: '100%', flexWrap: 'wrap' }}>
+                        <div className={styles.filterField} style={{ flex: 1 }}>
                             <label className={styles.filterLabel}>
                                 Start Date
                             </label>
@@ -97,7 +101,7 @@ export function MonthlyFeeFilters({
                                 className={styles.filterDateInput}
                             />
                         </div>
-                        <div className={styles.filterField}>
+                        <div className={styles.filterField} style={{ flex: 1 }}>
                             <label className={styles.filterLabel}>
                                 End Date
                             </label>
@@ -110,7 +114,7 @@ export function MonthlyFeeFilters({
                                 className={styles.filterDateInput}
                             />
                         </div>
-                    </>
+                    </div>
                 )}
             </div>
         </>

@@ -4,6 +4,7 @@ import React from 'react';
 import { Button } from '@/components/ui/Button';
 import type { User, Profile } from '../utils/types';
 import styles from './AdminComponents.module.css';
+import { tables } from '@/styles/modules';
 
 interface UsersTableProps {
     users: User[];
@@ -23,8 +24,8 @@ export function UsersTable({
     onDelete
 }: UsersTableProps) {
     return (
-        <div className={styles.tableContainer}>
-            <table className={styles.adminTable}>
+        <div className={tables.tableWrapper}>
+            <table className={tables.table}>
                 <thead>
                     <tr>
                         <th>Email</th>

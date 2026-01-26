@@ -18,11 +18,11 @@ export const APP_CONSTANTS = {
 } as const;
 
 export const AREA_COLORS = [
-    'var(--primary)',
-    '#10b981',
-    '#f59e0b',
-    '#ef4444',
-    '#8b5cf6',
-    '#ec4899',
-    '#06b6d4',
+    '#6366f1', // Indigo 500
+    '#a855f7', // Purple 500
+    '#ec4899', // Pink 500
+    '#10b981', // Emerald 500
+    '#f59e0b', // Amber 500
+    '#3b82f6', // Blue 500
+    '#14b8a6', // Teal 500
 ] as const;

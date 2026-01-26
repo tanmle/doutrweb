@@ -26,6 +26,12 @@
     margin: 0;
 }
 
+.headerButtonGroup {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
 /* Tables */
 .tableContainer {
     overflow-x: auto;
@@ -210,6 +216,23 @@
     gap: 2rem;
 }
 
+.generalSettingsCard {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    width: fit-content;
+    min-width: 300px;
+    padding-right: 3rem;
+}
+
+.generalSettingsRow {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
 .configHeader {
     display: flex;
     justify-content: space-between;
@@ -275,6 +298,78 @@
 
 .configLevelCell {
     font-weight: 500;
+}
+
+.levelBadge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--muted-foreground);
+    white-space: nowrap;
+}
+
+/* Level 1 - Bronze */
+.level1 {
+    background: linear-gradient(135deg, rgba(120, 53, 15, 0.15) 0%, rgba(180, 83, 9, 0.15) 100%);
+    color: #fdba74;
+    border-color: rgba(251, 146, 60, 0.3);
+    box-shadow: 0 0 10px rgba(234, 88, 12, 0.1);
+}
+
+/* Level 2 - Silver */
+.level2 {
+    background: linear-gradient(135deg, rgba(148, 163, 184, 0.15) 0%, rgba(203, 213, 225, 0.15) 100%);
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.3);
+    box-shadow: 0 0 10px rgba(148, 163, 184, 0.15);
+}
+
+/* Level 3 - Gold */
+.level3 {
+    background: linear-gradient(135deg, rgba(234, 179, 8, 0.1) 0%, rgba(250, 204, 21, 0.1) 100%);
+    color: #fde047;
+    border-color: rgba(234, 179, 8, 0.3);
+    box-shadow: 0 0 15px rgba(234, 179, 8, 0.2);
+    text-shadow: 0 0 10px rgba(234, 179, 8, 0.3);
+}
+
+/* Level 4 - Diamond/Platinum */
+.level4 {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%);
+    color: #c4b5fd;
+    border-color: rgba(139, 92, 246, 0.3);
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.25);
+    text-shadow: 0 0 5px rgba(167, 139, 250, 0.4);
+}
+
+/* Level 5+ - Master/Legendary */
+.level5 {
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(244, 63, 94, 0.15) 100%);
+    color: #fda4af;
+    border-color: rgba(244, 63, 94, 0.3);
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.3);
+    text-shadow: 0 0 8px rgba(251, 113, 133, 0.5);
+    animation: pulse 3s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 15px rgba(244, 63, 94, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 25px rgba(244, 63, 94, 0.4);
+    }
+
+    100% {
+        box-shadow: 0 0 15px rgba(244, 63, 94, 0.2);
+    }
 }
 
 .configInputCell {
@@ -691,5 +786,82 @@
         padding: 0;
         background: transparent;
         border: none;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filterButtons {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .filterButtons button {
+        width: 100%;
+        justify-content: center;
+        padding: 0.5rem;
+    }
+
+    .feeFiltersHeader {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.5rem;
+    }
+
+    .feeFiltersHeader>button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Users Tab Header Mobile */
+    .tabHeader {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .headerButtonGroup {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.75rem;
+        width: 100%;
+    }
+
+    .headerButtonGroup button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Configuration Mobile */
+    .configHeader {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .configHeader>button {
+        width: 100%;
+    }
+
+    .generalSettingsCard {
+        width: 100%;
+        min-width: 0;
+        padding-right: 1.5rem;
+    }
+
+    .generalSettingsRow {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .generalSettingsRow>input {
+        width: 100% !important;
+    }
+
+    .configGrid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
 }
