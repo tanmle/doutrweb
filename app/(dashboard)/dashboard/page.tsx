@@ -34,6 +34,7 @@ type DashboardStats = {
 };
 
 type SalesRecord = {
+  created_at?: string;
   date: string;
   revenue: number | string | null;
   profit: number | string | null;
@@ -145,6 +146,7 @@ export default function DashboardPage() {
         let query = supabase
           .from('sales_records')
           .select(`
+                    created_at,
                     date, 
                     revenue, 
                     profit, 
@@ -172,8 +174,12 @@ export default function DashboardPage() {
         const salesRows = (salesData ?? []) as SalesRecord[];
 
         if (salesRows.length > 0) {
-          // Today's Stats
-          const todayRecords = salesRows.filter(r => r.date === todayStr);
+          // Today's Stats (based on Created Date, mirroring Sales Entry)
+          const todayRecords = salesRows.filter(r => {
+            if (!r.created_at) return false;
+            const createdDate = new Date(r.created_at).toISOString().split('T')[0];
+            return createdDate === todayStr;
+          });
           const todayRev = todayRecords.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
           const todayItems = todayRecords.reduce((acc, curr) => acc + (Number(curr.items_sold) || 0), 0);
 
@@ -323,7 +329,7 @@ export default function DashboardPage() {
     <div>
       <h1 className={layouts.sectionHeader}>Today's Overview</h1>
 
-      <div className={cards.cardGridThreeCol}>
+      <div className={cards.cardGridTwoCol}>
         <StatCard
           label="Today's Sales"
           value={stats.todaySales}
@@ -334,13 +340,6 @@ export default function DashboardPage() {
           label="Today's Revenue"
           value={formatCurrency(stats.todayRevenue)}
           subtext="Gross Revenue Today"
-        />
-
-        <KPICard
-          currentKPI={stats.currentKPI}
-          targetKPI={stats.targetKPI}
-          monthlyProfit={stats.monthlyProfit}
-          currentLevel={stats.currentLevel}
         />
       </div>
 

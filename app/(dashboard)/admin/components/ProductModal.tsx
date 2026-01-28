@@ -66,6 +66,28 @@ export function ProductModal({
                     onChange={onChange}
                     required
                 />
+                <div className={styles.checkboxContainer}>
+                    <input
+                        type="checkbox"
+                        name="in_stock"
+                        id="in_stock"
+                        checked={formData.in_stock !== undefined ? formData.in_stock : true}
+                        onChange={onChange}
+                    />
+                    <label htmlFor="in_stock">In Stock</label>
+                </div>
+
+                {(!formData.in_stock && formData.in_stock !== undefined) ? null : (
+                    <Input
+                        label="Stock Quantity"
+                        name="stock_quantity"
+                        type="number"
+                        min="0"
+                        value={formData.stock_quantity || '0'}
+                        onChange={onChange}
+                    />
+                )}
+
                 <div>
                     <label className={styles.formLabel}>
                         Product Type

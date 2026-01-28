@@ -138,7 +138,7 @@ export default function ShopsPage() {
         owner_id: currentRole === 'member' ? user.id : (prev.owner_id || user.id),
       }));
 
-      const { data: productsData } = await supabase.from('products').select('id, name').order('name');
+      const { data: productsData } = await supabase.from('products').select('id, name, sku').order('name');
       if (productsData) setAllProducts(productsData);
 
       setInitialLoading(false);

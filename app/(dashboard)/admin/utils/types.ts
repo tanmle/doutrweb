@@ -13,6 +13,8 @@ export interface Product {
   selling_price: number;
   type?: 'company' | 'self_researched';
   owner_id?: string;
+  in_stock?: boolean;
+  stock_quantity?: number;
   created_at: string;
   owner_profile?: {
     full_name: string;

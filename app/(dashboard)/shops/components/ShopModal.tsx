@@ -21,7 +21,7 @@ interface ShopModalProps {
     isEdit?: boolean;
     formData: FormData;
     profiles: Profile[];
-    allProducts?: { id: string; name: string }[];
+    allProducts?: { id: string; name: string; sku?: string }[];
     selectedProductIds?: string[];
     userRole: string;
     loading: boolean;
@@ -130,8 +130,12 @@ export function ShopModal({
                                     }}
                                     style={{ marginRight: '0.75rem', width: '16px', height: '16px', accentColor: 'var(--primary)' }}
                                 />
-                                <label htmlFor={`prod-${p.id}`} style={{ cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                                    {p.name}
+                                <label
+                                    htmlFor={`prod-${p.id}`}
+                                    style={{ cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-secondary)' }}
+                                    title={p.name}
+                                >
+                                    {p.sku || 'No SKU'}
                                 </label>
                             </div>
                         ))}

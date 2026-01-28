@@ -23,6 +23,7 @@ export function ProductsTable({ products, onEdit, onDelete }: ProductsTableProps
                         <th>SKU</th>
                         <th>Base Price</th>
                         <th>Selling Price</th>
+                        <th>Status</th>
                         <th>Type</th>
                         <th>Owner</th>
                         <th>Actions</th>
@@ -37,6 +38,11 @@ export function ProductsTable({ products, onEdit, onDelete }: ProductsTableProps
                             </td>
                             <td data-label="Base Price">{formatUSD(p.base_price)}</td>
                             <td data-label="Selling Price">{formatUSD(p.selling_price)}</td>
+                            <td data-label="Status">
+                                <span className={`${styles.inStockBadge} ${p.in_stock !== false ? styles.inStockTrue : styles.inStockFalse}`}>
+                                    {p.in_stock !== false ? `In Stock (${p.stock_quantity || 0})` : 'Out of Stock'}
+                                </span>
+                            </td>
                             <td data-label="Type">
                                 <span className={`${styles.productTypeBadge} ${p.type === 'company' ? styles.productTypeBadgeCompany : styles.productTypeBadgeSelf
                                     }`}>

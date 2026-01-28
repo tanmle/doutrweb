@@ -34,46 +34,54 @@ export function SalesTable({ records, loading, onEdit, onDelete }: SalesTablePro
             <table className={tables.table}>
                 <thead>
                     <tr>
-                        <th>Date</th>
+                        <th>Order ID</th>
                         <th>Shop</th>
                         <th>Owner</th>
-                        <th>Product</th>
-                        <th>QTY</th>
-                        <th>Revenue($)</th>
+                        <th>Order Status</th>
+                        <th>Order Substatus</th>
+                        <th>SKU ID</th>
+                        <th>Quantity</th>
+                        <th>Order Amount</th>
+                        <th>Created Date</th>
+                        <th>Order Date</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {records.length === 0 ? (
                         <tr>
-                            <td colSpan={7} className={`${layouts.textCenter} ${sales.emptyStateCell}`}>
+                            <td colSpan={11} className={`${layouts.textCenter} ${sales.emptyStateCell}`}>
                                 <span className={layouts.textMuted}>No records found.</span>
                             </td>
                         </tr>
                     ) : (
                         records.map((r) => (
                             <tr key={r.id}>
-                                <td data-label="Date">{new Date(r.date).toLocaleDateString('vi-VN')}</td>
-                                <td data-label="Shop">{r.shop?.name}</td>
+                                <td data-label="Order ID">{r.order_id || 'manual-' + r.id.substring(0, 6)}</td>
+                                <td data-label="Shop">{r.shop?.name || '-'}</td>
                                 <td data-label="Owner">
                                     {(() => {
                                         const shopData = r.shop;
+                                        // Handle single object or array return from Supabase
                                         const profile = Array.isArray(shopData?.profiles) ? shopData.profiles[0] : shopData?.profiles;
 
                                         if (profile) {
-                                            return (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    <span>{profile.full_name || profile.email || 'No Name'}</span>
-                                                    {profile.role && <RoleBadge role={profile.role as UserRole} />}
-                                                </div>
-                                            );
+                                            return profile.full_name || profile.email || 'No Name';
                                         }
-                                        return shopData?.owner_id ? `ID: ${shopData.owner_id.substring(0, 8)}...` : 'N/A';
+                                        return 'N/A';
                                     })()}
                                 </td>
-                                <td data-label="Product">{r.product?.name}</td>
-                                <td data-label="QTY">{r.items_sold}</td>
-                                <td data-label="Revenue">{formatCurrency(r.revenue)}</td>
+                                <td data-label="Order Status">
+                                    <span className={sales.statusBadge}>{r.order_status || r.status || '-'}</span>
+                                </td>
+                                <td data-label="Order Substatus">{r.order_substatus || '-'}</td>
+                                <td data-label="SKU ID">{r.sku_id || r.product?.sku || '-'}</td>
+                                <td data-label="Quantity">{r.items_sold}</td>
+                                <td data-label="Order Amount">{formatCurrency(r.revenue)}</td>
+                                <td data-label="Created Date">
+                                    {r.created_at ? new Date(r.created_at).toLocaleDateString('vi-VN') : '-'}
+                                </td>
+                                <td data-label="Order Date">{new Date(r.date).toLocaleDateString('vi-VN')}</td>
                                 <td data-label="Actions">
                                     <div className={tables.tableActionsSmall}>
                                         <Button variant="ghost" onClick={() => onEdit(r)} className={sales.actionButtonSmall}>

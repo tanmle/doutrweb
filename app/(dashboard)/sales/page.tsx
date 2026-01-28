@@ -1,389 +1,329 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card } from '@/components/ui/Card';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
-import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
+import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { StatCard } from '@/components/ui/StatCard';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useSupabase } from '@/contexts/SupabaseContext';
 import { formatCurrency } from '@/utils/formatters';
 import { SalesTable } from './components';
-import { forms, cards, tables, filters, layouts, sales } from '@/styles/modules';
-import type {
-  Shop,
-  Product,
-  Profile,
-  SalesRecordWithRelations,
-  SalesFormData,
-  SalesItem,
-  DateFilterType,
-  DateRange,
-  CommissionRate
-} from './types';
-import { sendAchievementNotification, checkThresholdCrossed } from '@/utils/notifications';
-import { useRealtime } from '@/hooks/useRealtime';
+import { forms, layouts, filters, cards } from '@/styles/modules';
+import type { Shop, SalesRecordWithRelations, DateFilterType, DateRange, Profile } from './types';
 
-export default function DailyEntryPage() {
+// Date helpers
+const getDateRange = (type: DateFilterType): DateRange => {
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+
+  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
+  const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];
+
+  switch (type) {
+    case 'today':
+      return { start: today, end: today };
+    case 'this_month':
+      return { start: startOfMonth, end: today };
+    case 'last_month':
+      return { start: prevMonthStart, end: prevMonthEnd };
+    case 'range':
+      return { start: startOfMonth, end: today }; // Default range
+    default:
+      return { start: startOfMonth, end: today };
+  }
+};
+
+// CSV Parsing Helper
+const parseCSVLine = (text: string) => {
+  const result = [];
+  let cell = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      result.push(cell.trim());
+      cell = '';
+    } else {
+      cell += char;
+    }
+  }
+  result.push(cell.trim());
+  return result;
+};
+
+export default function SalesEntryPage() {
   const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<SalesRecordWithRelations | null>(null);
-  const [shops, setShops] = useState<Shop[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+
   const [records, setRecords] = useState<SalesRecordWithRelations[]>([]);
-  const [shopProductRelations, setShopProductRelations] = useState<{ shop_id: string; product_id: string }[]>([]);
-  const [refresh, setRefresh] = useState(0);
-  const [userRole, setUserRole] = useState<string>('member');
+  const [shops, setShops] = useState<Shop[]>([]);
 
-  // Grid Filters
-  const [shopFilter, setShopFilter] = useState('all');
-  const [ownerFilter, setOwnerFilter] = useState('all');
-  const [dateFilter, setDateFilter] = useState<DateFilterType>('today');
-  const [dateRange, setDateRange] = useState<DateRange>(() => {
-    const today = new Date().toISOString().split('T')[0];
-    return { start: today, end: today };
-  });
+  // Filters State
+  const [dateFilter, setDateFilter] = useState<DateFilterType>('this_month');
+  const [dateRange, setDateRange] = useState<DateRange>(getDateRange('this_month'));
+  const [ownerFilter, setOwnerFilter] = useState('');
+  const [profiles, setProfiles] = useState<Profile[]>([]);
 
-  const toast = useToast();
-  const router = useRouter();
-  const supabase = useSupabase();
-
-  // Form State
-  const [shopId, setShopId] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [items, setItems] = useState<SalesItem[]>([{ productId: '', quantity: '', price: '' }]);
-  const [formData, setFormData] = useState<SalesFormData>({
+  // Import Modal State
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [selectedShopId, setSelectedShopId] = useState('');
+  // Edit/Delete State
+  const [selectedRecord, setSelectedRecord] = useState<SalesRecordWithRelations | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [products, setProducts] = useState<any[]>([]); // Need products for dropdown
+  const [formData, setFormData] = useState({
     shopId: '',
     date: '',
     productId: '',
     quantity: '',
-    price: ''
+    price: '', // revenue
+    status: ''
   });
 
-  // Real-time subscription for sales records
-  useRealtime({
-    table: 'sales_records',
-    onData: () => {
-      // Trigger a re-fetch when data changes
-      setRefresh(prev => prev + 1);
-    }
-  });
+  const [importing, setImporting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  const supabase = useSupabase();
+  const toast = useToast();
+
+  // Fetch Initial Data
   useEffect(() => {
-    if (dateFilter === 'range') return;
+    const fetchShops = async () => {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+      // Fetch shops the user has access to
+      let query = supabase.from('shops').select('id, name, owner_id');
+      const { data: shopsData } = await query.order('name');
 
-    if (dateFilter === 'today') {
-      setDateRange({ start: todayStr, end: todayStr });
-      return;
+      if (shopsData) {
+        setShops(shopsData);
+        if (shopsData.length > 0) setSelectedShopId(shopsData[0].id);
+      }
+
+      // Fetch Profiles for Owner Filter
+      const { data: profilesData } = await supabase.from('profiles').select('id, full_name, email, role').order('full_name');
+      if (profilesData) setProfiles(profilesData);
+
+      // Fetch Products for Edit Modal
+      const { data: productsData } = await supabase.from('products').select('*').order('name');
+      if (productsData) setProducts(productsData);
+
+      setLoading(false);
+    };
+    fetchShops();
+  }, []);
+
+  // Update date range when filter type changes
+  useEffect(() => {
+    if (dateFilter !== 'range') {
+      setDateRange(getDateRange(dateFilter));
     }
-
-    if (dateFilter === 'this_month') {
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      setDateRange({
-        start: startOfMonth.toISOString().split('T')[0],
-        end: todayStr
-      });
-      return;
-    }
-
-    const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-    setDateRange({
-      start: startOfLastMonth.toISOString().split('T')[0],
-      end: endOfLastMonth.toISOString().split('T')[0]
-    });
   }, [dateFilter]);
 
+  // Fetch records when filters change
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+    fetchRecords();
+  }, [dateRange, ownerFilter]);
 
-        // Fetch User Role and Profiles for Owners
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-        if (profile) {
-          setUserRole(profile.role);
-          if (profile.role === 'admin') {
-            const { data: profileData } = await supabase.from('profiles').select('id, full_name, email').order('full_name');
-            if (profileData) setProfiles(profileData);
-          } else if (profile.role === 'leader') {
-            const { data: teamProfiles } = await supabase
-              .from('profiles')
-              .select('id, full_name, email')
-              .or(`id.eq.${user.id},leader_id.eq.${user.id}`)
-              .order('full_name');
-            if (teamProfiles) setProfiles(teamProfiles);
-          }
-        }
+  // Also pre-fetch products map for SKU resolution during import?
+  // We will do it inside handleImport to ensure freshness or fetch here.
 
-        // Fetch shops based on role hierarchy
-        let shopsQuery = supabase.from('shops').select('id, name, owner_id');
-        if (profile?.role === 'admin') {
-          // Admin sees all
-        } else if (profile?.role === 'leader') {
-          const { data: members } = await supabase.from('profiles').select('id').eq('leader_id', user.id);
-          const teamIds = [user.id, ...(members?.map(m => m.id) || [])];
-          shopsQuery = shopsQuery.in('owner_id', teamIds);
-        } else {
-          // Member
-          shopsQuery = shopsQuery.eq('owner_id', user.id);
-        }
-
-        const { data: shopsData } = await shopsQuery.order('name');
-        if (shopsData) {
-          setShops(shopsData);
-          if (shopsData.length > 0 && !shopId) setShopId(shopsData[0].id);
-        }
-
-        // Fetch products
-        const { data: productsData } = await supabase.from('products').select('*').order('name');
-        if (productsData) {
-          setProducts(productsData);
-        }
-
-        // Fetch shop-product relations
-        const { data: relations } = await supabase.from('shop_products').select('shop_id, product_id');
-        if (relations) {
-          setShopProductRelations(relations);
-        }
-
-        // Fetch records with filters based on role hierarchy
-        let query = supabase
-          .from('sales_records')
-          .select(`
-              *,
-              shop:shops!inner(
-                id,
-                name, 
-                owner_id,
-                profiles!owner_id(full_name, email, role)
-              ),
-              product:products(id, name)
-            `)
-          .order('date', { ascending: false });
-
-        if (shopFilter !== 'all') query = query.eq('shop_id', shopFilter);
-
-        const currentRole = profile?.role || 'member';
-        if (currentRole === 'admin') {
-          if (ownerFilter !== 'all') {
-            query = query.eq('shop.owner_id', ownerFilter);
-          }
-        } else if (currentRole === 'leader') {
-          const { data: members } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('leader_id', user.id);
-
-          const memberIds = members?.map(m => m.id) || [];
-          const teamIds = [user.id, ...memberIds];
-
-          if (ownerFilter !== 'all' && teamIds.includes(ownerFilter)) {
-            query = query.eq('shop.owner_id', ownerFilter);
-          } else {
-            query = query.in('shop.owner_id', teamIds);
-          }
-        } else {
-          // Member sees only their own shops
-          query = query.eq('shop.owner_id', user.id);
-        }
-
-        if (dateRange.start) query = query.gte('date', dateRange.start);
-        if (dateRange.end) query = query.lte('date', dateRange.end);
-
-        const { data: salesData } = await query.limit(50);
-        if (salesData) setRecords(salesData);
-      } finally {
-        setInitialLoading(false);
-      }
-    };
-    fetchData();
-  }, [refresh, shopFilter, ownerFilter, dateRange.start, dateRange.end]); // Fixed: removed unstable dependencies
-
-  const availableProducts = useMemo(() => {
-    if (!shopId) return products;
-    const relatedIds = shopProductRelations
-      .filter(r => r.shop_id === shopId)
-      .map(r => r.product_id);
-
-    if (relatedIds.length > 0) {
-      return products.filter(p => relatedIds.includes(p.id));
-    }
-    return products; // Fallback to all if none assigned
-  }, [shopId, products, shopProductRelations]);
-
-  // Update items when availableProducts changes (e.g. shop change)
-  useEffect(() => {
-    if (availableProducts.length > 0 && !initialLoading) {
-      // If current items have products not in available list (or generic init), reset?
-      // For now, let's just ensure defaults are valid if empty
-      if (items.length === 1 && items[0].productId === '' && items[0].quantity === '') {
-        setItems([{
-          productId: availableProducts[0].id,
-          quantity: '',
-          price: availableProducts[0].selling_price.toString()
-        }]);
-      }
-    }
-  }, [availableProducts, initialLoading]);
-
-  const addItem = () => {
-    setItems([...items, {
-      productId: availableProducts[0]?.id || '',
-      quantity: '',
-      price: availableProducts[0]?.selling_price?.toString() || ''
-    }]);
-  };
-
-  const removeItem = (index: number) => {
-    if (items.length === 1) return;
-    const newItems = items.filter((_, i) => i !== index);
-    setItems(newItems);
-  };
-
-  const handleItemChange = (index: number, field: string, value: string) => {
-    const newItems = [...items];
-    (newItems[index] as any)[field] = value;
-
-    if (field === 'productId') {
-      const product = products.find(p => p.id === value);
-      if (product) {
-        newItems[index].price = product.selling_price.toString();
-      }
-    }
-    setItems(newItems);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const fetchRecords = async () => {
     setLoading(true);
+    const query = supabase
+      .from('sales_records')
+      .select(`
+        *,
+        shop:shops!inner(id, name, owner_id, profiles:owner_id(full_name, email)),
+        product:products(id, name, sku)
+      `)
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error('You must be logged in');
-      setLoading(false);
-      return;
+      .order('created_at', { ascending: false });
+
+    // Apply Filters
+    if (dateRange.start) query.gte('created_at', dateRange.start);
+    if (dateRange.end) query.lte('created_at', dateRange.end + 'T23:59:59'); // Include the end date fully
+
+    // Filter by Shop Owner (requires !inner join on shops which we have)
+    if (ownerFilter) {
+      query.eq('shop.owner_id', ownerFilter);
     }
 
-    const records = items.map(item => {
-      const product = products.find(p => p.id === item.productId);
-      if (!product) return null;
+    const { data } = await query.limit(100);
 
-      const quantity = parseInt(item.quantity) || 0;
-      const unitPrice = parseFloat(item.price) || 0;
-      const revenue = quantity * unitPrice;
-      const cost = quantity * (product.base_price || 0);
-
-      return {
-        shop_id: shopId,
-        product_id: item.productId,
-        date: date,
-        revenue: revenue,
-        items_sold: quantity,
-        profit: revenue - cost,
-        created_by: user.id,
-        status: 'pending'
-      };
-    }).filter(r => r !== null);
-
-    if (records.length === 0) {
-      toast.error('Please add at least one valid product record');
-      setLoading(false);
-      return;
-    }
-
-    // Auto-Achievement Checks: Pre-fetch previous stats
-    // We fetch existing stats BEFORE insertion to establish a baseline
-    let companyRates: CommissionRate[] = [];
-    let selfRates: CommissionRate[] = [];
-    let prevCompanyProfit = 0;
-    let prevSelfProfit = 0;
-
-    try {
-      const today = new Date();
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
-      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString();
-
-      const [ratesData, salesData] = await Promise.all([
-        supabase.from('commission_rates').select('*'),
-        supabase.from('sales_records')
-          .select('profit, product:products(type)')
-          .eq('created_by', user.id)
-          .gte('date', startOfMonth)
-          .lte('date', endOfMonth)
-      ]);
-
-      if (ratesData.data) {
-        companyRates = ratesData.data.filter(r => r.type === 'company');
-        selfRates = ratesData.data.filter(r => r.type === 'self_researched');
-      }
-
-      if (salesData.data) {
-        salesData.data.forEach((sale: any) => {
-          const type = sale.product?.type || 'company';
-          if (type === 'self_researched') {
-            prevSelfProfit += sale.profit || 0;
-          } else {
-            prevCompanyProfit += sale.profit || 0;
-          }
-        });
-      }
-    } catch (err) {
-      console.error('Error preparing achievement check:', err);
-    }
-
-    const { error } = await supabase.from('sales_records').insert(records);
-
-    if (error) {
-      toast.error('Error saving records: ' + error.message);
-    } else {
-      toast.success('Daily records submitted successfully!');
-
-      // Calculate newly added profit
-      let addedCompanyProfit = 0;
-      let addedSelfProfit = 0;
-
-      records.forEach(r => {
-        const product = products.find(p => p.id === r.product_id);
-        const type = product?.type || 'company';
-        if (type === 'self_researched') {
-          addedSelfProfit += r.profit;
-        } else {
-          addedCompanyProfit += r.profit;
-        }
-      });
-
-      // Check thresholds
-      if (addedCompanyProfit > 0 && companyRates.length > 0) {
-        const current = prevCompanyProfit + addedCompanyProfit;
-        const crossed = checkThresholdCrossed(prevCompanyProfit, current, companyRates);
-        if (crossed) {
-          sendAchievementNotification(user.id, crossed.level, current, crossed.threshold);
-        }
-      }
-
-      if (addedSelfProfit > 0 && selfRates.length > 0) {
-        const current = prevSelfProfit + addedSelfProfit;
-        const crossed = checkThresholdCrossed(prevSelfProfit, current, selfRates);
-        if (crossed) {
-          sendAchievementNotification(user.id, crossed.level, current, crossed.threshold);
-        }
-      }
-
-      setItems([{ productId: products[0]?.id || '', quantity: '', price: products[0]?.selling_price?.toString() || '' }]);
-      setIsModalOpen(false);
-      setRefresh(prev => prev + 1);
+    if (data) {
+      setRecords(data as any);
     }
     setLoading(false);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const handleImport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile || !selectedShopId) {
+      toast.error('Please select a shop and a CSV file');
+      return;
+    }
+
+    setImporting(true);
+    const reader = new FileReader();
+
+    reader.onload = async (event) => {
+      try {
+        const text = event.target?.result as string;
+        const lines = text.split('\n');
+        if (lines.length < 2) {
+          throw new Error('CSV file is empty or invalid');
+        }
+
+        // Parse Headers to find column indices
+        const headerLine = lines[0];
+        const headers = parseCSVLine(headerLine).map(h => h.toLowerCase().trim());
+
+        const idxOrderId = headers.indexOf('order id');
+        const idxStatus = headers.findIndex(h => h === 'order status');
+        const idxSubStatus = headers.findIndex(h => h === 'order substatus');
+        const idxSkuId = headers.findIndex(h => h === 'sku id');
+        const idxQuantity = headers.findIndex(h => h === 'quantity');
+        const idxAmount = headers.findIndex(h => h === 'order amount');
+
+        const idxSellerSku = headers.findIndex(h => h === 'seller sku');
+        const idxCreatedTime = headers.findIndex(h => h === 'created time');
+
+        if (idxOrderId === -1) throw new Error('Column "Order ID" not found in CSV');
+
+        // Fetch products for SKU mapping
+        const { data: productsData } = await supabase.from('products').select('id, sku');
+        const productMap = new Map<string, string>(); // sku -> id
+        if (productsData) {
+          productsData.forEach(p => {
+            if (p.sku) productMap.set(p.sku.toLowerCase().trim(), p.id);
+          });
+        }
+
+        const newRecords = [];
+        // Start from line 1 (skip header)
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+
+          const cols = parseCSVLine(line);
+
+          // Basic validation
+          if (cols.length < headers.length * 0.5) continue; // Skip malformed lines
+
+          // Create raw_data object
+          const rawObj: any = {};
+          headers.forEach((h, index) => {
+            rawObj[h] = cols[index] || '';
+          });
+
+          // Resolve Product ID from SKU ID (ignoring Seller SKU as requested)
+          const sellerSku = idxSellerSku !== -1 ? cols[idxSellerSku] : '';
+          const csvSkuId = idxSkuId !== -1 ? cols[idxSkuId] : '';
+
+          // Only use SKU ID for product resolution
+          let productId = productMap.get(csvSkuId.toLowerCase().trim()) || null;
+
+          // Parse Date (Created Time) - format: 01/25/2026 10:29:04 PM
+          let dateStr = new Date().toISOString().split('T')[0];
+          if (idxCreatedTime !== -1 && cols[idxCreatedTime]) {
+            try {
+              const d = new Date(cols[idxCreatedTime]);
+              if (!isNaN(d.getTime())) dateStr = d.toISOString().split('T')[0];
+            } catch (e) {
+              // ignore date parse error
+            }
+          }
+
+          const recordData = {
+            shop_id: selectedShopId,
+            order_id: cols[idxOrderId],
+            order_status: idxStatus !== -1 ? cols[idxStatus] : null,
+            order_substatus: idxSubStatus !== -1 ? cols[idxSubStatus] : null,
+            sku_id: idxSkuId !== -1 ? cols[idxSkuId] : null,
+            seller_sku: sellerSku,
+            items_sold: idxQuantity !== -1 ? (parseInt(cols[idxQuantity]) || 0) : 0,
+            revenue: idxAmount !== -1 ? (parseFloat(cols[idxAmount]) || 0) : 0,
+
+            // Required fields for sales_records
+            date: dateStr,
+            product_id: productId, // Might be null if not found
+
+            raw_data: rawObj,
+            status: 'approved' // Auto-approve imported records? or pending? User didn't specify, defaulting to approved/verified usually for imports. Let's use 'pending' or whatever schema default is. Schema default is 'pending'.
+          };
+
+          newRecords.push(recordData);
+        }
+
+        if (newRecords.length === 0) {
+          throw new Error('No valid records found in CSV');
+        }
+
+        // Check for missing products (SKU exists in CSV but not found in DB)
+        const missingSkus = new Set<string>();
+        newRecords.forEach(r => {
+          // Only check SKU ID
+          if (!r.product_id && r.sku_id) {
+            missingSkus.add(r.sku_id as string);
+          }
+        });
+
+        if (missingSkus.size > 0) {
+          const skuList = Array.from(missingSkus).slice(0, 5).join(', ');
+          const moreCount = missingSkus.size > 5 ? ` and ${missingSkus.size - 5} more` : '';
+          throw new Error(`The following SKUs were not found in Products: ${skuList}${moreCount}. Import cancelled. Please add them to the Product list first.`);
+        }
+
+        const { data: { user } } = await supabase.auth.getUser();
+        // Add created_by to records
+        const recordsToInsert = newRecords.map(r => ({ ...r, created_by: user?.id || null }));
+
+        // Batch insert/upsert
+        const { error } = await supabase.from('sales_records').upsert(recordsToInsert, { onConflict: 'order_id' });
+
+        if (error) throw error;
+
+        toast.success(`Successfully imported ${newRecords.length} records`);
+
+        setIsImportModalOpen(false);
+        fetchRecords();
+
+      } catch (err: any) {
+        console.error(err);
+        toast.error('Import failed: ' + err.message);
+      } finally {
+        setImporting(false);
+        // Reset file input if needed, but managing generic state is enough
+      }
+    };
+
+    reader.readAsText(selectedFile);
+  };
+
+  const openEditModal = (record: SalesRecordWithRelations) => {
+    setSelectedRecord(record);
+    setFormData({
+      shopId: record.shop_id,
+      date: new Date(record.date).toISOString().split('T')[0],
+      productId: record.product_id || record.product?.id || '',
+      quantity: record.items_sold.toString(),
+      price: record.revenue.toString(),
+      status: record.order_status || record.status || 'pending'
+    });
+    setIsEditModalOpen(true);
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -391,25 +331,32 @@ export default function DailyEntryPage() {
     if (!selectedRecord) return;
     setLoading(true);
 
-    const product = products.find(p => p.id === formData.productId);
-    if (!product) {
-      toast.error('Invalid product');
-      setLoading(false);
-      return;
-    }
-
     const quantity = parseInt(formData.quantity) || 0;
-    const unitPrice = parseFloat(formData.price) || 0;
-    const revenue = quantity * unitPrice;
-    const cost = quantity * (product.base_price || 0);
+    const revenue = parseFloat(formData.price) || 0; // In this context, price is total revenue for the order line
+
+    // Recalculate profit if product is selected
+    let profit = 0;
+    const product = products.find(p => p.id === formData.productId);
+    if (product) {
+      // if we have base_price, profit = revenue - (qty * base)
+      // BUT complex logic might exist. For now simple:
+      const cost = quantity * (product.base_price || 0);
+      profit = revenue - cost;
+    } else {
+      // preserve old profit or 0? 
+      // If no product linked, profit is abstract. Let's assume 0 cost if no product?
+      // sales_records schema has profit column.
+      profit = revenue; // worst case
+    }
 
     const { error } = await supabase.from('sales_records').update({
       shop_id: formData.shopId,
-      product_id: formData.productId,
+      product_id: formData.productId || null,
       date: formData.date,
       items_sold: quantity,
       revenue: revenue,
-      profit: revenue - cost,
+      profit: profit,
+      status: formData.status
     }).eq('id', selectedRecord.id);
 
     if (error) {
@@ -417,22 +364,9 @@ export default function DailyEntryPage() {
     } else {
       toast.success('Record updated successfully!');
       setIsEditModalOpen(false);
-      setRefresh(prev => prev + 1);
+      fetchRecords();
     }
     setLoading(false);
-  };
-
-  const openEditModal = (record: any) => {
-    setSelectedRecord(record);
-    const unitPrice = record.items_sold > 0 ? (record.revenue / record.items_sold) : 0;
-    setFormData({
-      shopId: record.shop_id,
-      date: record.date,
-      productId: record.product_id,
-      quantity: record.items_sold.toString(),
-      price: unitPrice.toString()
-    });
-    setIsEditModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -442,29 +376,26 @@ export default function DailyEntryPage() {
     if (error) {
       toast.error('Error deleting record: ' + error.message);
     } else {
-      setRefresh(prev => prev + 1);
+      toast.success('Record deleted');
+      fetchRecords();
     }
     setLoading(false);
   };
 
+
+
   const totalQty = records.reduce((sum, r) => sum + (r.items_sold || 0), 0);
   const totalRevenue = records.reduce((sum, r) => sum + (r.revenue || 0), 0);
 
-  if (initialLoading) {
-    return <LoadingIndicator label="Loading sales data…" />;
-  }
-
   return (
     <div>
-
-
       <div className={cards.cardGridTwoCol}>
         <StatCard
-          label="Total QTY"
+          label="Total Order Quantity"
           value={totalQty.toLocaleString()}
         />
         <StatCard
-          label="Total Revenue"
+          label="Total Order Amount"
           value={formatCurrency(totalRevenue)}
           variant="success"
         />
@@ -473,317 +404,220 @@ export default function DailyEntryPage() {
       <div className={layouts.spacingY}></div>
 
       <div className={filters.filterControls}>
-        <div className={filters.filterField}>
-          <label className={filters.filterLabel}>Shop</label>
-          <select
-            aria-label="Filter by shop"
-            value={shopFilter}
-            onChange={(e) => setShopFilter(e.target.value)}
-            className={filters.filterSelect}
-          >
-            <option value="all">All Shops</option>
-            {shops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-        </div>
-
-        {['admin', 'leader'].includes(userRole) && (
-          <div className={filters.filterField}>
-            <label className={filters.filterLabel}>Owner</label>
-            <select
-              aria-label="Filter by owner"
-              value={ownerFilter}
-              onChange={(e) => setOwnerFilter(e.target.value)}
-              className={filters.filterSelect}
-            >
-              <option value="all">All Owners</option>
-              {profiles.map(p => <option key={p.id} value={p.id}>{p.full_name || p.email}</option>)}
-            </select>
-          </div>
-        )}
-
-        <div className={filters.filterGroup}>
-          <label className={filters.filterLabel}>Date Filter</label>
-
-          <div className={layouts.flexColumn}>
-            <div className={filters.filterButtons}>
-              <Button variant={dateFilter === 'today' ? 'primary' : 'secondary'} onClick={() => setDateFilter('today')}>
-                Today
-              </Button>
-              <Button variant={dateFilter === 'this_month' ? 'primary' : 'secondary'} onClick={() => setDateFilter('this_month')}>
-                This Month
-              </Button>
-              <Button variant={dateFilter === 'last_month' ? 'primary' : 'secondary'} onClick={() => setDateFilter('last_month')}>
-                Last Month
-              </Button>
-              <Button variant={dateFilter === 'range' ? 'primary' : 'secondary'} onClick={() => setDateFilter('range')}>
-                Date Range
-              </Button>
-
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  const today = new Date().toISOString().split('T')[0];
-                  setShopFilter('all');
-                  setOwnerFilter('all');
-                  setDateFilter('today');
-                  setDateRange({ start: today, end: today });
-                }}
-              >
-                Reset
-              </Button>
-            </div>
-
-            {dateFilter === 'range' && (
-              <div className={filters.dateRangeContainer}>
-                <div className={filters.dateRangeField}>
-                  <label className={filters.filterLabel}>Start Date</label>
-                  <input
-                    aria-label="Start date"
-                    type="date"
-                    value={dateRange.start}
-                    onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                    onClick={(e) => e.currentTarget.showPicker()}
-                    className={filters.filterInput}
-                  />
-                </div>
-
-                <div className={filters.dateRangeField}>
-                  <label className={filters.filterLabel}>End Date</label>
-                  <input
-                    aria-label="End date"
-                    type="date"
-                    value={dateRange.end}
-                    onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                    onClick={(e) => e.currentTarget.showPicker()}
-                    className={filters.filterInput}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className={layouts.hideOnMobile} style={{ marginLeft: 'auto', paddingBottom: '2px' }}>
-          <Button onClick={() => setIsModalOpen(true)}>+ Add Daily Sales</Button>
+        <h1 className={layouts.sectionHeader}>Sales Entry (Orders)</h1>
+        <div style={{ marginLeft: 'auto' }}>
+          <Button onClick={() => setIsImportModalOpen(true)}>Import CSV</Button>
         </div>
       </div>
 
-      <div className={layouts.spacingBottom}></div>
+      <div className={layouts.spacingY}></div>
 
-      <div className={layouts.showOnMobile}>
-        <Button onClick={() => setIsModalOpen(true)} fullWidth>+ Add Daily Sales</Button>
+      {/* Filters UI */}
+      <div className={filters.filterControls} style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className={filters.filterButtons}>
+            <Button
+              variant={dateFilter === 'today' ? 'primary' : 'secondary'}
+              onClick={() => setDateFilter('today')}
+              className={filters.filterButton}
+            >
+              Today
+            </Button>
+            <Button
+              variant={dateFilter === 'this_month' ? 'primary' : 'secondary'}
+              onClick={() => setDateFilter('this_month')}
+              className={filters.filterButton}
+            >
+              This Month
+            </Button>
+            <Button
+              variant={dateFilter === 'last_month' ? 'primary' : 'secondary'}
+              onClick={() => setDateFilter('last_month')}
+              className={filters.filterButton}
+            >
+              Last Month
+            </Button>
+            <Button
+              variant={dateFilter === 'range' ? 'primary' : 'secondary'}
+              onClick={() => setDateFilter('range')}
+              className={filters.filterButton}
+            >
+              Range
+            </Button>
+          </div>
+
+          {dateFilter === 'range' && (
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', animation: 'fadeIn 0.2s ease-in-out' }}>
+              <input
+                type="date"
+                value={dateRange.start}
+                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                className={forms.formInput}
+                style={{ width: 'auto' }}
+              />
+              <span className={layouts.textMuted}>-</span>
+              <input
+                type="date"
+                value={dateRange.end}
+                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                className={forms.formInput}
+                style={{ width: 'auto' }}
+              />
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <select
+            className={forms.formSelect}
+            value={ownerFilter}
+            onChange={(e) => setOwnerFilter(e.target.value)}
+            style={{ minWidth: '200px' }}
+          >
+            <option value="">All Owners</option>
+            {profiles.map(p => (
+              <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className={layouts.spacingY}></div>
 
       <SalesTable
         records={records}
-        loading={false}
+        loading={loading}
         onEdit={openEditModal}
         onDelete={handleDelete}
       />
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Daily Sales Entry">
-        <form onSubmit={handleSubmit} className={forms.form}>
-          <div className={forms.formGridAuto}>
-            <div className={forms.formField}>
-              <label className={forms.formLabel}>Shop</label>
-              <select
-                aria-label="Select shop"
-                className={forms.formSelect}
-                value={shopId}
-                onChange={(e) => setShopId(e.target.value)}
-                required
-              >
-                {shops.map(shop => (
-                  <option key={shop.id} value={shop.id}>{shop.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className={forms.formField}>
-              <label className={forms.formLabel}>Date</label>
-              <input
-                aria-label="Select date"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                onClick={(e) => e.currentTarget.showPicker()}
-                required
-                className={forms.formInput}
-              />
-            </div>
-          </div>
-
-          <div className={layouts.spacingTop}>
-            <div className={`${layouts.flexRowSpaced} ${sales.productsSectionHeader}`}>
-              <h3 className={layouts.sectionHeaderSmall}>Products Sold</h3>
-              <Button type="button" variant="ghost" onClick={addItem} className={sales.addButton}>
-                + Add row
-              </Button>
-            </div>
-
-            {items.length > 0 && (
-              <div style={{ padding: '0 0.75rem 0.5rem', display: 'flex', gap: '0.75rem' }}>
-                <label className={forms.formLabel} style={{ flex: 3.5, marginBottom: 0 }}>Product</label>
-                <label className={forms.formLabel} style={{ flex: 1.2, marginBottom: 0 }}>Price($)</label>
-                <label className={forms.formLabel} style={{ flex: 1.2, marginBottom: 0 }}>QTY</label>
-                <div style={{ width: '32px' }}></div>
-              </div>
-            )}
-
-            <div className={sales.productsList}>
-              {items.map((item, index) => {
-                const qty = parseInt(item.quantity) || 0;
-                const price = parseFloat(item.price) || 0;
-                const total = qty * price;
-
-                return (
-                  <div key={index} className={sales.productRow}>
-                    <div style={{ display: 'flex', gap: '0.75rem', width: '100%', alignItems: 'flex-start' }}>
-                      <div style={{ flex: 3.5 }}>
-                        <select
-                          aria-label="Select product"
-                          className={forms.formSelect}
-                          value={item.productId}
-                          onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
-                          required
-                        >
-                          {availableProducts.map(p => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div style={{ flex: 1.2 }}>
-                        <input
-                          aria-label="Selling Price"
-                          type="number"
-                          placeholder="0"
-                          value={item.price}
-                          onChange={(e) => handleItemChange(index, 'price', e.target.value)}
-                          required
-                          className={forms.formInput}
-                        />
-                      </div>
-
-                      <div style={{ flex: 1.2 }}>
-                        <input
-                          aria-label="Quantity"
-                          type="number"
-                          placeholder="0"
-                          value={item.quantity}
-                          onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                          required
-                          className={forms.formInput}
-                        />
-                      </div>
-
-                      <div className={sales.removeButtonContainer} style={{ width: '32px', paddingTop: '0.6rem' }}>
-                        {items.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeItem(index)}
-                            aria-label="Remove product row"
-                            className={sales.removeButton}
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div style={{
-                      width: '100%',
-                      textAlign: 'right',
-                      fontSize: '0.8rem',
-                      color: 'var(--muted-foreground)',
-                      paddingRight: '2.5rem'
-                    }}>
-                      Total: <span style={{ color: '#60a5fa', fontWeight: 600 }}>{formatCurrency(total)}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <Button type="submit" fullWidth disabled={loading} className={sales.submitButton}>
-            {loading ? 'Submitting…' : 'Submit Daily Record'}
-          </Button>
-        </form>
-      </Modal>
-
-      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Sales Entry">
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Sales Record">
         <form onSubmit={handleUpdate} className={forms.form}>
           <div className={forms.formField}>
             <label className={forms.formLabel}>Shop</label>
             <select
-              aria-label="Select shop"
               className={forms.formSelect}
               value={formData.shopId}
               onChange={(e) => setFormData({ ...formData, shopId: e.target.value })}
               required
             >
-              {shops.map(shop => (
-                <option key={shop.id} value={shop.id}>{shop.name}</option>
+              {shops.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
           </div>
 
-          <div className={forms.formField}>
-            <label className={forms.formLabel}>Date</label>
-            <input
-              aria-label="Select date"
-              type="date"
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              onClick={(e) => e.currentTarget.showPicker()}
-              required
-              className={forms.formInput}
-            />
+          <div className={forms.formGridTwoCol}>
+            <div className={forms.formField}>
+              <label className={forms.formLabel}>Date</label>
+              <input
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                className={forms.formInput}
+                required
+              />
+            </div>
+            <div className={forms.formField}>
+              <label className={forms.formLabel}>Status</label>
+              <input
+                type="text"
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                className={forms.formInput}
+              />
+            </div>
           </div>
 
           <div className={forms.formField}>
-            <label className={forms.formLabel}>Product</label>
+            <label className={forms.formLabel}>Product (Link to SKU)</label>
             <select
-              aria-label="Select product"
               className={forms.formSelect}
               value={formData.productId}
               onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
+            >
+              <option value="">-- No Product Linked --</option>
+              {products.map(p => (
+                <option key={p.id} value={p.id}>{p.name} ({p.sku || 'No SKU'})</option>
+              ))}
+            </select>
+            <p className={layouts.textMuted} style={{ fontSize: '0.8rem' }}>
+              Linking a product enables profit calculation.
+            </p>
+          </div>
+
+          <div className={forms.formGridTwoCol}>
+            <div className={forms.formField}>
+              <label className={forms.formLabel}>Quantity</label>
+              <input
+                type="number"
+                value={formData.quantity}
+                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                className={forms.formInput}
+                required
+              />
+            </div>
+            <div className={forms.formField}>
+              <label className={forms.formLabel}>Total Revenue ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                className={forms.formInput}
+                required
+              />
+            </div>
+          </div>
+
+          <Button type="submit" fullWidth disabled={loading}>
+            {loading ? 'Updating...' : 'Update Record'}
+          </Button>
+        </form>
+      </Modal>
+
+      <Modal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} title="Import Orders CSV">
+        <form onSubmit={handleImport} className={forms.form}>
+          <div className={forms.formField}>
+            <label className={forms.formLabel}>Select Shop</label>
+            <select
+              className={forms.formSelect}
+              value={selectedShopId}
+              onChange={(e) => setSelectedShopId(e.target.value)}
               required
             >
-              {availableProducts.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
+              <option value="">-- Select Shop --</option>
+              {shops.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
           </div>
 
           <div className={forms.formField}>
-            <label className={forms.formLabel}>Selling Price</label>
-            <input
-              aria-label="Selling Price"
-              type="number"
-              value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-              required
-              className={forms.formInput}
-            />
+            <label className={forms.formLabel}>CSV File</label>
+            <div style={{ padding: '1rem', border: '2px dashed var(--border)', borderRadius: '8px', textAlign: 'center' }}>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+                id="csv-upload"
+              />
+              <label htmlFor="csv-upload" style={{ cursor: 'pointer', display: 'block' }}>
+                {selectedFile ? (
+                  <span style={{ color: 'var(--primary)' }}>{selectedFile.name}</span>
+                ) : (
+                  <span className={layouts.textMuted}>Click to upload CSV</span>
+                )}
+              </label>
+            </div>
+            <p className={layouts.textMuted} style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>
+              Supported format: Order ID, Order Status, SKU ID, etc.
+            </p>
           </div>
 
-          <div className={forms.formField}>
-            <label className={forms.formLabel}>Quantity Sold</label>
-            <input
-              aria-label="Quantity"
-              type="number"
-              value={formData.quantity}
-              onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-              required
-              className={forms.formInput}
-            />
-          </div>
-
-          <Button type="submit" fullWidth disabled={loading} className={sales.updateButton}>
-            {loading ? 'Updating…' : 'Update Sales Record'}
+          <Button type="submit" fullWidth disabled={importing || !selectedFile || !selectedShopId}>
+            {importing ? 'Importing...' : 'Start Import'}
           </Button>
         </form>
       </Modal>

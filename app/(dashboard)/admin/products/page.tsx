@@ -40,12 +40,14 @@ export default function AdminProductsPage() {
     });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        if (['base_price', 'selling_price'].includes(name)) {
-            const numericValue = value.replace(/\D/g, '');
+        const { name, value, type } = e.target;
+        const finalValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+
+        if (['base_price', 'selling_price', 'stock_quantity'].includes(name)) {
+            const numericValue = (finalValue as string).replace(/\D/g, '');
             setFormData({ ...formData, [name]: numericValue });
         } else {
-            setFormData({ ...formData, [name]: value });
+            setFormData({ ...formData, [name]: finalValue });
         }
     };
 
@@ -59,6 +61,8 @@ export default function AdminProductsPage() {
             selling_price: parseFloat(formData.selling_price) || 0,
             type: formData.type || 'company',
             owner_id: formData.type === 'self_researched' ? (formData.owner_id || null) : null,
+            in_stock: formData.in_stock !== undefined ? formData.in_stock : true,
+            stock_quantity: (formData.in_stock !== false) ? (parseInt(formData.stock_quantity) || 0) : 0,
         });
         if (error) toast.error(error.message);
         else {
@@ -80,6 +84,8 @@ export default function AdminProductsPage() {
             selling_price: parseFloat(formData.selling_price) || 0,
             type: formData.type,
             owner_id: formData.type === 'self_researched' ? (formData.owner_id || null) : null,
+            in_stock: formData.in_stock,
+            stock_quantity: (formData.in_stock !== false) ? (parseInt(formData.stock_quantity) || 0) : 0,
         }).eq('id', selectedProduct.id);
 
         if (error) toast.error(error.message);
@@ -101,6 +107,8 @@ export default function AdminProductsPage() {
             selling_price: product.selling_price.toString(),
             type: product.type || 'company',
             owner_id: product.owner_id || '',
+            in_stock: product.in_stock,
+            stock_quantity: product.stock_quantity ? product.stock_quantity.toString() : '0',
         });
         setIsEditProductModalOpen(true);
     };

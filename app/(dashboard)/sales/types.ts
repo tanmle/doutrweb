@@ -11,6 +11,7 @@ export interface Shop {
 export interface Product {
     id: string;
     name: string;
+    sku?: string;
     base_price: number;
     selling_price: number;
     type?: 'company' | 'self_researched';
@@ -34,12 +35,19 @@ export interface Profile {
 export interface SalesRecordWithRelations {
     id: string;
     shop_id: string;
-    product_id: string;
+    product_id?: string;
+    order_id?: string;
+    order_status?: string;
+    order_substatus?: string;
+    sku_id?: string;
+    seller_sku?: string;
     date: string;
     items_sold: number;
     revenue: number;
     profit: number;
     status: 'pending' | 'approved' | 'rejected';
+    created_at?: string;
+    raw_data?: any;
     shop: {
         id: string;
         name: string;

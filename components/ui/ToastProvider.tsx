@@ -11,9 +11,9 @@ type ToastItem = {
 };
 
 type ToastContextValue = {
-  success: (message: string) => void;
-  error: (message: string) => void;
-  info: (message: string) => void;
+  success: (message: string, options?: { duration?: number }) => void;
+  error: (message: string, options?: { duration?: number }) => void;
+  info: (message: string, options?: { duration?: number }) => void;
 };
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
@@ -45,16 +45,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts(prev => prev.filter(item => item.id !== id));
   }, []);
 
-  const addToast = useCallback((message: string, variant: ToastVariant) => {
+  const addToast = useCallback((message: string, variant: ToastVariant, duration?: number) => {
     const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     setToasts(prev => [...prev, { id, message, variant }]);
-    window.setTimeout(() => removeToast(id), TOAST_DURATION_MS);
+    window.setTimeout(() => removeToast(id), duration || TOAST_DURATION_MS);
   }, [removeToast]);
 
   const value = useMemo<ToastContextValue>(() => ({
-    success: (message: string) => addToast(message, 'success'),
-    error: (message: string) => addToast(message, 'error'),
-    info: (message: string) => addToast(message, 'info')
+    success: (message: string, options) => addToast(message, 'success', options?.duration),
+    error: (message: string, options) => addToast(message, 'error', options?.duration),
+    info: (message: string, options) => addToast(message, 'info', options?.duration)
   }), [addToast]);
 
   return (
