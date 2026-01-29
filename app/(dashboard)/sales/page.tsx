@@ -1,4 +1,5 @@
 'use client';
+import * as XLSX from 'xlsx';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
@@ -200,7 +201,7 @@ export default function SalesEntryPage() {
   const handleImport = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile || !selectedShopId) {
-      toast.error('Please select a shop and a CSV file');
+      toast.error('Please select a shop and a file');
       return;
     }
 
@@ -209,27 +210,57 @@ export default function SalesEntryPage() {
 
     reader.onload = async (event) => {
       try {
-        const text = event.target?.result as string;
-        const lines = text.split('\n');
-        if (lines.length < 2) {
-          throw new Error('CSV file is empty or invalid');
+        let headers: string[] = [];
+        let dataRows: any[][] = [];
+
+        const isExcel = selectedFile.name.endsWith('.xlsx') || selectedFile.name.endsWith('.xls');
+
+        if (isExcel) {
+          const bstr = event.target?.result;
+          const wb = XLSX.read(bstr, { type: 'binary' });
+          const wsname = wb.SheetNames[0];
+          const ws = wb.Sheets[wsname];
+          // Get data as array of arrays
+          const rawData = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+
+          if (!rawData || rawData.length < 2) {
+            throw new Error('File is empty or invalid (no data rows found)');
+          }
+
+          // Row 0 is header
+          headers = rawData[0].map((h: any) => String(h).toLowerCase().trim());
+          dataRows = rawData.slice(1);
+
+        } else {
+          // CSV handling
+          const text = event.target?.result as string;
+          const lines = text.split('\n');
+          if (lines.length < 2) {
+            throw new Error('CSV file is empty or invalid');
+          }
+          const headerLine = lines[0];
+          headers = parseCSVLine(headerLine).map(h => h.toLowerCase().trim());
+
+          // Parse lines to arrays
+          for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (line) {
+              dataRows.push(parseCSVLine(line));
+            }
+          }
         }
 
-        // Parse Headers to find column indices
-        const headerLine = lines[0];
-        const headers = parseCSVLine(headerLine).map(h => h.toLowerCase().trim());
-
         const idxOrderId = headers.indexOf('order id');
+        // Flexible matching for status/substatus/sku
         const idxStatus = headers.findIndex(h => h === 'order status');
         const idxSubStatus = headers.findIndex(h => h === 'order substatus');
         const idxSkuId = headers.findIndex(h => h === 'sku id');
         const idxQuantity = headers.findIndex(h => h === 'quantity');
         const idxAmount = headers.findIndex(h => h === 'order amount');
-
         const idxSellerSku = headers.findIndex(h => h === 'seller sku');
         const idxCreatedTime = headers.findIndex(h => h === 'created time');
 
-        if (idxOrderId === -1) throw new Error('Column "Order ID" not found in CSV');
+        if (idxOrderId === -1) throw new Error('Column "Order ID" not found in file');
 
         // Fetch products for SKU mapping
         const { data: productsData } = await supabase.from('products').select('id, sku');
@@ -241,69 +272,70 @@ export default function SalesEntryPage() {
         }
 
         const newRecords = [];
-        // Start from line 1 (skip header)
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i].trim();
-          if (!line) continue;
 
-          const cols = parseCSVLine(line);
+        for (const cols of dataRows) {
+          // Skip empty rows if they slipped through
+          if (!cols || cols.length === 0) continue;
 
-          // Basic validation
-          if (cols.length < headers.length * 0.5) continue; // Skip malformed lines
+          // Basic length check (loose)
+          if (cols.length < headers.length * 0.2) continue;
 
-          // Create raw_data object
+          // Resolve values safely
+          const getVal = (idx: number) => (idx !== -1 && cols[idx] !== undefined) ? cols[idx] : '';
+          const orderId = getVal(idxOrderId);
+          if (!orderId) continue; // Skip if no order ID
+
+          // Create raw_data object mapping headers to values
           const rawObj: any = {};
-          headers.forEach((h, index) => {
-            rawObj[h] = cols[index] || '';
+          headers.forEach((h, i) => {
+            rawObj[h] = getVal(i);
           });
 
-          // Resolve Product ID from SKU ID (ignoring Seller SKU as requested)
-          const sellerSku = idxSellerSku !== -1 ? cols[idxSellerSku] : '';
-          const csvSkuId = idxSkuId !== -1 ? cols[idxSkuId] : '';
+          const sellerSku = getVal(idxSellerSku);
+          const csvSkuId = getVal(idxSkuId);
+          let productId = productMap.get(String(csvSkuId).toLowerCase().trim()) || null;
 
-          // Only use SKU ID for product resolution
-          let productId = productMap.get(csvSkuId.toLowerCase().trim()) || null;
-
-          // Parse Date (Created Time) - format: 01/25/2026 10:29:04 PM
+          // Parse Date
           let dateStr = new Date().toISOString().split('T')[0];
-          if (idxCreatedTime !== -1 && cols[idxCreatedTime]) {
+          const createdVal = getVal(idxCreatedTime);
+          if (createdVal) {
             try {
-              const d = new Date(cols[idxCreatedTime]);
-              if (!isNaN(d.getTime())) dateStr = d.toISOString().split('T')[0];
-            } catch (e) {
-              // ignore date parse error
-            }
+              // Excel might return number (serial date) if not text
+              if (typeof createdVal === 'number') {
+                const d = new Date(Math.round((createdVal - 25569) * 86400 * 1000));
+                dateStr = d.toISOString().split('T')[0];
+              } else {
+                const d = new Date(createdVal);
+                if (!isNaN(d.getTime())) dateStr = d.toISOString().split('T')[0];
+              }
+            } catch (e) { }
           }
 
           const recordData = {
             shop_id: selectedShopId,
-            order_id: cols[idxOrderId],
-            order_status: idxStatus !== -1 ? cols[idxStatus] : null,
-            order_substatus: idxSubStatus !== -1 ? cols[idxSubStatus] : null,
-            sku_id: idxSkuId !== -1 ? cols[idxSkuId] : null,
-            seller_sku: sellerSku,
-            items_sold: idxQuantity !== -1 ? (parseInt(cols[idxQuantity]) || 0) : 0,
-            revenue: idxAmount !== -1 ? (parseFloat(cols[idxAmount]) || 0) : 0,
-
-            // Required fields for sales_records
+            order_id: String(orderId), // Ensure string
+            order_status: getVal(idxStatus) || null,
+            order_substatus: getVal(idxSubStatus) || null,
+            sku_id: csvSkuId ? String(csvSkuId) : null,
+            seller_sku: sellerSku ? String(sellerSku) : '',
+            items_sold: idxQuantity !== -1 ? (parseInt(getVal(idxQuantity)) || 0) : 0,
+            revenue: idxAmount !== -1 ? (parseFloat(getVal(idxAmount)) || 0) : 0,
             date: dateStr,
-            product_id: productId, // Might be null if not found
-
+            product_id: productId,
             raw_data: rawObj,
-            status: 'approved' // Auto-approve imported records
+            status: 'approved'
           };
 
           newRecords.push(recordData);
         }
 
         if (newRecords.length === 0) {
-          throw new Error('No valid records found in CSV');
+          throw new Error('No valid records found');
         }
 
-        // Check for missing products (SKU exists in CSV but not found in DB)
+        // --- Duplication & Mismatch Checks ---
         const missingSkus = new Set<string>();
         newRecords.forEach(r => {
-          // Only check SKU ID
           if (!r.product_id && r.sku_id) {
             missingSkus.add(r.sku_id as string);
           }
@@ -315,9 +347,6 @@ export default function SalesEntryPage() {
           throw new Error(`The following SKUs were not found in Products: ${skuList}${moreCount}. Import cancelled. Please add them to the Product list first.`);
         }
 
-        const { data: { user } } = await supabase.auth.getUser();
-
-        // Check for existing records preventing shop transfer
         const orderIds = newRecords.map(r => r.order_id);
         const { data: existingRecords } = await supabase
           .from('sales_records')
@@ -340,16 +369,14 @@ export default function SalesEntryPage() {
           throw new Error(`Cannot move orders between shops. ${list}${shopMismatchErrors.length > 5 ? '...' : ''}`);
         }
 
-        // Add created_by to records
+        // --- Insert ---
+        const { data: { user } } = await supabase.auth.getUser();
         const recordsToInsert = newRecords.map(r => ({ ...r, created_by: user?.id || null }));
 
-        // Batch insert/upsert
         const { error } = await supabase.from('sales_records').upsert(recordsToInsert, { onConflict: 'order_id' });
-
         if (error) throw error;
 
         toast.success(`Successfully imported ${newRecords.length} records`);
-
         setIsImportModalOpen(false);
         fetchRecords();
 
@@ -358,7 +385,6 @@ export default function SalesEntryPage() {
         toast.error('Import failed: ' + err.message);
       } finally {
         setImporting(false);
-        // Reset file input
         setSelectedFile(null);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
@@ -366,7 +392,11 @@ export default function SalesEntryPage() {
       }
     };
 
-    reader.readAsText(selectedFile);
+    if (selectedFile.name.endsWith('.csv')) {
+      reader.readAsText(selectedFile);
+    } else {
+      reader.readAsBinaryString(selectedFile);
+    }
   };
 
   const openEditModal = (record: SalesRecordWithRelations) => {
@@ -576,7 +606,7 @@ export default function SalesEntryPage() {
         </div>
 
         <div>
-          <Button onClick={() => setIsImportModalOpen(true)}>Import CSV</Button>
+          <Button onClick={() => setIsImportModalOpen(true)}>Import Sales</Button>
         </div>
       </div>
 
@@ -673,7 +703,7 @@ export default function SalesEntryPage() {
         </form>
       </Modal>
 
-      <Modal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} title="Import Orders CSV">
+      <Modal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} title="Import Orders (CSV/XLSX)">
         <form onSubmit={handleImport} className={forms.form}>
           <div className={forms.formField}>
             <label className={forms.formLabel}>Select Shop</label>
@@ -691,11 +721,11 @@ export default function SalesEntryPage() {
           </div>
 
           <div className={forms.formField}>
-            <label className={forms.formLabel}>CSV File</label>
+            <label className={forms.formLabel}>File (CSV/XLSX)</label>
             <div style={{ padding: '1rem', border: '2px dashed var(--border)', borderRadius: '8px', textAlign: 'center' }}>
               <input
                 type="file"
-                accept=".csv"
+                accept=".csv, .xlsx, .xls"
                 onChange={handleFileChange}
                 style={{ display: 'none' }}
                 id="csv-upload"
@@ -705,7 +735,7 @@ export default function SalesEntryPage() {
                 {selectedFile ? (
                   <span style={{ color: 'var(--primary)' }}>{selectedFile.name}</span>
                 ) : (
-                  <span className={layouts.textMuted}>Click to upload CSV</span>
+                  <span className={layouts.textMuted}>Click to upload CSV or XLSX</span>
                 )}
               </label>
             </div>
