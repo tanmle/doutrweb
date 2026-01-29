@@ -16,12 +16,15 @@ export interface Product {
   in_stock?: boolean;
   stock_quantity?: number;
   created_at: string;
-  variation?: string;
-  image_url?: string;
+  variation_name?: string;
+  parent_id?: string | null;
+  // relations
   owner_profile?: {
     full_name: string;
     email: string;
   };
+  // client-side helper for grouping
+  variations?: Product[];
 }
 
 export interface User {
