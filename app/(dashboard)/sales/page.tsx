@@ -293,7 +293,7 @@ export default function SalesEntryPage() {
 
           const sellerSku = getVal(idxSellerSku);
           const csvSkuId = getVal(idxSkuId);
-          let productId = productMap.get(String(csvSkuId).toLowerCase().trim()) || null;
+          let productId = productMap.get(String(sellerSku).toLowerCase().trim()) || null;
 
           // Parse Date
           let dateStr = new Date().toISOString().split('T')[0];
@@ -336,8 +336,8 @@ export default function SalesEntryPage() {
         // --- Duplication & Mismatch Checks ---
         const missingSkus = new Set<string>();
         newRecords.forEach(r => {
-          if (!r.product_id && r.sku_id) {
-            missingSkus.add(r.sku_id as string);
+          if (!r.product_id && r.seller_sku) {
+            missingSkus.add(r.seller_sku as string);
           }
         });
 
