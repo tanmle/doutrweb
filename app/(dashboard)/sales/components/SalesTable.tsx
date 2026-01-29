@@ -9,6 +9,8 @@ import { formatCurrency } from '@/utils/formatters';
 import { tables, layouts, sales } from '@/styles/modules';
 import type { SalesRecordWithRelations } from '../types';
 
+import { useToast } from '@/components/ui/ToastProvider';
+
 interface SalesTableProps {
     records: SalesRecordWithRelations[];
     loading: boolean;
@@ -17,6 +19,14 @@ interface SalesTableProps {
 }
 
 export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps, 'onEdit'>) {
+    const toast = useToast();
+
+    const handleCopy = (text: string) => {
+        if (!text) return;
+        navigator.clipboard.writeText(text);
+        toast.success('Copied to clipboard');
+    };
+
     if (loading) {
         return (
             <Card>
@@ -36,6 +46,37 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
         if (s === 'pending') return '#f59e0b'; // amber-500
         if (s === 'failed' || s === 'cancelled' || s === 'rejected') return '#ef4444'; // red-500
         return '#6b7280';
+    };
+
+    const renderIdCell = (id: string | null | undefined) => {
+        if (!id) return '-';
+        const displayId = id.length > 15 ? id.substring(0, 12) + '...' : id;
+
+        return (
+            <div className={sales.idCell} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <span title={id}>{displayId}</span>
+                <button
+                    onClick={() => handleCopy(id)}
+                    className={sales.copyButton}
+                    title="Copy to clipboard"
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        opacity: 1,
+                        color: 'white',
+                        padding: 0,
+                        display: 'flex',
+                        alignItems: 'center'
+                    }}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                </button>
+            </div>
+        );
     };
 
     return (
@@ -67,9 +108,11 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
                     ) : (
                         records.map((r) => (
                             <tr key={r.id}>
-                                <td data-label="Order ID">{r.order_id || 'manual-' + r.id.substring(0, 6)}</td>
-                                <td data-label="Tracking ID" title={r.tracking_id || ''}>
-                                    {r.tracking_id ? (r.tracking_id.length > 15 ? r.tracking_id.substring(0, 12) + '...' : r.tracking_id) : '-'}
+                                <td data-label="Order ID">
+                                    {renderIdCell(r.order_id || 'manual-' + r.id.substring(0, 6))}
+                                </td>
+                                <td data-label="Tracking ID">
+                                    {renderIdCell(r.tracking_id)}
                                 </td>
                                 <td data-label="Shop">{r.shop?.name || '-'}</td>
                                 <td data-label="Owner">
@@ -118,6 +161,7 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
                                     >
                                         Delete
                                     </Button>
+                                    {/* Edit button could go here */}
                                 </td>
                             </tr>
                         ))
