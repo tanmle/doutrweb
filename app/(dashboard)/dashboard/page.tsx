@@ -1,16 +1,15 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Card } from '@/components/ui/Card';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { StatCard } from '@/components/ui/StatCard';
 import { RoleBadge } from '@/components/ui/RoleBadge';
 import type { UserRole } from '@/components/ui/RoleBadge';
-import { KPICard } from './components/KPICard';
 import { useSupabase } from '@/contexts/SupabaseContext';
-import { formatCurrency, formatDateKey, parseDateKey } from '@/utils/formatters';
-import { APP_CONSTANTS, AREA_COLORS } from '@/constants/app';
-import { cards, layouts, filters, forms, dashboard } from '@/styles/modules';
+import { formatCurrency } from '@/utils/formatters';
+import { AREA_COLORS } from '@/constants/app';
+import { cards, layouts, filters, dashboard } from '@/styles/modules';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -23,14 +22,12 @@ import {
 } from 'recharts';
 import { useRealtime } from '@/hooks/useRealtime';
 
+// --- Types ---
 type DashboardStats = {
   todayRevenue: number;
   todaySales: number;
   monthlyRevenue: number;
   monthlyProfit: number;
-  targetKPI: number;
-  currentKPI: number;
-  currentLevel: number;
 };
 
 type SalesRecord = {
@@ -60,17 +57,24 @@ type DateRange = {
   end: string;
 };
 
+// --- Helpers ---
 const getAreaColor = (index: number) => AREA_COLORS[index % AREA_COLORS.length];
 
+// Robustly formatting local date as YYYY-MM-DD
+const getLocalYYYYMMDD = (d: Date) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// --- Component ---
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
     todayRevenue: 0,
     todaySales: 0,
     monthlyRevenue: 0,
     monthlyProfit: 0,
-    targetKPI: 1500, // Default fallback
-    currentKPI: 0,
-    currentLevel: 0
   });
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
   const [memberNames, setMemberNames] = useState<string[]>([]);
@@ -87,65 +91,43 @@ export default function DashboardPage() {
   useRealtime({
     table: 'sales_records',
     onData: () => {
-      // Re-trigger fetch by toggling reloading state or a separate refresh trigger
-      // Since fetching is in useEffect with [] dep, we need to extract fetchData or force strict reload
-      // But we can just use a version state
       setVersion(v => v + 1);
     }
   });
 
-  // Real-time: Refresh on config changes (KPI)
-  useRealtime({
-    table: 'app_settings',
-    onData: () => setVersion(v => v + 1)
-  });
-
   const [version, setVersion] = useState(0);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      setLoading(true);
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+  const fetchStats = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
 
-        if (!profile) return;
-        setRole(profile.role ?? null);
+      if (!profile) return;
+      setRole(profile.role ?? null);
 
-        // Fetch Base KPI
-        const { data: settings } = await supabase
-          .from('app_settings')
-          .select('value')
-          .eq('key', 'base_kpi')
-          .maybeSingle();
-        const baseKpi = settings ? parseFloat(settings.value) : APP_CONSTANTS.DEFAULT_BASE_KPI;
+      // Fetch data from start of current month OR 30 days ago, whichever is earlier
+      // Use local time for date calculation to avoid UTC mismatches
+      const today = new Date();
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        // Fetch Commission Rates (for targets)
-        const { data: rates } = await supabase
-          .from('commission_rates')
-          .select('level, profit_threshold')
-          .eq('type', 'company')
-          .order('level', { ascending: true });
+      // Start of month in local time
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-        // Fetch data from start of current month OR 30 days ago, whichever is earlier
-        const today = new Date();
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const startDate = thirtyDaysAgo < startOfMonth ? thirtyDaysAgo : startOfMonth;
+      // Format as YYYY-MM-DD in local time
+      const dateStr = getLocalYYYYMMDD(startDate);
 
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const startDate = thirtyDaysAgo < startOfMonth ? thirtyDaysAgo : startOfMonth;
-        const dateStr = startDate.toISOString().split('T')[0];
-        const todayStr = today.toISOString().split('T')[0];
-
-        let query = supabase
-          .from('sales_records')
-          .select(`
+      let query = supabase
+        .from('sales_records')
+        .select(`
                     created_at,
                     date, 
                     revenue, 
@@ -156,131 +138,124 @@ export default function DashboardPage() {
                         owner:profiles!owner_id(full_name, role)
                     )
                 `)
-          .gte('date', dateStr);
+        .gte('date', dateStr);
 
-        if (profile.role === 'admin') {
-          // No filters
-        } else if (profile.role === 'leader') {
-          const { data: members } = await supabase.from('profiles').select('id').eq('leader_id', user.id);
-          const memberIds = members?.map(m => m.id) || [];
-          query = query.in('shop.owner_id', [user.id, ...memberIds]);
-        } else {
-          query = query.eq('shop.owner_id', user.id);
-        }
+      if (profile.role === 'admin') {
+        // No filters
+      } else if (profile.role === 'leader') {
+        const { data: members } = await supabase.from('profiles').select('id').eq('leader_id', user.id);
+        const memberIds = members?.map(m => m.id) || [];
+        query = query.in('shop.owner_id', [user.id, ...memberIds]);
+      } else {
+        query = query.eq('shop.owner_id', user.id);
+      }
 
-        const { data: salesData, error } = await query.order('date', { ascending: true });
-        if (error) throw error;
+      const { data: salesData, error } = await query.order('date', { ascending: true });
+      if (error) throw error;
 
-        const salesRows = (salesData ?? []) as SalesRecord[];
+      const salesRows = (salesData ?? []) as SalesRecord[];
 
-        if (salesRows.length > 0) {
-          // Today's Stats (based on Created Date, mirroring Sales Entry)
-          const todayRecords = salesRows.filter(r => {
-            if (!r.created_at) return false;
-            const createdDate = new Date(r.created_at).toISOString().split('T')[0];
-            return createdDate === todayStr;
-          });
-          const todayRev = todayRecords.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
-          const todayItems = todayRecords.reduce((acc, curr) => acc + (Number(curr.items_sold) || 0), 0);
+      if (salesRows.length > 0) {
+        // Today's Stats (based on Created Date for accuracy)
+        const todayRecords = salesRows.filter(r => {
+          if (!r.created_at) return false;
+          const recordDate = new Date(r.created_at);
+          const now = new Date();
+          return recordDate.getDate() === now.getDate() &&
+            recordDate.getMonth() === now.getMonth() &&
+            recordDate.getFullYear() === now.getFullYear();
+        });
+        const todayRev = todayRecords.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
+        const todayItems = todayRecords.reduce((acc, curr) => acc + (Number(curr.items_sold) || 0), 0);
 
-          // Monthly KPI Stats (from 1st of current month)
-          const monthlyRecords = salesRows.filter(r => new Date(r.date) >= startOfMonth);
-          const monthlyRev = monthlyRecords.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
-          const monthlyProfitVal = monthlyRecords.reduce((acc, curr) => acc + (Number(curr.profit) || 0), 0);
+        // Monthly Stats - Local comparison
+        const monthlyRecords = salesRows.filter(r => {
+          // Check created_at first for better accuracy if available, else date
+          const d = r.created_at ? new Date(r.created_at) : new Date(r.date);
+          return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth();
+        });
 
-          // Determine Target based on Profit
-          let currentLevel = 0;
-          let nextThreshold = rates?.[0]?.profit_threshold || 1000;
+        const monthlyRev = monthlyRecords.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
+        const monthlyProfitVal = monthlyRecords.reduce((acc, curr) => acc + (Number(curr.profit) || 0), 0);
 
-          if (rates && rates.length > 0) {
-            for (const r of rates) {
-              if (monthlyProfitVal >= r.profit_threshold) {
-                currentLevel = r.level;
-              } else {
-                nextThreshold = r.profit_threshold;
-                break;
-              }
-            }
-            // Check if maxed out
-            const maxRate = rates[rates.length - 1];
-            if (monthlyProfitVal >= maxRate.profit_threshold) {
-              nextThreshold = maxRate.profit_threshold; // Stay at max or indicate completion
-            }
+        setStats({
+          todayRevenue: todayRev,
+          todaySales: todayItems,
+          monthlyRevenue: monthlyRev,
+          monthlyProfit: monthlyProfitVal,
+        });
+
+        // Process Chart Data
+        const membersSet = new Set<string>();
+        const rolesMap: Record<string, UserRole> = {};
+
+        const groupedData = salesRows.reduce<Record<string, ChartPoint>>((acc, curr) => {
+          const owner = curr.shop?.owner;
+          // Removed strict owner check to allow "Unknown" entries
+
+          // Use created_at as primary date source for accurate daily charting
+          let dateKey = curr.date; // Fallback
+          if (curr.created_at) {
+            dateKey = getLocalYYYYMMDD(new Date(curr.created_at));
           }
 
-          const targetVal = baseKpi + nextThreshold;
+          const name = owner?.full_name || 'Unknown';
+          const rev = Number(curr.revenue) || 0;
+          membersSet.add(name);
 
-          setStats(prev => ({
-            ...prev,
-            todayRevenue: todayRev,
-            todaySales: todayItems,
-            monthlyRevenue: monthlyRev,
-            monthlyProfit: monthlyProfitVal,
-            currentKPI: monthlyProfitVal, // Using Profit for KPI tracking
-            targetKPI: targetVal,
-            currentLevel
-          }));
+          // Capture role
+          if (owner?.role && (owner.role === 'leader' || owner.role === 'member')) {
+            rolesMap[name] = owner.role as UserRole;
+          }
 
-          // Process Chart Data (30-day trend context)
-          const membersSet = new Set<string>();
-          const rolesMap: Record<string, UserRole> = {};
-          const groupedData = salesRows.reduce<Record<string, ChartPoint>>((acc, curr) => {
-            const owner = curr.shop?.owner;
-            if (owner?.role === 'admin') return acc;
+          if (!acc[dateKey]) {
+            acc[dateKey] = { date: dateKey };
+          }
 
-            const date = curr.date;
-            const name = owner?.full_name || 'Unknown';
-            const rev = Number(curr.revenue) || 0;
-            membersSet.add(name);
+          const val = acc[dateKey][name];
+          const existingValue = typeof val === 'number' ? val : 0;
+          acc[dateKey][name] = existingValue + rev;
+          return acc;
+        }, {});
 
-            // Capture role
-            if (owner?.role && (owner.role === 'leader' || owner.role === 'member')) {
-              rolesMap[name] = owner.role as UserRole;
-            }
+        const chartArray = Object.values(groupedData).sort((a, b) =>
+          new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
 
-            if (!acc[date]) {
-              acc[date] = { date };
-            }
-            const existingValue = typeof acc[date][name] === 'number' ? acc[date][name] : 0;
-            acc[date][name] = existingValue + rev;
-            return acc;
-          }, {});
-
-          const chartArray = Object.values(groupedData).sort((a, b) =>
-            new Date(a.date).getTime() - new Date(b.date).getTime()
-          );
-
-          setChartData(chartArray);
-          setMemberNames(Array.from(membersSet));
-          setMemberRoles(rolesMap);
-        } else {
-          // Even if no data, set targets
-          // Determine default target
-          let nextThreshold = rates?.[0]?.profit_threshold || 1000;
-          const targetVal = baseKpi + nextThreshold;
-          setStats(prev => ({ ...prev, targetKPI: targetVal }));
-        }
-      } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
-      } finally {
-        setLoading(false);
+        setChartData(chartArray);
+        setMemberNames(Array.from(membersSet));
+        setMemberRoles(rolesMap);
+      } else {
+        // Reset stats if no data
+        setStats({
+          todayRevenue: 0,
+          todaySales: 0,
+          monthlyRevenue: 0,
+          monthlyProfit: 0
+        });
+        setChartData([]);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  useEffect(() => {
     fetchStats();
-  }, [version]); // Removed supabase - it's stable from context
+  }, [version, fetchStats]);
 
-  const progress = Math.min((stats.currentKPI / stats.targetKPI) * 100, 100);
-
+  /* Filters Logic with Local Time alignment */
   const filteredChartData = useMemo(() => {
     if (chartData.length === 0) return chartData;
 
-    const today = new Date();
-    const todayKey = formatDateKey(today);
-    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const now = new Date();
+    const todayKey = getLocalYYYYMMDD(now);
 
-    const isWithinRange = (dateKey: string, start: Date, end: Date) => {
-      const date = parseDateKey(dateKey);
-      return date >= start && date <= end;
+    // Helper to compare "YYYY-MM-DD" strings directly
+    const isWithinRange = (dateStr: string, startStr: string, endStr: string) => {
+      return dateStr >= startStr && dateStr <= endStr;
     };
 
     if (filter === 'today') {
@@ -288,29 +263,37 @@ export default function DashboardPage() {
     }
 
     if (filter === 'week') {
-      const weekday = startOfToday.getDay();
-      const diff = (weekday + 6) % 7;
-      const startOfWeek = new Date(startOfToday);
-      startOfWeek.setDate(startOfToday.getDate() - diff);
-      return chartData.filter((item) => isWithinRange(item.date, startOfWeek, startOfToday));
+      // Calculate start of week (Sunday) in Local Time
+      const dayOfWeek = now.getDay(); // 0 (Sun) - 6 (Sat)
+      const diff = dayOfWeek; // Days to subtract to get to Sunday
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - diff);
+      const startStr = getLocalYYYYMMDD(startOfWeek);
+      return chartData.filter((item) => isWithinRange(item.date, startStr, todayKey));
     }
 
     if (filter === 'month') {
-      const startOfMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth(), 1);
-      return chartData.filter((item) => isWithinRange(item.date, startOfMonth, startOfToday));
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startOfMonthStr = getLocalYYYYMMDD(startOfMonth);
+      return chartData.filter((item) => isWithinRange(item.date, startOfMonthStr, todayKey));
     }
 
     if (filter === 'last-month') {
-      const startOfLastMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth() - 1, 1);
-      const endOfLastMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth(), 0);
-      return chartData.filter((item) => isWithinRange(item.date, startOfLastMonth, endOfLastMonth));
+      // Logic for last month
+      const firstDayCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDayLastMonth = new Date(firstDayCurrentMonth);
+      lastDayLastMonth.setDate(0); // Go back one day to end of prev month
+      const firstDayLastMonth = new Date(lastDayLastMonth.getFullYear(), lastDayLastMonth.getMonth(), 1);
+
+      const startStr = getLocalYYYYMMDD(firstDayLastMonth);
+      const endStr = getLocalYYYYMMDD(lastDayLastMonth);
+
+      return chartData.filter((item) => isWithinRange(item.date, startStr, endStr));
     }
 
     if (filter === 'range') {
       if (!dateRange.start || !dateRange.end) return chartData;
-      const start = parseDateKey(dateRange.start);
-      const end = parseDateKey(dateRange.end);
-      return chartData.filter((item) => isWithinRange(item.date, start, end));
+      return chartData.filter((item) => isWithinRange(item.date, dateRange.start, dateRange.end));
     }
 
     return chartData;
@@ -409,7 +392,6 @@ export default function DashboardPage() {
             {filteredChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={filteredChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-
                   <defs>
                     {memberNamesToRender.map((name, index) => (
                       <linearGradient key={`grad-${name}`} id={`color-${index}`} x1="0" y1="0" x2="0" y2="1">
@@ -479,7 +461,6 @@ export default function DashboardPage() {
                       stackId="1"
                     />
                   ))}
-
                 </AreaChart>
               </ResponsiveContainer>
             ) : (

@@ -1,0 +1,1 @@
+export { PayoutsTable } from './PayoutsTable';

@@ -45,7 +45,7 @@ export function KPICard({
             </div>
 
             <div className={styles.footer}>
-                <span>MTD Profit: {formatCurrency(monthlyProfit)}</span>
+                <span>MTD Settlement: {formatCurrency(monthlyProfit)}</span>
                 <span>
                     {progress >= 100 ? (
                         <span className={styles.congratulation}>Target Met!</span>

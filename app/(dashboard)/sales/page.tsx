@@ -57,7 +57,7 @@ const parseCSVLine = (text: string) => {
 };
 
 export default function SalesEntryPage() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [records, setRecords] = useState<SalesRecordWithRelations[]>([]);
   const [shops, setShops] = useState<Shop[]>([]);
@@ -66,11 +66,15 @@ export default function SalesEntryPage() {
   const [dateFilter, setDateFilter] = useState<DateFilterType>('this_month');
   const [dateRange, setDateRange] = useState<DateRange>(getDateRange('this_month'));
   const [ownerFilter, setOwnerFilter] = useState('');
+  const [shopFilter, setShopFilter] = useState('all');
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all');
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [userRole, setUserRole] = useState<string>('member'); // Default to member for security
 
   // Import Modal State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedShopId, setSelectedShopId] = useState('');
+
   // Edit/Delete State
   const [selectedRecord, setSelectedRecord] = useState<SalesRecordWithRelations | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -92,13 +96,22 @@ export default function SalesEntryPage() {
 
   // Fetch Initial Data
   useEffect(() => {
-    const fetchShops = async () => {
+    const fetchContext = async () => {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Get User Role
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+      const role = profile?.role || 'member';
+      setUserRole(role);
+
       // Fetch shops the user has access to
       let query = supabase.from('shops').select('id, name, owner_id');
+      // If member/leader, RLS should handle it, but we can also filter for clarity or if RLS is loose
+      if (role !== 'admin' && role !== 'leader') { // Leaders might see their team's shops? Assuming standard role logic
+        // For now rely on RLS or specific logic. Payouts used: if(role!==admin) filter.
+      }
       const { data: shopsData } = await query.order('name');
 
       if (shopsData) {
@@ -106,9 +119,11 @@ export default function SalesEntryPage() {
         if (shopsData.length > 0) setSelectedShopId(shopsData[0].id);
       }
 
-      // Fetch Profiles for Owner Filter
-      const { data: profilesData } = await supabase.from('profiles').select('id, full_name, email, role').order('full_name');
-      if (profilesData) setProfiles(profilesData);
+      // Fetch Profiles for Owner Filter (Admin/Leader only)
+      if (['admin', 'leader'].includes(role)) {
+        const { data: profilesData } = await supabase.from('profiles').select('id, full_name, email, role').order('full_name');
+        if (profilesData) setProfiles(profilesData);
+      }
 
       // Fetch Products for Edit Modal
       const { data: productsData } = await supabase.from('products').select('*').order('name');
@@ -116,7 +131,7 @@ export default function SalesEntryPage() {
 
       setLoading(false);
     };
-    fetchShops();
+    fetchContext();
   }, []);
 
   // Update date range when filter type changes
@@ -128,31 +143,43 @@ export default function SalesEntryPage() {
 
   // Fetch records when filters change
   useEffect(() => {
-    fetchRecords();
-  }, [dateRange, ownerFilter]);
-
-  // Also pre-fetch products map for SKU resolution during import?
-  // We will do it inside handleImport to ensure freshness or fetch here.
+    if (userRole) fetchRecords();
+  }, [dateRange, ownerFilter, shopFilter, orderStatusFilter, userRole, dateFilter]);
 
   const fetchRecords = async () => {
     setLoading(true);
-    const query = supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    let query = supabase
       .from('sales_records')
       .select(`
         *,
         shop:shops!inner(id, name, owner_id, profiles:owner_id(full_name, email)),
         product:products(id, name, sku)
       `)
-
       .order('created_at', { ascending: false });
 
     // Apply Filters
     if (dateRange.start) query.gte('created_at', dateRange.start);
-    if (dateRange.end) query.lte('created_at', dateRange.end + 'T23:59:59'); // Include the end date fully
+    if (dateRange.end) query.lte('created_at', dateRange.end + 'T23:59:59');
 
-    // Filter by Shop Owner (requires !inner join on shops which we have)
-    if (ownerFilter) {
-      query.eq('shop.owner_id', ownerFilter);
+    // Filter by Shop Owner
+    if (['admin', 'leader'].includes(userRole)) {
+      if (ownerFilter) {
+        query = query.eq('shop.owner_id', ownerFilter);
+      }
+    } else {
+      // Members see only their own data
+      query = query.eq('shop.owner_id', user.id);
+    }
+
+    if (shopFilter !== 'all') {
+      query = query.eq('shop_id', shopFilter);
+    }
+
+    if (orderStatusFilter !== 'all') {
+      query = query.eq('order_status', orderStatusFilter);
     }
 
     const { data } = await query.limit(100);
@@ -262,7 +289,7 @@ export default function SalesEntryPage() {
             product_id: productId, // Might be null if not found
 
             raw_data: rawObj,
-            status: 'approved' // Auto-approve imported records? or pending? User didn't specify, defaulting to approved/verified usually for imports. Let's use 'pending' or whatever schema default is. Schema default is 'pending'.
+            status: 'approved' // Auto-approve imported records
           };
 
           newRecords.push(recordData);
@@ -288,6 +315,30 @@ export default function SalesEntryPage() {
         }
 
         const { data: { user } } = await supabase.auth.getUser();
+
+        // Check for existing records preventing shop transfer
+        const orderIds = newRecords.map(r => r.order_id);
+        const { data: existingRecords } = await supabase
+          .from('sales_records')
+          .select('order_id, shop_id, shop:shops(name)')
+          .in('order_id', orderIds);
+
+        const shopMismatchErrors: string[] = [];
+        if (existingRecords && existingRecords.length > 0) {
+          existingRecords.forEach(existing => {
+            if (existing.shop_id !== selectedShopId) {
+              const r = existing as any;
+              const shopName = r.shop?.name || 'Unknown Shop';
+              shopMismatchErrors.push(`Order ${existing.order_id} exists in "${shopName}"`);
+            }
+          });
+        }
+
+        if (shopMismatchErrors.length > 0) {
+          const list = shopMismatchErrors.slice(0, 5).join(', ');
+          throw new Error(`Cannot move orders between shops. ${list}${shopMismatchErrors.length > 5 ? '...' : ''}`);
+        }
+
         // Add created_by to records
         const recordsToInsert = newRecords.map(r => ({ ...r, created_by: user?.id || null }));
 
@@ -306,7 +357,7 @@ export default function SalesEntryPage() {
         toast.error('Import failed: ' + err.message);
       } finally {
         setImporting(false);
-        // Reset file input if needed, but managing generic state is enough
+        // Reset file input
       }
     };
 
@@ -382,10 +433,10 @@ export default function SalesEntryPage() {
     setLoading(false);
   };
 
-
-
   const totalQty = records.reduce((sum, r) => sum + (r.items_sold || 0), 0);
   const totalRevenue = records.reduce((sum, r) => sum + (r.revenue || 0), 0);
+
+  if (loading) return <LoadingIndicator label="Loading sales records..." />;
 
   return (
     <div>
@@ -403,19 +454,9 @@ export default function SalesEntryPage() {
 
       <div className={layouts.spacingY}></div>
 
-      <div className={filters.filterControls}>
-        <h1 className={layouts.sectionHeader}>Sales Entry (Orders)</h1>
-        <div style={{ marginLeft: 'auto' }}>
-          <Button onClick={() => setIsImportModalOpen(true)}>Import CSV</Button>
-        </div>
-      </div>
-
-      <div className={layouts.spacingY}></div>
-
-      {/* Filters UI */}
-      <div className={filters.filterControls} style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className={filters.filterButtons}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div className={filters.filterButtons} style={{ marginBottom: 0 }}>
             <Button
               variant={dateFilter === 'today' ? 'primary' : 'secondary'}
               onClick={() => setDateFilter('today')}
@@ -465,20 +506,57 @@ export default function SalesEntryPage() {
               />
             </div>
           )}
+
+          {['admin', 'leader'].includes(userRole) && (
+            <div style={{ minWidth: '200px' }}>
+              <label className={forms.formLabel} style={{ marginBottom: '0.5rem', display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Filter by Owner</label>
+              <select
+                className={forms.formSelect}
+                value={ownerFilter}
+                onChange={(e) => setOwnerFilter(e.target.value)}
+              >
+                <option value="">All Owners</option>
+                {profiles.map(p => (
+                  <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div style={{ minWidth: '200px' }}>
+            <label className={forms.formLabel} style={{ marginBottom: '0.5rem', display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Filter by Shop</label>
+            <select
+              className={forms.formSelect}
+              value={shopFilter}
+              onChange={(e) => setShopFilter(e.target.value)}
+            >
+              <option value="all">All Shops</option>
+              {shops.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ minWidth: '150px' }}>
+            <label className={forms.formLabel} style={{ marginBottom: '0.5rem', display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Order Status</label>
+            <select
+              className={forms.formSelect}
+              value={orderStatusFilter}
+              onChange={(e) => setOrderStatusFilter(e.target.value)}
+            >
+              <option value="all">All Statuses</option>
+              <option value="Completed">Completed</option>
+              <option value="Paid">Paid</option>
+              <option value="Process">Process</option>
+              <option value="Cancelled">Cancelled</option>
+              <option value="Return">Return</option>
+              <option value="Failed">Failed</option>
+            </select>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <select
-            className={forms.formSelect}
-            value={ownerFilter}
-            onChange={(e) => setOwnerFilter(e.target.value)}
-            style={{ minWidth: '200px' }}
-          >
-            <option value="">All Owners</option>
-            {profiles.map(p => (
-              <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
-            ))}
-          </select>
+        <div>
+          <Button onClick={() => setIsImportModalOpen(true)}>Import CSV</Button>
         </div>
       </div>
 
@@ -487,8 +565,6 @@ export default function SalesEntryPage() {
       <SalesTable
         records={records}
         loading={loading}
-        onEdit={openEditModal}
-        onDelete={handleDelete}
       />
 
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Sales Record">

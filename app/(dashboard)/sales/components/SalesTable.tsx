@@ -16,7 +16,7 @@ interface SalesTableProps {
     onDelete: (id: string) => void;
 }
 
-export function SalesTable({ records, loading, onEdit, onDelete }: SalesTableProps) {
+export function SalesTable({ records, loading }: Omit<SalesTableProps, 'onEdit' | 'onDelete'>) {
     if (loading) {
         return (
             <Card>
@@ -29,6 +29,15 @@ export function SalesTable({ records, loading, onEdit, onDelete }: SalesTablePro
         );
     }
 
+    const getStatusColor = (status: string | null) => {
+        if (!status) return '#6b7280'; // gray-500
+        const s = status.toLowerCase();
+        if (s === 'paid' || s === 'completed' || s === 'approved') return '#10b981'; // emerald-500
+        if (s === 'pending') return '#f59e0b'; // amber-500
+        if (s === 'failed' || s === 'cancelled' || s === 'rejected') return '#ef4444'; // red-500
+        return '#6b7280';
+    };
+
     return (
         <div className={tables.tableWrapper}>
             <table className={tables.table}>
@@ -38,13 +47,13 @@ export function SalesTable({ records, loading, onEdit, onDelete }: SalesTablePro
                         <th>Shop</th>
                         <th>Owner</th>
                         <th>Order Status</th>
+                        <th>Payout Status</th>
                         <th>Order Substatus</th>
                         <th>SKU ID</th>
                         <th>Quantity</th>
                         <th>Order Amount</th>
                         <th>Created Date</th>
                         <th>Order Date</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -72,7 +81,22 @@ export function SalesTable({ records, loading, onEdit, onDelete }: SalesTablePro
                                     })()}
                                 </td>
                                 <td data-label="Order Status">
-                                    <span className={sales.statusBadge}>{r.order_status || r.status || '-'}</span>
+                                    <span className={sales.statusBadge}>{r.order_status || '-'}</span>
+                                </td>
+                                <td data-label="Payout Status">
+                                    <span
+                                        style={{
+                                            display: 'inline-block',
+                                            padding: '0.25rem 0.75rem',
+                                            borderRadius: '9999px',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 500,
+                                            backgroundColor: `${getStatusColor(r.status)}20`, // 20% opacity background
+                                            color: getStatusColor(r.status)
+                                        }}
+                                    >
+                                        {r.status || 'pending'}
+                                    </span>
                                 </td>
                                 <td data-label="Order Substatus">{r.order_substatus || '-'}</td>
                                 <td data-label="SKU ID">{r.sku_id || r.product?.sku || '-'}</td>
@@ -82,16 +106,6 @@ export function SalesTable({ records, loading, onEdit, onDelete }: SalesTablePro
                                     {r.created_at ? new Date(r.created_at).toLocaleDateString('vi-VN') : '-'}
                                 </td>
                                 <td data-label="Order Date">{new Date(r.date).toLocaleDateString('vi-VN')}</td>
-                                <td data-label="Actions">
-                                    <div className={tables.tableActionsSmall}>
-                                        <Button variant="ghost" onClick={() => onEdit(r)} className={sales.actionButtonSmall}>
-                                            Edit
-                                        </Button>
-                                        <Button variant="ghost" onClick={() => onDelete(r.id)} className={sales.deleteButtonSmall}>
-                                            Delete
-                                        </Button>
-                                    </div>
-                                </td>
                             </tr>
                         ))
                     )}
