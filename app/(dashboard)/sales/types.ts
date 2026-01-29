@@ -41,6 +41,7 @@ export interface SalesRecordWithRelations {
     order_substatus?: string;
     sku_id?: string;
     seller_sku?: string;
+    tracking_id?: string;
     date: string;
     items_sold: number;
     revenue: number;

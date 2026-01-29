@@ -259,6 +259,7 @@ export default function SalesEntryPage() {
         const idxAmount = headers.findIndex(h => h === 'order amount');
         const idxSellerSku = headers.findIndex(h => h === 'seller sku');
         const idxCreatedTime = headers.findIndex(h => h === 'created time');
+        const idxTrackingId = headers.findIndex(h => h === 'tracking id');
 
         if (idxOrderId === -1) throw new Error('Column "Order ID" not found in file');
 
@@ -318,6 +319,7 @@ export default function SalesEntryPage() {
             order_substatus: getVal(idxSubStatus) || null,
             sku_id: csvSkuId ? String(csvSkuId) : null,
             seller_sku: sellerSku ? String(sellerSku) : '',
+            tracking_id: getVal(idxTrackingId) || null,
             items_sold: idxQuantity !== -1 ? (parseInt(getVal(idxQuantity)) || 0) : 0,
             revenue: idxAmount !== -1 ? (parseFloat(getVal(idxAmount)) || 0) : 0,
             date: dateStr,

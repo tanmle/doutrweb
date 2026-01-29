@@ -44,11 +44,11 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
                 <thead>
                     <tr>
                         <th>Order ID</th>
+                        <th>Tracking ID</th>
                         <th>Shop</th>
                         <th>Owner</th>
                         <th>Order Status</th>
                         <th>Payout Status</th>
-                        <th>Order Substatus</th>
                         <th>Seller SKU</th>
                         <th>Quantity</th>
                         <th>Order Amount</th>
@@ -60,7 +60,7 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
                 <tbody>
                     {records.length === 0 ? (
                         <tr>
-                            <td colSpan={12} className={`${layouts.textCenter} ${sales.emptyStateCell}`}>
+                            <td colSpan={13} className={`${layouts.textCenter} ${sales.emptyStateCell}`}>
                                 <span className={layouts.textMuted}>No records found.</span>
                             </td>
                         </tr>
@@ -68,6 +68,9 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
                         records.map((r) => (
                             <tr key={r.id}>
                                 <td data-label="Order ID">{r.order_id || 'manual-' + r.id.substring(0, 6)}</td>
+                                <td data-label="Tracking ID" title={r.tracking_id || ''}>
+                                    {r.tracking_id ? (r.tracking_id.length > 15 ? r.tracking_id.substring(0, 12) + '...' : r.tracking_id) : '-'}
+                                </td>
                                 <td data-label="Shop">{r.shop?.name || '-'}</td>
                                 <td data-label="Owner">
                                     {(() => {
@@ -99,7 +102,6 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
                                         {r.status || 'pending'}
                                     </span>
                                 </td>
-                                <td data-label="Order Substatus">{r.order_substatus || '-'}</td>
                                 <td data-label="Seller SKU" title={r.product?.name || 'No Product Linked'}>
                                     {r.seller_sku || r.product?.sku || '-'}
                                 </td>
