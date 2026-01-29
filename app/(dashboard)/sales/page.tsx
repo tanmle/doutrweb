@@ -325,7 +325,7 @@ export default function SalesEntryPage() {
             date: dateStr,
             product_id: productId,
             raw_data: rawObj,
-            status: 'approved'
+            status: ''
           };
 
           newRecords.push(recordData);
@@ -602,11 +602,9 @@ export default function SalesEntryPage() {
             >
               <option value="all">All Statuses</option>
               <option value="Completed">Completed</option>
-              <option value="Paid">Paid</option>
-              <option value="Process">Process</option>
-              <option value="Cancelled">Cancelled</option>
-              <option value="Return">Return</option>
-              <option value="Failed">Failed</option>
+              <option value="To ship">To ship</option>
+              <option value="Shipped">Shipped</option>
+              <option value="Canceled">Canceled</option>
             </select>
           </div>
         </div>

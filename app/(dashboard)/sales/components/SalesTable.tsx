@@ -49,10 +49,10 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
                         <th>Owner</th>
                         <th>Order Status</th>
                         <th>Payout Status</th>
+                        <th>Order Substatus</th>
                         <th>Seller SKU</th>
                         <th>Quantity</th>
-                        <th>Order Amount</th>
-                        <th>Created Date</th>
+                        <th>Amount</th>
                         <th>Order Date</th>
                         <th>Action</th>
                     </tr>
@@ -102,14 +102,12 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
                                         {r.status || 'pending'}
                                     </span>
                                 </td>
+                                <td data-label="Order Substatus">{r.order_substatus || '-'}</td>
                                 <td data-label="Seller SKU" title={r.product?.name || 'No Product Linked'}>
                                     {r.seller_sku || r.product?.sku || '-'}
                                 </td>
                                 <td data-label="Quantity">{r.items_sold}</td>
-                                <td data-label="Order Amount">{formatCurrency(r.revenue)}</td>
-                                <td data-label="Created Date">
-                                    {r.created_at ? new Date(r.created_at).toLocaleDateString('vi-VN') : '-'}
-                                </td>
+                                <td data-label="Amount">{formatCurrency(r.revenue)}</td>
                                 <td data-label="Order Date">{new Date(r.date).toLocaleDateString('vi-VN')}</td>
                                 <td data-label="Action">
                                     <Button
