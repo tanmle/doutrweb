@@ -359,6 +359,9 @@ export default function SalesEntryPage() {
             if (existing.shop_id !== selectedShopId) {
               const r = existing as any;
               const shopName = r.shop?.name || 'Unknown Shop';
+              // Check if we are actually "moving" logic implies strict order uniqueness.
+              // If we allow multi-lines, checking "shop mismatch" via order_id is still valid
+              // (an order can't belong to two shops).
               shopMismatchErrors.push(`Order ${existing.order_id} exists in "${shopName}"`);
             }
           });
@@ -373,7 +376,8 @@ export default function SalesEntryPage() {
         const { data: { user } } = await supabase.auth.getUser();
         const recordsToInsert = newRecords.map(r => ({ ...r, created_by: user?.id || null }));
 
-        const { error } = await supabase.from('sales_records').upsert(recordsToInsert, { onConflict: 'order_id' });
+        // Upsert on (order_id, seller_sku) to allow multiple items per order
+        const { error } = await supabase.from('sales_records').upsert(recordsToInsert, { onConflict: 'order_id, seller_sku' });
         if (error) throw error;
 
         toast.success(`Successfully imported ${newRecords.length} records`);

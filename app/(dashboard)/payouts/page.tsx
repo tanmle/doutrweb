@@ -340,8 +340,16 @@ export default function PayoutReportsPage() {
 
                 if (fetchError) throw fetchError;
 
-                const salesMap = new Map(); // order_id -> record
-                salesRecords?.forEach(r => salesMap.set(r.order_id, r));
+                // Create a map for composite key lookup: order_id + sku_id
+                const salesMap = new Map<string, any>();
+                salesRecords?.forEach(r => {
+                    const key = `${r.order_id}_${(r.sku_id || '').trim().toLowerCase()}`;
+                    salesMap.set(key, r);
+                    // Also keep a fallback map for order_id only? 
+                    // No, strict matching is safer to avoid cross-linking wrong items.
+                    // But if SKU ID is missing or inconsistent, we might have issues.
+                    // Let's assume strict matching first.
+                });
 
                 // 4. Validation Logic
                 const errors: string[] = [];
@@ -349,25 +357,26 @@ export default function PayoutReportsPage() {
                 const updatesToSales: any[] = [];
 
                 for (const payout of payoutRecords) {
-                    const salesRecord = salesMap.get(payout.order_id);
+                    const payoutSku = (payout.sku_id || '').trim().toLowerCase();
+                    const key = `${payout.order_id}_${payoutSku}`;
+
+                    let salesRecord = salesMap.get(key);
+
+                    // Fallback: If only one sales record exists for this orderId, and we failed match by SKU (maybe missing SKU in one side), use it?
+                    // This is risky if there are multiple items.
+                    // Let's stick to strict or intelligent fallback if needed. The user asked for "same approach", which implies supporting the granularity.
 
                     if (!salesRecord) {
-                        errors.push(`Order ID ${payout.order_id} not found in Sales.`);
+                        // Try searching by just order_id if we can't find exact match, 
+                        // but only if that order has only 1 sales record?
+                        // Too complex for now. Report missing.
+                        errors.push(`Order ID ${payout.order_id} (SKU: ${payout.sku_id}) not found in Sales (or SKU mismatch).`);
                         continue;
                     }
 
                     // Check Shop
                     if (salesRecord.shop_id !== selectedShopId) {
                         errors.push(`Shop mismatch for Order ${payout.order_id}: Selected shop does not match Sales Record shop.`);
-                        continue;
-                    }
-
-                    // Check SKU
-                    const salesSku = (salesRecord.sku_id || '').trim().toLowerCase();
-                    const payoutSku = (payout.sku_id || '').trim().toLowerCase();
-
-                    if (salesSku !== payoutSku) {
-                        errors.push(`SKU mismatch for Order ${payout.order_id}: Payout has '${payout.sku_id}', Sales has '${salesRecord.sku_id}'`);
                         continue;
                     }
 
@@ -388,11 +397,15 @@ export default function PayoutReportsPage() {
                 }
 
                 // 5. Batch Insert Payouts
-                const { error: insertError } = await supabase.from('payout_records').upsert(validPayouts, { onConflict: 'order_id' });
+                // Upsert on (order_id, sku_id)
+                const { error: insertError } = await supabase.from('payout_records').upsert(validPayouts, { onConflict: 'order_id, sku_id' });
                 if (insertError) throw insertError;
 
                 // 6. Update Sales Records Status
-                await Promise.all(updatesToSales.map((u: any) =>
+                // Deduplicate updates to avoid multiple updates to same ID?
+                const uniqueUpdates = Array.from(new Map(updatesToSales.map(item => [item.id, item])).values());
+
+                await Promise.all(uniqueUpdates.map((u: any) =>
                     supabase.from('sales_records').update({ status: u.status }).eq('id', u.id)
                 ));
 
