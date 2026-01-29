@@ -49,7 +49,7 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
                         <th>Order Status</th>
                         <th>Payout Status</th>
                         <th>Order Substatus</th>
-                        <th>SKU ID</th>
+                        <th>Seller SKU</th>
                         <th>Quantity</th>
                         <th>Order Amount</th>
                         <th>Created Date</th>
@@ -100,7 +100,9 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
                                     </span>
                                 </td>
                                 <td data-label="Order Substatus">{r.order_substatus || '-'}</td>
-                                <td data-label="SKU ID">{r.sku_id || r.product?.sku || '-'}</td>
+                                <td data-label="Seller SKU" title={r.product?.name || 'No Product Linked'}>
+                                    {r.seller_sku || r.product?.sku || '-'}
+                                </td>
                                 <td data-label="Quantity">{r.items_sold}</td>
                                 <td data-label="Order Amount">{formatCurrency(r.revenue)}</td>
                                 <td data-label="Created Date">

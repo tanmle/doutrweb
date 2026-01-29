@@ -223,13 +223,13 @@ export default function SalesEntryPage() {
           // Get data as array of arrays
           const rawData = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
 
-          if (!rawData || rawData.length < 2) {
-            throw new Error('File is empty or invalid (no data rows found)');
+          if (!rawData || rawData.length < 3) {
+            throw new Error('File is empty or invalid (insufficient rows for header, note, and data)');
           }
 
-          // Row 0 is header
+          // Row 0 is header, Row 1 is note (skipped)
           headers = rawData[0].map((h: any) => String(h).toLowerCase().trim());
-          dataRows = rawData.slice(1);
+          dataRows = rawData.slice(2);
 
         } else {
           // CSV handling
