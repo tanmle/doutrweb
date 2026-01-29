@@ -17,6 +17,8 @@ interface ProductModalProps {
     onClose: () => void;
     onSubmit: (e: React.FormEvent) => void;
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+    onFileChange: (file: File) => void;
+    imagePreview: string | null;
 }
 
 export function ProductModal({
@@ -27,9 +29,22 @@ export function ProductModal({
     loading,
     onClose,
     onSubmit,
-    onChange
+    onChange,
+    onFileChange,
+    imagePreview
 }: ProductModalProps) {
     const isSelfResearched = formData.type === 'self_researched';
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const handleFileTrigger = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            onFileChange(e.target.files[0]);
+        }
+    };
 
     return (
         <Modal
@@ -38,6 +53,44 @@ export function ProductModal({
             title={isEdit ? 'Edit Product' : 'Add New Product'}
         >
             <form onSubmit={onSubmit} className={styles.modalFormCompact}>
+                {/* Image Upload Section */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <div
+                        onClick={handleFileTrigger}
+                        style={{
+                            width: '100px',
+                            height: '100px',
+                            borderRadius: '8px',
+                            border: '2px dashed #ccc',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            overflow: 'hidden',
+                            position: 'relative',
+                            backgroundColor: '#f9f9f9'
+                        }}
+                    >
+                        {imagePreview ? (
+                            <img
+                                src={imagePreview}
+                                alt="Product Preview"
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                        ) : (
+                            <span style={{ color: '#999', fontSize: '0.8rem', textAlign: 'center' }}>+ Image</span>
+                        )}
+                    </div>
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                    />
+                    <small style={{ marginTop: '0.5rem', color: '#666' }}>Click to upload product image</small>
+                </div>
+
                 <Input
                     label="Product Name"
                     name="name"
@@ -51,6 +104,14 @@ export function ProductModal({
                     value={formData.sku || ''}
                     onChange={onChange}
                     placeholder="e.g. PROD-001"
+                    required
+                />
+                <Input
+                    label="Variation"
+                    name="variation"
+                    value={formData.variation || ''}
+                    onChange={onChange}
+                    placeholder="e.g. Red, Size M"
                 />
                 <Input
                     label="Base Price (USD)"

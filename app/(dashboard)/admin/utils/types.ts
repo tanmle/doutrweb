@@ -16,6 +16,8 @@ export interface Product {
   in_stock?: boolean;
   stock_quantity?: number;
   created_at: string;
+  variation?: string;
+  image_url?: string;
   owner_profile?: {
     full_name: string;
     email: string;

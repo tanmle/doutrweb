@@ -19,7 +19,9 @@ export function ProductsTable({ products, onEdit, onDelete }: ProductsTableProps
             <table className={tables.table}>
                 <thead>
                     <tr>
+                        <th>Image</th>
                         <th>Name</th>
+                        <th>Variation</th>
                         <th>SKU</th>
                         <th>Base Price</th>
                         <th>Selling Price</th>
@@ -32,14 +34,28 @@ export function ProductsTable({ products, onEdit, onDelete }: ProductsTableProps
                 <tbody>
                     {products.length === 0 ? (
                         <tr>
-                            <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
+                            <td colSpan={10} style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
                                 No product records found.
                             </td>
                         </tr>
                     ) : (
                         products.map(p => (
                             <tr key={p.id}>
+                                <td data-label="Image">
+                                    {p.image_url ? (
+                                        <img
+                                            src={p.image_url}
+                                            alt={p.name}
+                                            style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }}
+                                        />
+                                    ) : (
+                                        <div style={{ width: '40px', height: '40px', backgroundColor: '#eee', borderRadius: '4px' }} />
+                                    )}
+                                </td>
                                 <td data-label="Name">{p.name}</td>
+                                <td data-label="Variation">
+                                    <span className={styles.mutedText}>{p.variation || '-'}</span>
+                                </td>
                                 <td data-label="SKU">
                                     <span className={styles.mutedText}>{p.sku || '-'}</span>
                                 </td>

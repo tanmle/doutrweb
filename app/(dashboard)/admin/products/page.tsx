@@ -25,6 +25,10 @@ export default function AdminProductsPage() {
     const [isEditProductModalOpen, setIsEditProductModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
+    // Image upload states
+    const [productImageFile, setProductImageFile] = useState<File | null>(null);
+    const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
+
     const supabase = createClient();
     const toast = useToast();
 
@@ -54,20 +58,46 @@ export default function AdminProductsPage() {
     const handleProductSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        let imageUrl = null;
+
+        if (productImageFile) {
+            const fileExt = productImageFile.name.split('.').pop();
+            const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+            const { error: uploadError } = await supabase.storage
+                .from('products')
+                .upload(fileName, productImageFile);
+
+            if (uploadError) {
+                toast.error('Error uploading image: ' + uploadError.message);
+                setLoading(false);
+                return;
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('products')
+                .getPublicUrl(fileName);
+            imageUrl = publicUrl;
+        }
+
         const { error } = await supabase.from('products').insert({
             name: formData.name,
-            sku: formData.sku || null,
+            sku: formData.sku, // Required now
             base_price: parseFloat(formData.base_price) || 0,
             selling_price: parseFloat(formData.selling_price) || 0,
             type: formData.type || 'company',
             owner_id: formData.type === 'self_researched' ? (formData.owner_id || null) : null,
             in_stock: formData.in_stock !== undefined ? formData.in_stock : true,
             stock_quantity: (formData.in_stock !== false) ? (parseInt(formData.stock_quantity) || 0) : 0,
+            variation: formData.variation || null,
+            image_url: imageUrl,
         });
         if (error) toast.error(error.message);
         else {
             setIsProductModalOpen(false);
+            setIsProductModalOpen(false);
             setFormData({});
+            setProductImageFile(null);
+            setProductImagePreview(null);
             setRefresh(prev => prev + 1);
         }
         setLoading(false);
@@ -77,21 +107,47 @@ export default function AdminProductsPage() {
         e.preventDefault();
         if (!selectedProduct) return;
         setLoading(true);
+        let imageUrl = selectedProduct.image_url;
+
+        if (productImageFile) {
+            const fileExt = productImageFile.name.split('.').pop();
+            const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+            const { error: uploadError } = await supabase.storage
+                .from('products')
+                .upload(fileName, productImageFile);
+
+            if (uploadError) {
+                toast.error('Error uploading image: ' + uploadError.message);
+                setLoading(false);
+                return;
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('products')
+                .getPublicUrl(fileName);
+            imageUrl = publicUrl;
+        }
+
         const { error } = await supabase.from('products').update({
             name: formData.name,
-            sku: formData.sku || null,
+            sku: formData.sku,
             base_price: parseFloat(formData.base_price) || 0,
             selling_price: parseFloat(formData.selling_price) || 0,
             type: formData.type,
             owner_id: formData.type === 'self_researched' ? (formData.owner_id || null) : null,
             in_stock: formData.in_stock,
             stock_quantity: (formData.in_stock !== false) ? (parseInt(formData.stock_quantity) || 0) : 0,
+            variation: formData.variation || null,
+            image_url: imageUrl,
         }).eq('id', selectedProduct.id);
 
         if (error) toast.error(error.message);
         else {
             setIsEditProductModalOpen(false);
+            setIsEditProductModalOpen(false);
             setFormData({});
+            setProductImageFile(null);
+            setProductImagePreview(null);
             setSelectedProduct(null);
             setRefresh(prev => prev + 1);
         }
@@ -109,7 +165,10 @@ export default function AdminProductsPage() {
             owner_id: product.owner_id || '',
             in_stock: product.in_stock,
             stock_quantity: product.stock_quantity ? product.stock_quantity.toString() : '0',
+            variation: product.variation || '',
         });
+        setProductImagePreview(product.image_url || null);
+        setProductImageFile(null);
         setIsEditProductModalOpen(true);
     };
 
@@ -120,6 +179,21 @@ export default function AdminProductsPage() {
         if (error) toast.error(error.message);
         else setRefresh(prev => prev + 1);
         setLoading(false);
+    };
+
+    const handleFileChange = (file: File) => {
+        setProductImageFile(file);
+        const objectUrl = URL.createObjectURL(file);
+        setProductImagePreview(objectUrl);
+    };
+
+    const handleCloseModal = () => {
+        setIsProductModalOpen(false);
+        setIsEditProductModalOpen(false);
+        setFormData({});
+        setProductImageFile(null);
+        setProductImagePreview(null);
+        setSelectedProduct(null);
     };
 
     if (dataLoading) {
@@ -140,9 +214,11 @@ export default function AdminProductsPage() {
                 formData={formData}
                 profiles={profiles}
                 loading={loading}
-                onClose={() => setIsProductModalOpen(false)}
+                onClose={handleCloseModal}
                 onSubmit={handleProductSubmit}
                 onChange={handleInputChange}
+                onFileChange={handleFileChange}
+                imagePreview={productImagePreview}
             />
 
             <ProductModal
@@ -151,9 +227,11 @@ export default function AdminProductsPage() {
                 formData={formData}
                 profiles={profiles}
                 loading={loading}
-                onClose={() => setIsEditProductModalOpen(false)}
+                onClose={handleCloseModal}
                 onSubmit={handleUpdateProductSubmit}
                 onChange={handleInputChange}
+                onFileChange={handleFileChange}
+                imagePreview={productImagePreview}
             />
 
             <AdminTableStyles />
