@@ -55,6 +55,73 @@ export async function createUser(rawData: unknown) {
 
 export async function deleteUser(id: string) {
   const supabase = createAdminClient();
+
+  // 1. Unassign members where this user is leader
+  const { error: unassignMembersError } = await supabase
+    .from('profiles')
+    .update({ leader_id: null })
+    .eq('leader_id', id);
+
+  if (unassignMembersError) {
+    return { error: 'Failed to unassign members: ' + unassignMembersError.message };
+  }
+
+  // 2. Unassign leader from this user
+  const { error: unassignLeaderError } = await supabase
+    .from('profiles')
+    .update({ leader_id: null })
+    .eq('id', id);
+
+  if (unassignLeaderError) {
+    return { error: 'Failed to unassign leader: ' + unassignLeaderError.message };
+  }
+
+  // 3. Unassign Shops
+  const { error: shopError } = await supabase
+    .from('shops')
+    .update({ owner_id: null })
+    .eq('owner_id', id);
+
+  if (shopError) return { error: 'Failed to unassign shops: ' + shopError.message };
+
+  // 4. Unassign Sales Records (created_by)
+  const { error: salesError } = await supabase
+    .from('sales_records')
+    .update({ created_by: null })
+    .eq('created_by', id);
+
+  if (salesError) return { error: 'Failed to unassign sales records: ' + salesError.message };
+
+  // 5. Unassign Selling Fees
+  const { error: sellingFeeError } = await supabase
+    .from('selling_fees')
+    .update({ owner_id: null })
+    .eq('owner_id', id);
+
+  if (sellingFeeError) return { error: 'Failed to unassign selling fees: ' + sellingFeeError.message };
+
+  // 6. Unassign Monthly Fees
+  // Note: Wrapped in try/catch logic via checking error message if table might be missing, 
+  // but assuming it exists based on project structure.
+  const { error: monthlyFeeError } = await supabase
+    .from('monthly_fees')
+    .update({ owner_id: null })
+    .eq('owner_id', id);
+
+  if (monthlyFeeError && !monthlyFeeError.message.includes('relation "public.monthly_fees" does not exist')) {
+    return { error: 'Failed to unassign monthly fees: ' + monthlyFeeError.message };
+  }
+
+  // 7. Delete Payroll Records
+  const { error: payrollError } = await supabase
+    .from('payroll_records')
+    .delete()
+    .eq('user_id', id);
+
+  if (payrollError && !payrollError.message.includes('relation "public.payroll_records" does not exist')) {
+    return { error: 'Failed to delete payroll records: ' + payrollError.message };
+  }
+
   const { error } = await supabase.auth.admin.deleteUser(id);
   if (error) return { error: error.message };
   return { success: true };

@@ -39,10 +39,22 @@ export default function AdminUsersPage() {
         profiles,
     } = useUsers(refresh);
 
-    // Real-time updates for user profiles
+    const refreshTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+    const isLocalChange = React.useRef(false);
+
+    // Real-time updates for user profiles, debounced
     useRealtime({
         table: 'profiles',
-        onData: () => setRefresh(prev => prev + 1)
+        onData: () => {
+            if (isLocalChange.current) return;
+
+            if (refreshTimeoutRef.current) {
+                clearTimeout(refreshTimeoutRef.current);
+            }
+            refreshTimeoutRef.current = setTimeout(() => {
+                setRefresh(prev => prev + 1);
+            }, 300);
+        }
     });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -58,6 +70,7 @@ export default function AdminUsersPage() {
     const handleUserSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        isLocalChange.current = true; // Suppress realtime for own action
         const res = await createUser({
             email: formData.email,
             password: formData.password,
@@ -71,11 +84,14 @@ export default function AdminUsersPage() {
 
         if (res.error) {
             toast.error('Error: ' + res.error);
+            isLocalChange.current = false;
         } else {
             toast.success('User created successfully');
             setIsUserModalOpen(false);
             setFormData({});
             setRefresh(prev => prev + 1);
+            // Re-enable realtime after echoes settle
+            setTimeout(() => { isLocalChange.current = false; }, 2000);
         }
         setLoading(false);
     };
@@ -84,6 +100,7 @@ export default function AdminUsersPage() {
         e.preventDefault();
         if (!selectedUser) return;
         setLoading(true);
+        isLocalChange.current = true;
         // Updated logic: if removing leader_id (role change), ensure it's null
         const { error } = await supabase.from('profiles').update({
             full_name: formData.full_name,
@@ -94,12 +111,15 @@ export default function AdminUsersPage() {
             base_salary: parseFloat(formData.base_salary) || 0
         }).eq('id', selectedUser.id);
 
-        if (error) toast.error(error.message);
-        else {
+        if (error) {
+            toast.error(error.message);
+            isLocalChange.current = false;
+        } else {
             setIsEditUserModalOpen(false);
             setFormData({});
             setSelectedUser(null);
             setRefresh(prev => prev + 1);
+            setTimeout(() => { isLocalChange.current = false; }, 2000);
         }
         setLoading(false);
     };
@@ -120,12 +140,17 @@ export default function AdminUsersPage() {
     const handleDeleteUser = async (id: string, email: string) => {
         if (!confirm(`Are you sure you want to delete user ${email}? This cannot be undone.`)) return;
         setLoading(true);
+        isLocalChange.current = true;
+
         const result = await deleteUser(id);
         if (result.error) {
             toast.error(result.error);
+            isLocalChange.current = false;
         } else {
             toast.success('User deleted successfully');
             setRefresh(prev => prev + 1);
+            // Re-enable realtime listening after a delay to ignore the echo of our own delete
+            setTimeout(() => { isLocalChange.current = false; }, 2000);
         }
         setLoading(false);
     };

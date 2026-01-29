@@ -94,26 +94,18 @@ export function UserModal({
                 <Input
                     label="Base Salary (VND)"
                     name="base_salary"
-                    value={formatCurrency(formData.base_salary)}
+                    value={formData.base_salary ? formatCurrency(formData.base_salary) : ''}
                     onChange={(e) => {
-                        const numericValue = parseCurrency(e.target.value);
-                        // Start: Manually creating a synthetic event-like object or calling a custom handler if needed.
-                        // However, UserModal expects a ChangeEvent.
-                        // We can just update formData directly via a wrapper or assume onChange handles basic inputs.
-                        // But onChange in props expects React.ChangeEvent.
-                        // Let's modify the onChange behavior just for this input.
-                        // We need to pass { target: { name, value } } to the parent on change.
-                        // The parent `handleInputChange` in `page.tsx` handles typical inputs but expects raw values.
-                        // If we pass the numeric value back, it should work if it's stored as number or string number.
+                        // User types into a formatted string (e.g. "1,000 ₫" -> "1,0005 ₫")
+                        // We extract just the digits to get the raw number
+                        const rawValue = e.target.value.replace(/\D/g, '');
 
-                        // Actually, better to just let the parent handle it? 
-                        // Issue is the passed `value` to Input is now formatted string. 
-                        // `onChange` needs to send the *numeric* value (or stringified number) back to state.
-
+                        // We send the RAW DIGIT STRING back to the parent.
+                        // The parent (page.tsx) expects a string and cleans it again, which is fine.
                         const syntheticEvent = {
                             target: {
                                 name: 'base_salary',
-                                value: numericValue
+                                value: rawValue
                             }
                         } as any;
                         onChange(syntheticEvent);
