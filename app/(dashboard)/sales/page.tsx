@@ -63,7 +63,7 @@ export default function SalesEntryPage() {
   const [shops, setShops] = useState<Shop[]>([]);
 
   // Filters State
-  const [dateFilter, setDateFilter] = useState<DateFilterType>('this_month');
+  const [dateFilter, setDateFilter] = useState<DateFilterType>('today');
   const [dateRange, setDateRange] = useState<DateRange>(getDateRange('this_month'));
   const [ownerFilter, setOwnerFilter] = useState('');
   const [shopFilter, setShopFilter] = useState('all');
@@ -480,7 +480,14 @@ export default function SalesEntryPage() {
             </Button>
             <Button
               variant={dateFilter === 'range' ? 'primary' : 'secondary'}
-              onClick={() => setDateFilter('range')}
+              onClick={() => {
+                setDateFilter('range');
+                // Allow state update then focus first input
+                setTimeout(() => {
+                  const inputs = document.querySelectorAll('input[type="date"]');
+                  if (inputs.length > 0) (inputs[0] as HTMLInputElement).showPicker?.();
+                }, 100);
+              }}
               className={filters.filterButton}
             >
               Range
@@ -493,6 +500,7 @@ export default function SalesEntryPage() {
                 type="date"
                 value={dateRange.start}
                 onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                 className={forms.formInput}
                 style={{ width: 'auto' }}
               />
@@ -501,6 +509,7 @@ export default function SalesEntryPage() {
                 type="date"
                 value={dateRange.end}
                 onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                 className={forms.formInput}
                 style={{ width: 'auto' }}
               />

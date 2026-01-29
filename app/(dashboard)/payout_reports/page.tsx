@@ -16,7 +16,7 @@ import { PayoutsTable } from './components';
 import { KPICard } from './components/KPICard';
 import { APP_CONSTANTS } from '@/constants/app';
 
-type FilterType = 'daily' | 'weekly' | 'monthly';
+type FilterType = 'this_month' | 'last_month' | 'range';
 
 interface Profile {
     id: string;
@@ -48,7 +48,8 @@ interface PayoutRecord {
 
 export default function PayoutReportsPage() {
     const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
-    const [filter, setFilter] = useState<FilterType>('monthly');
+    const [filter, setFilter] = useState<FilterType>('this_month');
+    const [dateRange, setDateRange] = useState({ start: '', end: '' });
     const [kpiStats, setKpiStats] = useState({
         targetKPI: 1500,
         currentKPI: 0,
@@ -102,7 +103,6 @@ export default function PayoutReportsPage() {
             }
         };
         fetchContext();
-        fetchKPI();
     }, []);
 
     const fetchKPI = async () => {
@@ -118,13 +118,22 @@ export default function PayoutReportsPage() {
         const { data: rates } = await supabase.from('commission_rates').select('level, profit_threshold').eq('type', 'company').order('level', { ascending: true });
 
         const now = new Date();
-        const startOfMonthDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        const startOfMonth = startOfMonthDate.toISOString();
+        let kpiQuery = supabase.from('payout_records').select('settlement_amount, shop:shops!inner(owner_id)');
 
-        // Corrected Relation Syntax: shop:shops!inner(owner_id)
-        let kpiQuery = supabase.from('payout_records')
-            .select('settlement_amount, shop:shops!inner(owner_id)')
-            .gte('created_at', startOfMonth);
+        if (filter === 'this_month') {
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            kpiQuery = kpiQuery.gte('created_at', startOfMonth.toISOString());
+        } else if (filter === 'last_month') {
+            const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+            kpiQuery = kpiQuery
+                .gte('created_at', startOfLastMonth.toISOString())
+                .lte('created_at', endOfLastMonth.toISOString());
+        } else if (filter === 'range' && dateRange.start && dateRange.end) {
+            kpiQuery = kpiQuery
+                .gte('created_at', dateRange.start)
+                .lte('created_at', dateRange.end + 'T23:59:59');
+        }
 
         if (role !== 'admin') {
             if (role === 'leader') {
@@ -200,18 +209,21 @@ export default function PayoutReportsPage() {
         const now = new Date();
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        if (filter === 'daily') {
-            query = query.gte('created_at', startOfToday.toISOString());
-        } else if (filter === 'weekly') {
-            const dayOfWeek = now.getDay();
-            const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Mon=0 start
-            const startOfWeek = new Date(now);
-            startOfWeek.setDate(now.getDate() - diff);
-            startOfWeek.setHours(0, 0, 0, 0); // Start of day
-            query = query.gte('created_at', startOfWeek.toISOString());
-        } else if (filter === 'monthly') {
+        if (filter === 'this_month') {
+            // From start of current month to now
             const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
             query = query.gte('created_at', startOfMonth.toISOString());
+        } else if (filter === 'last_month') {
+            // From start of last month to end of last month
+            const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+            query = query
+                .gte('created_at', startOfLastMonth.toISOString())
+                .lte('created_at', endOfLastMonth.toISOString());
+        } else if (filter === 'range' && dateRange.start && dateRange.end) {
+            query = query
+                .gte('created_at', dateRange.start)
+                .lte('created_at', dateRange.end + 'T23:59:59');
         }
 
         const { data, error } = await query;
@@ -225,7 +237,8 @@ export default function PayoutReportsPage() {
 
     useEffect(() => {
         fetchPayouts();
-    }, [filter, userFilter, shopFilter, statusFilter, userRole]);
+        fetchKPI();
+    }, [filter, dateRange, userFilter, shopFilter, statusFilter, userRole]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -422,27 +435,55 @@ export default function PayoutReportsPage() {
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                     <div className={filters.filterButtons} style={{ marginBottom: 0 }}>
                         <Button
-                            variant={filter === 'daily' ? 'primary' : 'secondary'}
-                            onClick={() => setFilter('daily')}
+                            variant={filter === 'this_month' ? 'primary' : 'secondary'}
+                            onClick={() => setFilter('this_month')}
                             className={filters.filterButton}
                         >
-                            Daily
+                            This Month
                         </Button>
                         <Button
-                            variant={filter === 'weekly' ? 'primary' : 'secondary'}
-                            onClick={() => setFilter('weekly')}
+                            variant={filter === 'last_month' ? 'primary' : 'secondary'}
+                            onClick={() => setFilter('last_month')}
                             className={filters.filterButton}
                         >
-                            Weekly
+                            Last Month
                         </Button>
                         <Button
-                            variant={filter === 'monthly' ? 'primary' : 'secondary'}
-                            onClick={() => setFilter('monthly')}
+                            variant={filter === 'range' ? 'primary' : 'secondary'}
+                            onClick={() => {
+                                setFilter('range');
+                                setTimeout(() => {
+                                    const inputs = document.querySelectorAll('input[type="date"]');
+                                    if (inputs.length > 0) (inputs[0] as HTMLInputElement).showPicker?.();
+                                }, 100);
+                            }}
                             className={filters.filterButton}
                         >
-                            Monthly
+                            Range
                         </Button>
                     </div>
+
+                    {filter === 'range' && (
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', animation: 'fadeIn 0.2s ease-in-out' }}>
+                            <input
+                                type="date"
+                                value={dateRange.start}
+                                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                                onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
+                                className={forms.formInput}
+                                style={{ width: 'auto' }}
+                            />
+                            <span className={layouts.textMuted}>-</span>
+                            <input
+                                type="date"
+                                value={dateRange.end}
+                                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                                onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
+                                className={forms.formInput}
+                                style={{ width: 'auto' }}
+                            />
+                        </div>
+                    )}
 
                     {['admin', 'leader'].includes(userRole) && (
                         <div style={{ minWidth: '200px' }}>
