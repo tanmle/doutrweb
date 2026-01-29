@@ -30,52 +30,60 @@ export function ProductsTable({ products, onEdit, onDelete }: ProductsTableProps
                     </tr>
                 </thead>
                 <tbody>
-                    {products.map(p => (
-                        <tr key={p.id}>
-                            <td data-label="Name">{p.name}</td>
-                            <td data-label="SKU">
-                                <span className={styles.mutedText}>{p.sku || '-'}</span>
-                            </td>
-                            <td data-label="Base Price">{formatUSD(p.base_price)}</td>
-                            <td data-label="Selling Price">{formatUSD(p.selling_price)}</td>
-                            <td data-label="Status">
-                                <span className={`${styles.inStockBadge} ${p.in_stock !== false ? styles.inStockTrue : styles.inStockFalse}`}>
-                                    {p.in_stock !== false ? `In Stock (${p.stock_quantity || 0})` : 'Out of Stock'}
-                                </span>
-                            </td>
-                            <td data-label="Type">
-                                <span className={`${styles.productTypeBadge} ${p.type === 'company' ? styles.productTypeBadgeCompany : styles.productTypeBadgeSelf
-                                    }`}>
-                                    {p.type === 'self_researched' ? 'Self-Research' : 'Company'}
-                                </span>
-                            </td>
-                            <td data-label="Owner">
-                                {p.type === 'self_researched' && p.owner_profile ? (
-                                    <span>{p.owner_profile.full_name || p.owner_profile.email}</span>
-                                ) : (
-                                    <span className={styles.mutedText}>-</span>
-                                )}
-                            </td>
-                            <td data-label="Actions">
-                                <div className={styles.tableActions}>
-                                    <Button
-                                        variant="ghost"
-                                        onClick={() => onEdit(p)}
-                                        className={styles.buttonExtraSmall}
-                                    >
-                                        Edit
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        onClick={() => onDelete(p.id)}
-                                        className={`${styles.buttonExtraSmall} ${styles.buttonDeleteColor}`}
-                                    >
-                                        Delete
-                                    </Button>
-                                </div>
+                    {products.length === 0 ? (
+                        <tr>
+                            <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
+                                No product records found.
                             </td>
                         </tr>
-                    ))}
+                    ) : (
+                        products.map(p => (
+                            <tr key={p.id}>
+                                <td data-label="Name">{p.name}</td>
+                                <td data-label="SKU">
+                                    <span className={styles.mutedText}>{p.sku || '-'}</span>
+                                </td>
+                                <td data-label="Base Price">{formatUSD(p.base_price)}</td>
+                                <td data-label="Selling Price">{formatUSD(p.selling_price)}</td>
+                                <td data-label="Status">
+                                    <span className={`${styles.inStockBadge} ${p.in_stock !== false ? styles.inStockTrue : styles.inStockFalse}`}>
+                                        {p.in_stock !== false ? `In Stock (${p.stock_quantity || 0})` : 'Out of Stock'}
+                                    </span>
+                                </td>
+                                <td data-label="Type">
+                                    <span className={`${styles.productTypeBadge} ${p.type === 'company' ? styles.productTypeBadgeCompany : styles.productTypeBadgeSelf
+                                        }`}>
+                                        {p.type === 'self_researched' ? 'Self-Research' : 'Company'}
+                                    </span>
+                                </td>
+                                <td data-label="Owner">
+                                    {p.type === 'self_researched' && p.owner_profile ? (
+                                        <span>{p.owner_profile.full_name || p.owner_profile.email}</span>
+                                    ) : (
+                                        <span className={styles.mutedText}>-</span>
+                                    )}
+                                </td>
+                                <td data-label="Actions">
+                                    <div className={styles.tableActions}>
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => onEdit(p)}
+                                            className={styles.buttonExtraSmall}
+                                        >
+                                            Edit
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => onDelete(p.id)}
+                                            className={`${styles.buttonExtraSmall} ${styles.buttonDeleteColor}`}
+                                        >
+                                            Delete
+                                        </Button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))
+                    )}
                 </tbody>
             </table>
         </div>

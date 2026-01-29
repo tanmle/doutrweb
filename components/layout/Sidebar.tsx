@@ -33,10 +33,22 @@ const navItems: NavItem[] = [
 export const Sidebar = ({ isOpen, onClose, role }: { isOpen: boolean; onClose: () => void; role?: string }) => {
   const pathname = usePathname();
 
-  const filteredNavItems = useMemo(() => navItems.filter(item => {
-    if (item.label === 'Admin') return role === 'admin';
-    return true;
-  }), [role]);
+  const filteredNavItems = useMemo(() => {
+    return navItems.map(item => {
+      // 1. Top-level permission check
+      if (item.label === 'Admin' && role !== 'admin' && role !== 'leader') return null;
+
+      // 2. Filter children if necessary
+      if (item.label === 'Admin' && role === 'leader') {
+        const allowedChildren = ['Products'];
+        // Including User Management as they manage team members.
+        const filteredChildren = item.children?.filter(child => allowedChildren.includes(child.label));
+        return { ...item, children: filteredChildren };
+      }
+
+      return item;
+    }).filter(Boolean) as NavItem[];
+  }, [role]);
 
   return (
     <aside className={styles.sidebarWrapper}>
