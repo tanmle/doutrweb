@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
@@ -90,6 +90,7 @@ export default function SalesEntryPage() {
 
   const [importing, setImporting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const supabase = useSupabase();
   const toast = useToast();
@@ -358,6 +359,10 @@ export default function SalesEntryPage() {
       } finally {
         setImporting(false);
         // Reset file input
+        setSelectedFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       }
     };
 
@@ -421,13 +426,19 @@ export default function SalesEntryPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this record?')) return;
+    const record = records.find(r => r.id === id);
+    if (!record) return;
+
+    if (!confirm(`Are you sure you want to delete this record?\n\nIMPORTANT: This will also delete the corresponding Payout Record for Order ID: ${record.order_id} (if it exists) as well as data sharing the same SKU/Qty.`)) return;
+
     setLoading(true);
+
+    // Delete Sales Record (Cascade will handle Payout Records)
     const { error } = await supabase.from('sales_records').delete().eq('id', id);
     if (error) {
       toast.error('Error deleting record: ' + error.message);
     } else {
-      toast.success('Record deleted');
+      toast.success('Record and linked payout data deleted');
       fetchRecords();
     }
     setLoading(false);
@@ -574,6 +585,7 @@ export default function SalesEntryPage() {
       <SalesTable
         records={records}
         loading={loading}
+        onDelete={handleDelete}
       />
 
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Sales Record">
@@ -687,6 +699,7 @@ export default function SalesEntryPage() {
                 onChange={handleFileChange}
                 style={{ display: 'none' }}
                 id="csv-upload"
+                ref={fileInputRef}
               />
               <label htmlFor="csv-upload" style={{ cursor: 'pointer', display: 'block' }}>
                 {selectedFile ? (

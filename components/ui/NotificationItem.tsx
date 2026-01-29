@@ -37,7 +37,7 @@ export function NotificationItem({ notification, onClick, onMarkRead }: Notifica
                 router.push('/reports');
                 break;
             case 'manual':
-                // Assuming 'manual' notifications are mostly about tasks like Sales Entry
+                // Assuming 'manual' notifications are mostly about tasks like Sales
                 router.push('/dashboard');
                 break;
             default:

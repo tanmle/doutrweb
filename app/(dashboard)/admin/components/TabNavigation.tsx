@@ -17,7 +17,7 @@ export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
                 variant={activeTab === 'products' ? 'primary' : 'ghost'}
                 onClick={() => onTabChange('products')}
             >
-                Product Entry
+                Products
             </Button>
             <Button
                 variant={activeTab === 'users' ? 'primary' : 'ghost'}

@@ -16,7 +16,7 @@ interface SalesTableProps {
     onDelete: (id: string) => void;
 }
 
-export function SalesTable({ records, loading }: Omit<SalesTableProps, 'onEdit' | 'onDelete'>) {
+export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps, 'onEdit'>) {
     if (loading) {
         return (
             <Card>
@@ -54,12 +54,13 @@ export function SalesTable({ records, loading }: Omit<SalesTableProps, 'onEdit' 
                         <th>Order Amount</th>
                         <th>Created Date</th>
                         <th>Order Date</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {records.length === 0 ? (
                         <tr>
-                            <td colSpan={11} className={`${layouts.textCenter} ${sales.emptyStateCell}`}>
+                            <td colSpan={12} className={`${layouts.textCenter} ${sales.emptyStateCell}`}>
                                 <span className={layouts.textMuted}>No records found.</span>
                             </td>
                         </tr>
@@ -106,6 +107,16 @@ export function SalesTable({ records, loading }: Omit<SalesTableProps, 'onEdit' 
                                     {r.created_at ? new Date(r.created_at).toLocaleDateString('vi-VN') : '-'}
                                 </td>
                                 <td data-label="Order Date">{new Date(r.date).toLocaleDateString('vi-VN')}</td>
+                                <td data-label="Action">
+                                    <Button
+                                        variant="secondary"
+                                        onClick={() => onDelete(r.id)}
+                                        className="px-2 py-1 text-xs"
+                                        style={{ backgroundColor: '#ef4444', color: 'white', borderColor: '#ef4444' }}
+                                    >
+                                        Delete
+                                    </Button>
+                                </td>
                             </tr>
                         ))
                     )}

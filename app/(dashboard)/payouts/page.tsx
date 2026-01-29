@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -34,6 +34,7 @@ interface PayoutRecord {
     quantity: number;
     settlement_amount: number;
     shop_id: string;
+    sales_record_id?: string; // Added field
     raw_data: any;
     order_created_date: string | null;
     shop?: {
@@ -68,6 +69,7 @@ export default function PayoutReportsPage() {
     const [selectedShopId, setSelectedShopId] = useState<string>('');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [shops, setShops] = useState<any[]>([]);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const supabase = useSupabase();
     const toast = useToast();
@@ -304,6 +306,7 @@ export default function PayoutReportsPage() {
                         quantity: parseInt(row['Quantity'] || '0'),
                         settlement_amount: parseFloat(row['Total settlement amount'] || '0'),
                         shop_id: selectedShopId,
+                        sales_record_id: undefined, // Initialize field
                         raw_data: row // Store full row
                     };
                 }).filter(p => p.order_id);
@@ -349,7 +352,7 @@ export default function PayoutReportsPage() {
                     const salesRecord = salesMap.get(payout.order_id);
 
                     if (!salesRecord) {
-                        errors.push(`Order ID ${payout.order_id} not found in Sales Entry.`);
+                        errors.push(`Order ID ${payout.order_id} not found in Sales.`);
                         continue;
                     }
 
@@ -367,6 +370,9 @@ export default function PayoutReportsPage() {
                         errors.push(`SKU mismatch for Order ${payout.order_id}: Payout has '${payout.sku_id}', Sales has '${salesRecord.sku_id}'`);
                         continue;
                     }
+
+                    // Link to Sales Record
+                    payout.sales_record_id = salesRecord.id;
 
                     validPayouts.push(payout);
 
@@ -402,6 +408,9 @@ export default function PayoutReportsPage() {
             } finally {
                 setImporting(false);
                 setSelectedFile(null);
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
             }
         };
         reader.readAsBinaryString(selectedFile);
@@ -409,7 +418,7 @@ export default function PayoutReportsPage() {
 
     const totalSettlement = payouts.reduce((acc, curr) => acc + (curr.settlement_amount || 0), 0);
 
-    if (loading) return <LoadingIndicator label="Loading payout reports..." />;
+    if (loading) return <LoadingIndicator label="Loading payouts..." />;
 
     return (
         <div>
@@ -553,7 +562,6 @@ export default function PayoutReportsPage() {
                             {shops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                         </select>
                     </div>
-
                     <div className={forms.formField}>
                         <label className={forms.formLabel}>XLSX File</label>
                         <div style={{ padding: '1rem', border: '2px dashed var(--border)', borderRadius: '8px', textAlign: 'center' }}>
@@ -563,6 +571,7 @@ export default function PayoutReportsPage() {
                                 onChange={handleFileChange}
                                 id="xlsx-upload"
                                 style={{ display: 'none' }}
+                                ref={fileInputRef}
                             />
                             <label htmlFor="xlsx-upload" style={{ cursor: 'pointer', display: 'block' }}>
                                 {selectedFile ? (
@@ -578,7 +587,7 @@ export default function PayoutReportsPage() {
                         {importing ? 'Importing...' : 'Start Import'}
                     </Button>
                 </form>
-            </Modal>
-        </div>
+            </Modal >
+        </div >
     );
 }

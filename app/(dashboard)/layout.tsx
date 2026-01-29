@@ -251,9 +251,9 @@ export default function DashboardLayout({
             </div>
             <h2 className={styles.headerTitle}>
               {(() => {
-                if (pathname?.includes('/sales')) return 'Sales Entry';
+                if (pathname?.includes('/sales')) return 'Sales';
                 if (pathname?.includes('/shops')) return 'Shops';
-                if (pathname?.includes('/payout_reports')) return 'Payout Reports';
+                if (pathname?.includes('/payouts')) return 'Payouts';
                 if (pathname?.includes('/admin/products')) return 'Products';
                 if (pathname?.includes('/admin/users')) return 'Users';
                 if (pathname?.includes('/admin/payroll')) return 'Payroll';
