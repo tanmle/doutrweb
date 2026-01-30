@@ -908,3 +908,153 @@
         gap: 1.5rem;
     }
 }
+/* Salary Periods Editor */
+.salaryPeriodsEditor {
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--background-secondary);
+}
+
+.salaryPeriodsHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.salaryPeriodsTitle {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.salaryPeriodsAddButton {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+}
+
+.salaryPeriodsEmpty {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 1.5rem;
+    margin: 0;
+}
+
+.salaryPeriodsList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.salaryPeriodRow {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    padding: 0.75rem;
+    background: var(--background);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+}
+
+.salaryPeriodFields {
+    display: flex;
+    gap: 0.75rem;
+    flex: 1;
+    flex-wrap: wrap;
+}
+
+.salaryPeriodField {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 120px;
+}
+
+.salaryPeriodLabel {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.salaryPeriodInput {
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--background);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.salaryPeriodSubtotal {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+}
+
+.salaryPeriodRemove {
+    padding: 0.5rem;
+    color: var(--destructive);
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.salaryPeriodsSummary {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.salaryPeriodsSummaryRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+}
+
+.salaryPeriodsSummaryRow span {
+    color: var(--text-secondary);
+}
+
+.salaryPeriodsSummaryRow strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Salary Quick Buttons */
+.salaryQuickButtons {
+    display: flex;
+    gap: 0.375rem;
+    margin-top: 0.375rem;
+}
+
+.salaryQuickButton {
+    flex: 1;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--background);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.salaryQuickButton:hover {
+    background: var(--accent);
+    color: var(--accent-foreground);
+    border-color: var(--accent);
+}
+
+.salaryQuickButton:active {
+    transform: scale(0.95);
+}

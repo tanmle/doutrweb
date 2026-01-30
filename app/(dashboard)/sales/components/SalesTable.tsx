@@ -1,15 +1,14 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { RoleBadge } from '@/components/ui/RoleBadge';
-import type { UserRole } from '@/components/ui/RoleBadge';
 import { formatCurrency } from '@/utils/formatters';
+import { getStatusBadgeStyle } from '@/utils/statusColors';
+import { TRUNCATE_ID_LENGTH, TRUNCATE_ID_DISPLAY_LENGTH } from '@/constants/sales';
+import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 import { tables, layouts, sales } from '@/styles/modules';
 import type { SalesRecordWithRelations } from '../types';
-
-import { useToast } from '@/components/ui/ToastProvider';
 
 interface SalesTableProps {
     records: SalesRecordWithRelations[];
@@ -18,14 +17,52 @@ interface SalesTableProps {
     onDelete: (id: string) => void;
 }
 
-export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps, 'onEdit'>) {
-    const toast = useToast();
+/**
+ * Renders a truncated ID with copy button
+ */
+const IdCell = React.memo(({ id, onCopy }: { id: string | null | undefined; onCopy: (id: string) => void }) => {
+    if (!id) return <>-</>;
 
-    const handleCopy = (text: string) => {
-        if (!text) return;
-        navigator.clipboard.writeText(text);
-        toast.success('Copied to clipboard');
-    };
+    const displayId = id.length > TRUNCATE_ID_LENGTH
+        ? id.substring(0, TRUNCATE_ID_DISPLAY_LENGTH) + '...'
+        : id;
+
+    return (
+        <div className={sales.idCell} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <span title={id}>{displayId}</span>
+            <button
+                onClick={() => onCopy(id)}
+                className={sales.copyButton}
+                title="Copy to clipboard"
+                aria-label={`Copy ${id} to clipboard`}
+                style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    opacity: 1,
+                    color: 'white',
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center'
+                }}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+            </button>
+        </div>
+    );
+});
+
+IdCell.displayName = 'IdCell';
+
+export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps, 'onEdit'>) {
+    const { copyToClipboard } = useCopyToClipboard();
+
+    const handleCopy = useCallback((text: string) => {
+        copyToClipboard(text);
+    }, [copyToClipboard]);
 
     if (loading) {
         return (
@@ -38,46 +75,6 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
             </Card>
         );
     }
-
-    const getStatusColor = (status: string | null) => {
-        if (!status) return '#6b7280'; // gray-500
-        const s = status.toLowerCase();
-        if (s === 'paid' || s === 'completed' || s === 'approved') return '#10b981'; // emerald-500
-        if (s === 'pending') return '#f59e0b'; // amber-500
-        if (s === 'failed' || s === 'cancelled' || s === 'rejected') return '#ef4444'; // red-500
-        return '#6b7280';
-    };
-
-    const renderIdCell = (id: string | null | undefined) => {
-        if (!id) return '-';
-        const displayId = id.length > 15 ? id.substring(0, 12) + '...' : id;
-
-        return (
-            <div className={sales.idCell} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                <span title={id}>{displayId}</span>
-                <button
-                    onClick={() => handleCopy(id)}
-                    className={sales.copyButton}
-                    title="Copy to clipboard"
-                    style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        opacity: 1,
-                        color: 'white',
-                        padding: 0,
-                        display: 'flex',
-                        alignItems: 'center'
-                    }}
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                    </svg>
-                </button>
-            </div>
-        );
-    };
 
     return (
         <div className={tables.tableWrapper}>
@@ -101,7 +98,7 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
                 <tbody>
                     {records.length === 0 ? (
                         <tr>
-                            <td colSpan={13} className={`${layouts.textCenter} ${sales.emptyStateCell}`}>
+                            <td colSpan={12} className={`${layouts.textCenter} ${sales.emptyStateCell}`}>
                                 <span className={layouts.textMuted}>No records found.</span>
                             </td>
                         </tr>
@@ -109,10 +106,13 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
                         records.map((r) => (
                             <tr key={r.id}>
                                 <td data-label="Order ID">
-                                    {renderIdCell(r.order_id || 'manual-' + r.id.substring(0, 6))}
+                                    <IdCell
+                                        id={r.order_id || 'manual-' + r.id.substring(0, 6)}
+                                        onCopy={handleCopy}
+                                    />
                                 </td>
                                 <td data-label="Tracking ID">
-                                    {renderIdCell(r.tracking_id)}
+                                    <IdCell id={r.tracking_id} onCopy={handleCopy} />
                                 </td>
                                 <td data-label="Shop">{r.shop?.name || '-'}</td>
                                 <td data-label="Owner">
@@ -131,17 +131,7 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
                                     <span className={sales.statusBadge}>{r.order_status || '-'}</span>
                                 </td>
                                 <td data-label="Payout Status">
-                                    <span
-                                        style={{
-                                            display: 'inline-block',
-                                            padding: '0.25rem 0.75rem',
-                                            borderRadius: '9999px',
-                                            fontSize: '0.75rem',
-                                            fontWeight: 500,
-                                            backgroundColor: `${getStatusColor(r.status)}20`, // 20% opacity background
-                                            color: getStatusColor(r.status)
-                                        }}
-                                    >
+                                    <span style={getStatusBadgeStyle(r.status)}>
                                         {r.status || 'pending'}
                                     </span>
                                 </td>
@@ -158,6 +148,7 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
                                         onClick={() => onDelete(r.id)}
                                         className="px-2 py-1 text-xs"
                                         style={{ backgroundColor: '#ef4444', color: 'white', borderColor: '#ef4444' }}
+                                        aria-label={`Delete order ${r.order_id}`}
                                     >
                                         Delete
                                     </Button>

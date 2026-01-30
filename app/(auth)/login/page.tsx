@@ -31,6 +31,23 @@ export default function LoginPage() {
       setError(error.message);
       setLoading(false);
     } else {
+      // Check if user is inactive
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('status')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.status === 'inactive') {
+          await supabase.auth.signOut();
+          setError('Your account is inactive. Please contact your administrator.');
+          setLoading(false);
+          return;
+        }
+      }
+
       router.push('/dashboard');
       router.refresh(); // Ensure server session is updated
     }

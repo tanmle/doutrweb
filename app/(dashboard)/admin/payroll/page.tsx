@@ -42,9 +42,13 @@ export default function AdminPayrollPage() {
         setIsGeneratePayrollModalOpen(true);
     };
 
-    const handleBulkGenerateSubmit = async (standardDays: number, userDays: Record<string, number>) => {
+    const handleBulkGenerateSubmit = async (
+        standardDays: number,
+        userDays: Record<string, number>,
+        userPeriods: Record<string, any[]>
+    ) => {
         setLoading(true);
-        const result = await generatePayroll(payrollMonth, standardDays, userDays);
+        const result = await generatePayroll(payrollMonth, standardDays, userDays, userPeriods);
         if (result.error) {
             toast.error(result.error);
         } else {
@@ -66,6 +70,7 @@ export default function AdminPayrollPage() {
         const result = await updatePayrollRecord(selectedPayrollRecord.id, {
             standard_work_days: data.standard_work_days,
             actual_work_days: data.actual_work_days,
+            salary_periods: data.salary_periods,
             bonus: data.bonus,
             total_salary: data.total_salary,
             status: data.status

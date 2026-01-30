@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSupabase } from '@/contexts/SupabaseContext';
 import type { Product, Profile } from '../utils/types';
 
@@ -20,16 +20,22 @@ export function useProducts(refresh: number) {
       }
 
       try {
-        const { data } = await supabase
-          .from('products')
-          .select('*, owner_profile:profiles!owner_id(full_name, email)')
-          .order('created_at', { ascending: false });
+        // Parallel fetch products and profiles
+        const [productsRes, profilesRes] = await Promise.all([
+          supabase
+            .from('products')
+            .select('*, owner_profile:profiles!owner_id(full_name, email)')
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('profiles')
+            .select('id, full_name, email, role')
+        ]);
 
-        if (data) {
+        if (productsRes.data) {
           // Grouping logic:
           // 1. Identify Parents and Standalone items
-          const parents = data.filter((p: any) => !p.parent_id);
-          const children = data.filter((p: any) => p.parent_id);
+          const parents = productsRes.data.filter((p: any) => !p.parent_id);
+          const children = productsRes.data.filter((p: any) => p.parent_id);
 
           // 2. Map children to parents
           const groupedProducts = parents.map((parent: any) => {
@@ -43,10 +49,11 @@ export function useProducts(refresh: number) {
           setProducts(groupedProducts);
         }
 
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('id, full_name, email, role');
-        if (profileData) setProfiles(profileData);
+        if (profilesRes.data) {
+          setProfiles(profilesRes.data);
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
       } finally {
         setLoading(false);
         initialized.current = true;
@@ -54,7 +61,7 @@ export function useProducts(refresh: number) {
     };
 
     fetchData();
-  }, [refresh]); // Removed supabase - it's stable from context
+  }, [refresh, supabase]); // Fixed: Added supabase to dependencies
 
   return { loading, products, profiles };
 }

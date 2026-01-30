@@ -1,0 +1,309 @@
+/* Payroll History Component */
+.payrollHistory {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+/* Custom Scrollbar */
+.payrollHistory::-webkit-scrollbar {
+    width: 6px;
+}
+
+.payrollHistory::-webkit-scrollbar-track {
+    background: var(--background-secondary);
+    border-radius: 3px;
+}
+
+.payrollHistory::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
+.payrollHistory::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+}
+
+/* Empty State */
+.emptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    text-align: center;
+}
+
+.emptyIcon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.emptyText {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+/* Record Card */
+.recordCard {
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.recordCard:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Record Header */
+.recordHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    cursor: pointer;
+    user-select: none;
+    gap: 1rem;
+}
+
+.recordMonth {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.monthIcon {
+    font-size: 1.25rem;
+}
+
+.monthText {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9375rem;
+}
+
+.recordSummary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.totalAmount {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.statusBadge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.statusPaid {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.statusPending {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.expandButton {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 0.5rem;
+    transition: transform 0.2s ease;
+}
+
+.expandButton:hover {
+    color: var(--text-primary);
+}
+
+/* Record Details */
+.recordDetails {
+    padding: 0 1rem 1rem 1rem;
+    border-top: 1px solid var(--border);
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.detailsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.detailItem {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.detailLabel {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.detailValue {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Salary Periods Section */
+.periodsSection {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--background-secondary);
+    border-radius: 6px;
+}
+
+.periodsSectionTitle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+}
+
+.periodsIcon {
+    font-size: 1rem;
+}
+
+.periodsList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.periodItem {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem;
+    background: var(--background);
+    border-radius: 4px;
+    font-size: 0.8125rem;
+}
+
+.periodDays {
+    font-weight: 600;
+    color: var(--text-primary);
+    min-width: 60px;
+}
+
+.periodRate {
+    color: var(--text-secondary);
+    flex: 1;
+}
+
+.periodTotal {
+    font-weight: 600;
+    color: var(--accent);
+}
+
+/* Calculation Section */
+.calculationSection {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.calculationRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    font-size: 0.875rem;
+}
+
+.calculationLabel {
+    color: var(--text-secondary);
+}
+
+.calculationValue {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.bonusValue {
+    color: #16a34a;
+}
+
+.totalRow {
+    border-top: 2px solid var(--border);
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
+    font-size: 1rem;
+}
+
+.totalRow .calculationLabel {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.totalRow .calculationValue {
+    font-size: 1.125rem;
+    color: var(--accent);
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+    .recordHeader {
+        flex-wrap: wrap;
+    }
+
+    .recordSummary {
+        width: 100%;
+        justify-content: space-between;
+        margin-top: 0.5rem;
+    }
+
+    .detailsGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .periodItem {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .periodDays,
+    .periodRate,
+    .periodTotal {
+        width: 100%;
+    }
+}

@@ -3,11 +3,13 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { PayrollHistory } from './PayrollHistory';
 import styles from './EditProfileModal.module.css';
 
 type EditFormData = {
   fullName: string;
   avatarUrl: string;
+  dob: string;
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
@@ -28,6 +30,8 @@ type EditProfileModalProps = {
   onFieldChange: (field: keyof EditFormData, value: string) => void;
   banks: any[];
   role?: string | null;
+  payrollRecords?: any[];
+  baseSalary?: number;
 };
 
 export const EditProfileModal: React.FC<EditProfileModalProps> = ({
@@ -43,6 +47,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   onFieldChange,
   banks,
   role,
+  payrollRecords = [],
+  baseSalary = 0,
 }) => {
   const getRoleClass = () => {
     if (!role) return '';
@@ -89,6 +95,22 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               onChange={(event) => onFieldChange('fullName', event.target.value)}
               required
             />
+            <Input
+              label="Date of Birth"
+              type="date"
+              value={formData.dob}
+              onChange={(event) => onFieldChange('dob', event.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionTitle}>💰 Payroll History</span>
+            <span className={styles.sectionLine} aria-hidden="true" />
+          </div>
+          <div className={styles.fields}>
+            <PayrollHistory records={payrollRecords} baseSalary={baseSalary} />
           </div>
         </div>
 

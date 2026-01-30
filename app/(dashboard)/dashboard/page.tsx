@@ -8,6 +8,7 @@ import { RoleBadge } from '@/components/ui/RoleBadge';
 import type { UserRole } from '@/components/ui/RoleBadge';
 import { useSupabase } from '@/contexts/SupabaseContext';
 import { formatCurrency } from '@/utils/formatters';
+import { getLocalYYYYMMDD, getDashboardStartDate, isDateInRange, getStartOfWeek } from '@/utils/dateHelpers';
 import { AREA_COLORS } from '@/constants/app';
 import { cards, layouts, filters, dashboard } from '@/styles/modules';
 import {
@@ -60,14 +61,6 @@ type DateRange = {
 // --- Helpers ---
 const getAreaColor = (index: number) => AREA_COLORS[index % AREA_COLORS.length];
 
-// Robustly formatting local date as YYYY-MM-DD
-const getLocalYYYYMMDD = (d: Date) => {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
 // --- Component ---
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
@@ -100,9 +93,15 @@ export default function DashboardPage() {
   const fetchStats = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      // Parallel fetch: user auth and start date calculation
+      const [{ data: { user } }, dateStr] = await Promise.all([
+        supabase.auth.getUser(),
+        Promise.resolve(getDashboardStartDate())
+      ]);
+
       if (!user) return;
 
+      // Fetch profile
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
@@ -111,19 +110,6 @@ export default function DashboardPage() {
 
       if (!profile) return;
       setRole(profile.role ?? null);
-
-      // Fetch data from start of current month OR 30 days ago, whichever is earlier
-      // Use local time for date calculation to avoid UTC mismatches
-      const today = new Date();
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      // Start of month in local time
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-      const startDate = thirtyDaysAgo < startOfMonth ? thirtyDaysAgo : startOfMonth;
-      // Format as YYYY-MM-DD in local time
-      const dateStr = getLocalYYYYMMDD(startDate);
 
       let query = supabase
         .from('sales_records')
@@ -140,10 +126,15 @@ export default function DashboardPage() {
                 `)
         .gte('date', dateStr);
 
+      // Apply role-based filters and fetch in parallel if needed
       if (profile.role === 'admin') {
-        // No filters
+        // No filters - admin sees all
       } else if (profile.role === 'leader') {
-        const { data: members } = await supabase.from('profiles').select('id').eq('leader_id', user.id);
+        // Fetch team members in parallel with query setup
+        const { data: members } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('leader_id', user.id);
         const memberIds = members?.map(m => m.id) || [];
         query = query.in('shop.owner_id', [user.id, ...memberIds]);
       } else {
@@ -229,36 +220,26 @@ export default function DashboardPage() {
     fetchStats();
   }, [version, fetchStats]);
 
-  /* Filters Logic with Local Time alignment */
+  /* Filters Logic with Local Time alignment - Memoized */
   const filteredChartData = useMemo(() => {
     if (chartData.length === 0) return chartData;
 
     const now = new Date();
     const todayKey = getLocalYYYYMMDD(now);
 
-    // Helper to compare "YYYY-MM-DD" strings directly
-    const isWithinRange = (dateStr: string, startStr: string, endStr: string) => {
-      return dateStr >= startStr && dateStr <= endStr;
-    };
-
     if (filter === 'today') {
       return chartData.filter((item) => item.date === todayKey);
     }
 
     if (filter === 'week') {
-      // Calculate start of week (Sunday) in Local Time
-      const dayOfWeek = now.getDay(); // 0 (Sun) - 6 (Sat)
-      const diff = dayOfWeek; // Days to subtract to get to Sunday
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - diff);
-      const startStr = getLocalYYYYMMDD(startOfWeek);
-      return chartData.filter((item) => isWithinRange(item.date, startStr, todayKey));
+      const startStr = getStartOfWeek(now);
+      return chartData.filter((item) => isDateInRange(item.date, startStr, todayKey));
     }
 
     if (filter === 'month') {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const startOfMonthStr = getLocalYYYYMMDD(startOfMonth);
-      return chartData.filter((item) => isWithinRange(item.date, startOfMonthStr, todayKey));
+      return chartData.filter((item) => isDateInRange(item.date, startOfMonthStr, todayKey));
     }
 
     if (filter === 'last-month') {
@@ -271,12 +252,12 @@ export default function DashboardPage() {
       const startStr = getLocalYYYYMMDD(firstDayLastMonth);
       const endStr = getLocalYYYYMMDD(lastDayLastMonth);
 
-      return chartData.filter((item) => isWithinRange(item.date, startStr, endStr));
+      return chartData.filter((item) => isDateInRange(item.date, startStr, endStr));
     }
 
     if (filter === 'range') {
       if (!dateRange.start || !dateRange.end) return chartData;
-      return chartData.filter((item) => isWithinRange(item.date, dateRange.start, dateRange.end));
+      return chartData.filter((item) => isDateInRange(item.date, dateRange.start, dateRange.end));
     }
 
     return chartData;

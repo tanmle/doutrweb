@@ -1,7 +1,7 @@
 'use client';
 import * as XLSX from 'xlsx';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
@@ -10,32 +10,12 @@ import { StatCard } from '@/components/ui/StatCard';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useSupabase } from '@/contexts/SupabaseContext';
 import { formatCurrency } from '@/utils/formatters';
+import { getDateRange } from '@/utils/dateHelpers';
+import { ITEMS_PER_PAGE, CSV_COLUMNS, ERROR_MESSAGES } from '@/constants/sales';
 import { SalesTable } from './components';
 import { forms, layouts, filters, cards } from '@/styles/modules';
 import type { Shop, SalesRecordWithRelations, DateFilterType, DateRange, Profile } from './types';
 
-// Date helpers
-const getDateRange = (type: DateFilterType): DateRange => {
-  const now = new Date();
-  const today = now.toISOString().split('T')[0];
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-
-  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
-  const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];
-
-  switch (type) {
-    case 'today':
-      return { start: today, end: today };
-    case 'this_month':
-      return { start: startOfMonth, end: today };
-    case 'last_month':
-      return { start: prevMonthStart, end: prevMonthEnd };
-    case 'range':
-      return { start: startOfMonth, end: today }; // Default range
-    default:
-      return { start: startOfMonth, end: today };
-  }
-};
 
 // CSV Parsing Helper
 const parseCSVLine = (text: string) => {
@@ -56,8 +36,6 @@ const parseCSVLine = (text: string) => {
   result.push(cell.trim());
   return result;
 };
-
-const ITEMS_PER_PAGE = 10;
 
 export default function SalesEntryPage() {
   const [loading, setLoading] = useState(true);
@@ -104,7 +82,7 @@ export default function SalesEntryPage() {
   const supabase = useSupabase();
   const toast = useToast();
 
-  // Fetch Initial Data
+  // Fetch Initial Data - Parallelized
   useEffect(() => {
     const fetchContext = async () => {
       setLoading(true);
@@ -116,33 +94,41 @@ export default function SalesEntryPage() {
       const role = profile?.role || 'member';
       setUserRole(role);
 
-      // Fetch shops the user has access to
-      let query = supabase.from('shops').select('id, name, owner_id');
-      // If member/leader, RLS should handle it, but we can also filter for clarity or if RLS is loose
-      if (role !== 'admin' && role !== 'leader') { // Leaders might see their team's shops? Assuming standard role logic
-        // For now rely on RLS or specific logic. Payouts used: if(role!==admin) filter.
-      }
-      const { data: shopsData } = await query.order('name');
+      // Parallel fetch: shops, profiles (if needed), and products
+      const promises = [
+        supabase.from('shops').select('id, name, owner_id').order('name'),
+        supabase.from('products').select('*').order('name')
+      ];
 
-      if (shopsData) {
-        setShops(shopsData);
-        if (shopsData.length > 0) setSelectedShopId(shopsData[0].id);
-      }
-
-      // Fetch Profiles for Owner Filter (Admin/Leader only)
+      // Only fetch profiles for admin/leader
       if (['admin', 'leader'].includes(role)) {
-        const { data: profilesData } = await supabase.from('profiles').select('id, full_name, email, role').order('full_name');
-        if (profilesData) setProfiles(profilesData);
+        promises.push(
+          supabase.from('profiles').select('id, full_name, email, role').order('full_name')
+        );
       }
 
-      // Fetch Products for Edit Modal
-      const { data: productsData } = await supabase.from('products').select('*').order('name');
-      if (productsData) setProducts(productsData);
+      const results = await Promise.all(promises);
+      const shopsRes = results[0];
+      const productsRes = results[1];
+      const profilesRes = results[2] as unknown as { data: Profile[] } | undefined;
+
+      if (shopsRes.data) {
+        setShops(shopsRes.data);
+        if (shopsRes.data.length > 0) setSelectedShopId(shopsRes.data[0].id);
+      }
+
+      if (productsRes.data) {
+        setProducts(productsRes.data);
+      }
+
+      if (profilesRes?.data) {
+        setProfiles(profilesRes.data as Profile[]);
+      }
 
       setLoading(false);
     };
     fetchContext();
-  }, []);
+  }, [supabase]);
 
   // Update date range when filter type changes
   useEffect(() => {
@@ -156,12 +142,8 @@ export default function SalesEntryPage() {
     }
   }, [dateFilter]);
 
-  // Fetch records when filters change
-  useEffect(() => {
-    if (userRole) fetchRecords();
-  }, [dateRange, ownerFilter, shopFilter, orderStatusFilter, userRole, currentPage]);
-
-  const fetchRecords = async () => {
+  // Fetch records when filters change - Memoized with useCallback
+  const fetchRecords = useCallback(async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -241,7 +223,11 @@ export default function SalesEntryPage() {
       setFilteredTotals({ quantity: qty, revenue: rev });
     }
     setLoading(false);
-  };
+  }, [supabase, dateRange, ownerFilter, shopFilter, orderStatusFilter, userRole, currentPage]);
+
+  useEffect(() => {
+    if (userRole) fetchRecords();
+  }, [userRole, fetchRecords]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {

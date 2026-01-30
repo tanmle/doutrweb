@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSupabase } from '@/contexts/SupabaseContext';
 
 interface UseDataFetchOptions<T> {
-    queryFn: () => Promise<T>;
+    queryFn: (signal?: AbortSignal) => Promise<T>;
     dependencies?: any[];
     enabled?: boolean;
 }
@@ -17,7 +17,7 @@ interface UseDataFetchResult<T> {
 }
 
 /**
- * Generic data fetching hook with loading and error states
+ * Generic data fetching hook with loading, error states, and abort controller
  * Prevents code duplication across components
  */
 export function useDataFetch<T>({
@@ -29,7 +29,7 @@ export function useDataFetch<T>({
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async (signal?: AbortSignal) => {
         if (!enabled) {
             setLoading(false);
             return;
@@ -38,22 +38,40 @@ export function useDataFetch<T>({
         try {
             setLoading(true);
             setError(null);
-            const result = await queryFn();
-            setData(result);
+            const result = await queryFn(signal);
+
+            // Don't update state if aborted
+            if (!signal?.aborted) {
+                setData(result);
+            }
         } catch (err) {
-            setError(err instanceof Error ? err : new Error('Unknown error'));
-            console.error('Data fetch error:', err);
+            // Don't set error if request was aborted
+            if (!signal?.aborted) {
+                setError(err instanceof Error ? err : new Error('Unknown error'));
+                console.error('Data fetch error:', err);
+            }
         } finally {
-            setLoading(false);
+            if (!signal?.aborted) {
+                setLoading(false);
+            }
         }
-    };
+    }, [queryFn, enabled]);
 
     useEffect(() => {
-        fetchData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, dependencies);
+        const abortController = new AbortController();
 
-    return { data, loading, error, refetch: fetchData };
+        fetchData(abortController.signal);
+
+        return () => {
+            abortController.abort();
+        };
+    }, [fetchData, ...dependencies]);
+
+    const refetch = useCallback(async () => {
+        await fetchData();
+    }, [fetchData]);
+
+    return { data, loading, error, refetch };
 }
 
 /**

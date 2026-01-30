@@ -11,6 +11,12 @@ export const createUserSchema = z.object({
     role: z.enum(['admin', 'leader', 'member'], {
         message: 'Invalid role'
     }),
+    status: z.enum(['active', 'inactive']).optional().nullable(),
+    phone: z.string().optional().nullable(),
+    dob: z.string().optional().nullable(),
+    join_date: z.string().optional().nullable(),
+    left_date: z.string().optional().nullable(),
+    department: z.string().optional().nullable(),
     leader_id: z.string().uuid().optional().nullable(),
     bank_name: z.string().optional().nullable(),
     bank_number: z.string().optional().nullable(),

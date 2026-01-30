@@ -28,8 +28,11 @@ export function UsersTable({
             <table className={tables.table}>
                 <thead>
                     <tr>
-                        <th>Email</th>
                         <th>Full Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                        <th>Department</th>
                         <th>Role</th>
                         <th>Leader</th>
                         <th>Actions</th>
@@ -38,8 +41,23 @@ export function UsersTable({
                 <tbody>
                     {users.map(u => (
                         <tr key={u.id}>
-                            <td data-label="Email">{u.email}</td>
                             <td data-label="Full Name">{u.full_name || 'N/A'}</td>
+                            <td data-label="Email">{u.email}</td>
+                            <td data-label="Phone">{u.phone || '-'}</td>
+                            <td data-label="Status">
+                                <span style={{
+                                    display: 'inline-block',
+                                    padding: '0.25rem 0.5rem',
+                                    borderRadius: '4px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600,
+                                    backgroundColor: u.status === 'inactive' ? '#fee2e2' : '#dcfce7',
+                                    color: u.status === 'inactive' ? '#dc2626' : '#16a34a'
+                                }}>
+                                    {u.status === 'inactive' ? 'Inactive' : 'Active'}
+                                </span>
+                            </td>
+                            <td data-label="Department">{u.department || '-'}</td>
                             <td data-label="Role">
                                 <div className={styles.roleBadgeContainer}>
                                     <span className={`${styles.roleText} ${styles[`roleText${u.role.charAt(0).toUpperCase() + u.role.slice(1)}`]}`}>

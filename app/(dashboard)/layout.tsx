@@ -23,6 +23,7 @@ type Profile = {
 type EditFormData = {
   fullName: string;
   avatarUrl: string;
+  dob: string;
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
@@ -45,6 +46,7 @@ export default function DashboardLayout({
   const [editFormData, setEditFormData] = useState<EditFormData>({
     fullName: '',
     avatarUrl: '',
+    dob: '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
@@ -55,6 +57,8 @@ export default function DashboardLayout({
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [updating, setUpdating] = useState(false);
+  const [payrollRecords, setPayrollRecords] = useState<any[]>([]);
+  const [baseSalary, setBaseSalary] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -63,16 +67,18 @@ export default function DashboardLayout({
       if (user) {
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('full_name, avatar_url, role, bank_name, bank_number')
+          .select('full_name, avatar_url, role, bank_name, bank_number, dob, base_salary')
           .eq('id', user.id)
           .single();
 
         if (profileData) {
           setProfile(profileData);
+          setBaseSalary(profileData.base_salary || 0);
           setEditFormData(prev => ({
             ...prev,
             fullName: profileData.full_name || '',
             avatarUrl: profileData.avatar_url || '',
+            dob: profileData.dob || '',
             currentPassword: '',
             newPassword: '',
             confirmPassword: '',
@@ -80,6 +86,18 @@ export default function DashboardLayout({
             bankNumber: profileData.bank_number || ''
           }));
           setPreviewUrl(profileData.avatar_url || '');
+
+          // Fetch payroll records
+          const { data: payrollData } = await supabase
+            .from('payroll_records')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('month', { ascending: false })
+            .limit(12);
+
+          if (payrollData) {
+            setPayrollRecords(payrollData);
+          }
         } else {
           // Fallback if no profile record exists yet
           const fallbackName = user.email?.split('@')[0] || '';
@@ -187,6 +205,7 @@ export default function DashboardLayout({
         .update({
           full_name: editFormData.fullName,
           avatar_url: finalAvatarUrl,
+          dob: editFormData.dob || null,
           bank_name: editFormData.bankName || null,
           bank_number: editFormData.bankNumber || null
         })
@@ -299,6 +318,9 @@ export default function DashboardLayout({
         onFileChange={handleFileChange}
         onFieldChange={handleEditFormChange}
         banks={banks}
+        role={profile?.role}
+        payrollRecords={payrollRecords}
+        baseSalary={baseSalary}
       />
     </>
   );

@@ -10,7 +10,7 @@ export async function createUser(rawData: unknown) {
     const data = createUserSchema.parse(rawData);
 
     const supabase = createAdminClient();
-    const { email, password, full_name, role, leader_id, bank_name, bank_number, base_salary } = data;
+    const { email, password, full_name, role, status, phone, dob, join_date, left_date, department, leader_id, bank_name, bank_number, base_salary } = data;
 
     // 1. Create User in Supabase Auth
     const { data: userData, error: userError } = await supabase.auth.admin.createUser({
@@ -31,6 +31,12 @@ export async function createUser(rawData: unknown) {
         .from('profiles')
         .update({
           role: role || 'member',
+          status: status || 'active',
+          phone: phone || null,
+          dob: dob || null,
+          join_date: join_date || null,
+          left_date: left_date || null,
+          department: department || null,
           leader_id: (role === 'member' || !role) ? (leader_id || null) : null,
           bank_name: bank_name || null,
           bank_number: bank_number || null,

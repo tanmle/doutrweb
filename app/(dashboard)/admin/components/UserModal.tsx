@@ -91,6 +91,66 @@ export function UserModal({
                     required
                 />
 
+                <div>
+                    <label className={styles.formLabel}>Status</label>
+                    <select
+                        name="status"
+                        value={formData.status || 'active'}
+                        onChange={onChange}
+                        className={styles.formSelect}
+                    >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+
+                <Input
+                    label="Phone"
+                    name="phone"
+                    value={formData.phone || ''}
+                    onChange={onChange}
+                    placeholder="0123456789"
+                />
+
+                <Input
+                    label="Date of Birth"
+                    type="date"
+                    name="dob"
+                    value={formData.dob || ''}
+                    onChange={onChange}
+                />
+
+                <Input
+                    label="Join Date"
+                    type="date"
+                    name="join_date"
+                    value={formData.join_date || ''}
+                    onChange={onChange}
+                />
+
+                <Input
+                    label="Left Date"
+                    type="date"
+                    name="left_date"
+                    value={formData.left_date || ''}
+                    onChange={onChange}
+                />
+
+                <div>
+                    <label className={styles.formLabel}>Department</label>
+                    <select
+                        name="department"
+                        value={formData.department || ''}
+                        onChange={onChange}
+                        className={styles.formSelect}
+                    >
+                        <option value="">Select Department</option>
+                        <option value="Manager">Manager</option>
+                        <option value="Sales">Sales</option>
+                        <option value="Editor">Editor</option>
+                    </select>
+                </div>
+
                 <Input
                     label="Base Salary (VND)"
                     name="base_salary"

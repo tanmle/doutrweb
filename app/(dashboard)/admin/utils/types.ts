@@ -32,6 +32,12 @@ export interface User {
   email: string;
   full_name?: string;
   role: 'admin' | 'leader' | 'member';
+  status?: 'active' | 'inactive';
+  phone?: string;
+  dob?: string;
+  join_date?: string;
+  left_date?: string;
+  department?: 'Manager' | 'Sales' | 'Editor';
   leader_id?: string;
   bank_name?: string;
   bank_number?: string;
@@ -71,9 +77,21 @@ export interface Profile {
   full_name?: string;
   email: string;
   role: 'admin' | 'leader' | 'member';
+  status?: 'active' | 'inactive';
+  phone?: string;
+  dob?: string;
+  join_date?: string;
+  left_date?: string;
+  department?: 'Manager' | 'Sales' | 'Editor';
   bank_name?: string;
   bank_number?: string;
   base_salary?: number;
+}
+
+export interface SalaryPeriod {
+  days: number;
+  daily_rate: number;
+  monthly_salary?: number; // Store the original monthly salary to avoid rounding issues
 }
 
 export interface PayrollRecord {
@@ -82,6 +100,7 @@ export interface PayrollRecord {
   month: string;
   standard_work_days: number;
   actual_work_days: number;
+  salary_periods?: SalaryPeriod[]; // Array of periods with different rates
   bonus: number;
   total_salary: number;
   status: 'pending' | 'paid';

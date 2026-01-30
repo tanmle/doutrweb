@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { PayrollRecord } from '../utils/types';
+import { PayrollRecord, SalaryPeriod } from '../utils/types';
 import { formatCurrency, parseCurrency } from '@/utils/currency';
 import { PayrollSummaryCard } from './PayrollSummaryCard';
 import { PayrollQRCode } from './PayrollQRCode';
+import { SalaryPeriodsEditor } from './SalaryPeriodsEditor';
 import styles from './AdminComponents.module.css';
 
 interface PayrollModalProps {
@@ -33,6 +34,7 @@ export function PayrollModal({
         bonus: 0,
         status: 'pending'
     });
+    const [salaryPeriods, setSalaryPeriods] = useState<SalaryPeriod[]>([]);
 
     useEffect(() => {
         if (isOpen && record) {
@@ -42,6 +44,7 @@ export function PayrollModal({
                 bonus: record.bonus || 0,
                 status: record.status || 'pending'
             });
+            setSalaryPeriods(record.salary_periods || []);
         } else if (isOpen) {
             setFormData({
                 standard_work_days: 26,
@@ -49,16 +52,35 @@ export function PayrollModal({
                 bonus: 0,
                 status: 'pending'
             });
+            setSalaryPeriods([]);
         }
     }, [isOpen, record]);
 
     const baseSalary = user?.base_salary || 0;
+
     const calculateTotal = () => {
+        const bonus = Number(formData.bonus) || 0;
+
+        // If there are custom salary periods, use them
+        if (salaryPeriods.length > 0) {
+            const periodsSalary = salaryPeriods.reduce((sum, period) => {
+                return sum + (period.days * period.daily_rate);
+            }, 0);
+            return Math.floor(periodsSalary + bonus);
+        }
+
+        // Otherwise use standard calculation
         const standard = Number(formData.standard_work_days) || 1;
         const actual = Number(formData.actual_work_days) || 0;
-        const bonus = Number(formData.bonus) || 0;
         const salary = (baseSalary / standard) * actual;
         return Math.floor(salary + bonus);
+    };
+
+    const handlePeriodsChange = (periods: SalaryPeriod[]) => {
+        setSalaryPeriods(periods);
+        // Auto-update actual days based on periods
+        const totalDays = periods.reduce((sum, p) => sum + p.days, 0);
+        setFormData({ ...formData, actual_work_days: totalDays });
     };
 
     const totalSalary = calculateTotal();
@@ -74,6 +96,7 @@ export function PayrollModal({
         e.preventDefault();
         onSubmit({
             ...formData,
+            salary_periods: salaryPeriods.length > 0 ? salaryPeriods : null,
             total_salary: totalSalary
         });
     };
@@ -81,6 +104,7 @@ export function PayrollModal({
     const markAsPaid = () => {
         onSubmit({
             ...formData,
+            salary_periods: salaryPeriods.length > 0 ? salaryPeriods : null,
             total_salary: totalSalary,
             status: 'paid'
         });
@@ -107,6 +131,13 @@ export function PayrollModal({
                         onChange={e => setFormData({ ...formData, actual_work_days: Number(e.target.value) })}
                     />
                 </div>
+
+                <SalaryPeriodsEditor
+                    periods={salaryPeriods}
+                    standardDays={formData.standard_work_days}
+                    baseSalary={baseSalary}
+                    onChange={handlePeriodsChange}
+                />
 
                 <Input
                     label="Bonus (VND)"
