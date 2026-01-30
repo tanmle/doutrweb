@@ -80,7 +80,7 @@ export default function DashboardPage() {
   const [memberNames, setMemberNames] = useState<string[]>([]);
   const [memberRoles, setMemberRoles] = useState<Record<string, UserRole>>({});
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<ChartFilter>('today');
+  const [filter, setFilter] = useState<ChartFilter>('month');
   const [memberFilter, setMemberFilter] = useState('all');
   const [role, setRole] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>({ start: '', end: '' });
@@ -156,31 +156,18 @@ export default function DashboardPage() {
       const salesRows = (salesData ?? []) as SalesRecord[];
 
       if (salesRows.length > 0) {
-        // Today's Stats (based on Created Date for accuracy)
-        const todayRecords = salesRows.filter(r => {
-          if (!r.created_at) return false;
-          const recordDate = new Date(r.created_at);
-          const now = new Date();
-          return recordDate.getDate() === now.getDate() &&
-            recordDate.getMonth() === now.getMonth() &&
-            recordDate.getFullYear() === now.getFullYear();
-        });
-        const todayRev = todayRecords.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
-        const todayItems = todayRecords.reduce((acc, curr) => acc + (Number(curr.items_sold) || 0), 0);
-
         // Monthly Stats - Local comparison
-        const monthlyRecords = salesRows.filter(r => {
-          // Check created_at first for better accuracy if available, else date
-          const d = r.created_at ? new Date(r.created_at) : new Date(r.date);
-          return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth();
-        });
+        const currentMonthPrefix = getLocalYYYYMMDD(new Date()).substring(0, 7); // YYYY-MM
+
+        const monthlyRecords = salesRows.filter(r => r.date && r.date.startsWith(currentMonthPrefix));
 
         const monthlyRev = monthlyRecords.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
+        const monthlyItems = monthlyRecords.reduce((acc, curr) => acc + (Number(curr.items_sold) || 0), 0);
         const monthlyProfitVal = monthlyRecords.reduce((acc, curr) => acc + (Number(curr.profit) || 0), 0);
 
         setStats({
-          todayRevenue: todayRev,
-          todaySales: todayItems,
+          todayRevenue: monthlyRev, // repurposing "todayRevenue" key for "displayed revenue" which is now monthly
+          todaySales: monthlyItems,
           monthlyRevenue: monthlyRev,
           monthlyProfit: monthlyProfitVal,
         });
@@ -191,13 +178,9 @@ export default function DashboardPage() {
 
         const groupedData = salesRows.reduce<Record<string, ChartPoint>>((acc, curr) => {
           const owner = curr.shop?.owner;
-          // Removed strict owner check to allow "Unknown" entries
 
-          // Use created_at as primary date source for accurate daily charting
-          let dateKey = curr.date; // Fallback
-          if (curr.created_at) {
-            dateKey = getLocalYYYYMMDD(new Date(curr.created_at));
-          }
+          // Use 'date' field directly for charting
+          const dateKey = curr.date;
 
           const name = owner?.full_name || 'Unknown';
           const rev = Number(curr.revenue) || 0;
@@ -310,19 +293,21 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h1 className={layouts.sectionHeader}>Today's Overview</h1>
+      <h1 className={layouts.sectionHeader}>This Month's Overview</h1>
 
       <div className={cards.cardGridTwoCol}>
         <StatCard
-          label="Today's Sales"
+          label="This Month's Sales"
           value={stats.todaySales}
-          subtext="Items Sold Today"
+          subtext="Items Sold This Month"
+          variant="warning"
         />
 
         <StatCard
-          label="Today's Revenue"
+          label="This Month's Revenue"
           value={formatCurrency(stats.todayRevenue)}
-          subtext="Gross Revenue Today"
+          subtext="Gross Revenue This Month"
+          variant="success"
         />
       </div>
 

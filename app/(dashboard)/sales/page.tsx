@@ -187,8 +187,9 @@ export default function SalesEntryPage() {
 
     // Helper to apply filters to any query object
     const applyFilters = (q: any) => {
-      if (dateRange.start) q = q.gte('created_at', dateRange.start);
-      if (dateRange.end) q = q.lte('created_at', dateRange.end + 'T23:59:59');
+      // Filter by 'date' column instead of 'created_at'
+      if (dateRange.start) q = q.gte('date', dateRange.start);
+      if (dateRange.end) q = q.lte('date', dateRange.end);
 
       if (['admin', 'leader'].includes(userRole)) {
         if (ownerFilter) {
