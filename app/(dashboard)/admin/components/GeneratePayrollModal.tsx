@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { User, PayrollRecord, SalaryPeriod } from '../utils/types';
 import { SalaryPeriodsEditor } from './SalaryPeriodsEditor';
+import { RoleBadge } from '@/components/ui/RoleBadge';
 import { tables, forms } from '@/styles/modules';
 import styles from './AdminComponents.module.css';
 
@@ -130,7 +131,10 @@ export function GeneratePayrollModal({
                                 <React.Fragment key={user.id}>
                                     <tr>
                                         <td data-label="User" className={styles.generatePayrollUserCell}>
-                                            <div className={styles.generatePayrollUserName}>{user.full_name}</div>
+                                            <div className={styles.generatePayrollUserName} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                {user.full_name}
+                                                {user.role && <RoleBadge role={user.role} />}
+                                            </div>
                                         </td>
                                         <td data-label="Actual Days">
                                             <input

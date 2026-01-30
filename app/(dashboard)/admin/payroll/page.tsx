@@ -52,7 +52,11 @@ export default function AdminPayrollPage() {
         if (result.error) {
             toast.error(result.error);
         } else {
-            toast.success(`Payroll generated for ${payrollMonth}`);
+            if (result.warning) {
+                toast.error(result.warning); // Show as error so user sees it
+            } else {
+                toast.success(`Payroll generated for ${payrollMonth}`);
+            }
             setRefresh(prev => prev + 1);
             setIsGeneratePayrollModalOpen(false);
         }

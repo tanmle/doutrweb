@@ -8,7 +8,7 @@ export function usePayroll(month: string, refresh: number) {
   const [loading, setLoading] = useState(false);
   const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  
+
   const supabase = createClient();
 
   useEffect(() => {
@@ -17,21 +17,22 @@ export function usePayroll(month: string, refresh: number) {
       setLoading(true);
       try {
         const { data: userData } = await supabase
-            .from('profiles')
-            .select('id, full_name, email, role, base_salary, bank_name, bank_number');
+          .from('profiles')
+          .select('id, full_name, email, role, base_salary, bank_name, bank_number')
+          .neq('role', 'admin');
         if (userData) setUsers(userData as any);
 
         const startOfMonth = `${month}-01`;
         const { data } = await supabase
-            .from('payroll_records')
-            .select('*, user:profiles!user_id(full_name, email, bank_name, bank_number, base_salary, role)')
-            .eq('month', startOfMonth);
+          .from('payroll_records')
+          .select('*, user:profiles!user_id(full_name, email, bank_name, bank_number, base_salary, role)')
+          .eq('month', startOfMonth);
         if (data) setPayrollRecords(data as any);
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, [supabase, month, refresh]);
 

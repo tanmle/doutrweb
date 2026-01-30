@@ -11,6 +11,7 @@ import { RoleBadge } from '@/components/ui/RoleBadge';
 import type { UserRole } from '@/components/ui/RoleBadge';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useSupabase } from '@/contexts/SupabaseContext';
+import { useRealtime } from '@/hooks/useRealtime';
 import { APP_CONSTANTS } from '@/constants/app';
 import styles from './layout.module.css';
 
@@ -119,6 +120,27 @@ export default function DashboardLayout({
       })
       .catch(err => console.error('Error fetching banks:', err));
   }, []);
+
+  // Realtime subscription for payroll records
+  useRealtime({
+    table: 'payroll_records',
+    onData: async () => {
+      // Refresh payroll records
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: payrollData } = await supabase
+        .from('payroll_records')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('month', { ascending: false })
+        .limit(12);
+
+      if (payrollData) {
+        setPayrollRecords(payrollData);
+      }
+    }
+  });
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

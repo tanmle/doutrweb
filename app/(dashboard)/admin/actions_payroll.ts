@@ -19,7 +19,8 @@ export async function generatePayroll(
     const { data: users, error: usersError } = await supabase
         .from('profiles')
         .select('id, base_salary')
-        .neq('base_salary', 0); // Only generate for those with salary set
+        .neq('base_salary', 0)
+        .neq('role', 'admin'); // Only generate for those with salary set and not admin
 
     if (usersError) return { error: usersError.message };
     if (!users || users.length === 0) return { error: 'No users found eligible for payroll.' };
@@ -60,16 +61,56 @@ export async function generatePayroll(
 
     if (insertError) return { error: insertError.message };
 
+    // 3. Send Notifications
+    if (users.length > 0) {
+        const recipientIds = users.map(u => u.id);
+        const { error: notifError } = await supabase.rpc('send_notification', {
+            p_sender_id: null,
+            p_title: 'Payroll Generated 💰',
+            p_message: `Your payroll for ${month} has been generated.`,
+            p_type: 'manual',
+            p_recipient_ids: recipientIds,
+            p_metadata: { month }
+        });
+        if (notifError) {
+            console.error('Error sending payroll notifications:', notifError);
+            return { success: true, warning: `Payroll generated but notification failed: ${notifError.message}` };
+        }
+    }
+
     return { success: true };
 }
 
 export async function updatePayrollRecord(id: string, data: any) {
     const supabase = createAdminClient();
-    const { error } = await supabase
+    const { data: updatedRecord, error } = await supabase
         .from('payroll_records')
         .update(data)
-        .eq('id', id);
+        .eq('id', id)
+        .select('user_id, month, status')
+        .single();
 
     if (error) return { error: error.message };
+
+    if (updatedRecord) {
+        let title = 'Payroll Updated';
+        let message = `Your payroll for ${updatedRecord.month} has been updated.`;
+
+        if (updatedRecord.status === 'paid') {
+            title = 'Payroll Paid 💰';
+            message = `Your payroll for ${updatedRecord.month} has been marked as PAID.`;
+        }
+
+        // Send notification
+        await supabase.rpc('send_notification', {
+            p_sender_id: null, // System
+            p_title: title,
+            p_message: message,
+            p_type: 'manual',
+            p_recipient_ids: [updatedRecord.user_id],
+            p_metadata: { month: updatedRecord.month, status: updatedRecord.status }
+        });
+    }
+
     return { success: true };
 }

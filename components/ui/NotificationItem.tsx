@@ -26,6 +26,11 @@ export function NotificationItem({ notification, onClick, onMarkRead }: Notifica
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [menuOpen]);
 
+    // Check if it's a payroll notification (based on title or metadata)
+    const isPayroll = notification.title.toLowerCase().includes('payroll') ||
+        (notification as any).metadata?.type === 'payroll' ||
+        (notification.metadata as any)?.type === 'payroll';
+
     const handleClick = () => {
         if (!notification.read_at) {
             onMarkRead?.(notification.id);
@@ -66,6 +71,7 @@ export function NotificationItem({ notification, onClick, onMarkRead }: Notifica
     };
 
     const getIcon = (type: string) => {
+        if (isPayroll) return '💰';
         switch (type) {
             case 'achievement':
                 return '🎉';
@@ -92,7 +98,7 @@ export function NotificationItem({ notification, onClick, onMarkRead }: Notifica
 
     return (
         <div
-            className={`${styles.notificationItem} ${!notification.read_at ? styles.unread : ''}`}
+            className={`${styles.notificationItem} ${!notification.read_at ? styles.unread : ''} ${isPayroll ? styles.payrollItem : ''}`}
             onClick={handleClick}
         >
             <div className={styles.icon}>{getIcon(notification.type)}</div>
@@ -125,8 +131,8 @@ export function NotificationItem({ notification, onClick, onMarkRead }: Notifica
                     <span className={styles.timestamp}>
                         {getRelativeTime(notification.created_at)}
                     </span>
-                    <span className={`${styles.typeBadge} ${styles[`typeBadge${notification.type.charAt(0).toUpperCase() + notification.type.slice(1)}`]}`}>
-                        {notification.type}
+                    <span className={`${styles.typeBadge} ${isPayroll ? styles.typeBadgePayroll : styles[`typeBadge${notification.type.charAt(0).toUpperCase() + notification.type.slice(1)}`]}`}>
+                        {isPayroll ? 'Payroll' : notification.type}
                     </span>
                 </div>
             </div>
