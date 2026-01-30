@@ -25,10 +25,11 @@ interface ShopsTableProps {
     userRole: string;
     onEdit: (shop: Shop) => void;
     onArchive: (id: string, name: string) => void;
+    onDelete: (id: string, name: string) => void;
     onHistory: (shop: Shop) => void;
 }
 
-export function ShopsTable({ shops, userRole, onEdit, onArchive, onHistory }: ShopsTableProps) {
+export function ShopsTable({ shops, userRole, onEdit, onArchive, onDelete, onHistory }: ShopsTableProps) {
     const getPlatformBadge = (platform: string) => {
         const badges: { [key: string]: string } = {
             tiktok: 'TikTok Shop',
@@ -121,9 +122,18 @@ export function ShopsTable({ shops, userRole, onEdit, onArchive, onHistory }: Sh
                                         <Button
                                             variant="ghost"
                                             onClick={() => onArchive(shop.id, shop.name)}
-                                            className={`${styles.buttonExtraSmall} ${styles.buttonDeleteColor}`}
+                                            className={`${styles.buttonExtraSmall} ${styles.buttonWarningColor}`}
                                         >
                                             Archive
+                                        </Button>
+                                    )}
+                                    {userRole === 'admin' && (
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => onDelete(shop.id, shop.name)}
+                                            className={`${styles.buttonExtraSmall} ${styles.buttonDeleteColor}`}
+                                        >
+                                            Delete
                                         </Button>
                                     )}
                                 </div>

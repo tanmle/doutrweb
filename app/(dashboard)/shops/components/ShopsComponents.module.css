@@ -140,6 +140,15 @@
     background: rgba(239, 68, 68, 0.1);
 }
 
+.buttonWarningColor {
+    color: #f59e0b;
+}
+
+.buttonWarningColor:hover {
+    color: #d97706;
+    background: rgba(245, 158, 11, 0.1);
+}
+
 /* History Styles */
 .historyList {
     display: flex;

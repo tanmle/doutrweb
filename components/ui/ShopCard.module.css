@@ -51,14 +51,9 @@
   --platform-color-glow: rgba(0, 242, 234, 0.15);
 }
 
-.card[data-platform="shopee"] {
+.card[data-platform="amazon"] {
   --platform-color: #ff6b35;
   --platform-color-glow: rgba(255, 107, 53, 0.15);
-}
-
-.card[data-platform="lazada"] {
-  --platform-color: #0f146d;
-  --platform-color-glow: rgba(15, 20, 109, 0.15);
 }
 
 .card[data-platform="other"] {

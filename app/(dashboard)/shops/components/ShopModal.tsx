@@ -67,8 +67,6 @@ export function ShopModal({
                         >
                             <option value="tiktok">TikTok Shop</option>
                             <option value="amazon">Amazon</option>
-                            <option value="shopee">Shopee</option>
-                            <option value="lazada">Lazada</option>
                             <option value="other">Other</option>
                         </select>
                     </div>

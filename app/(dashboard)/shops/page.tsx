@@ -281,6 +281,22 @@ export default function ShopsPage() {
     setLoading(false);
   };
 
+  const handleDeleteShop = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to PERMANENTLY delete the shop "${name}"? This action cannot be undone.`)) return;
+
+    setLoading(true);
+    const { error } = await supabase.from('shops').delete().eq('id', id);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Shop deleted successfully');
+      setShops(prev => prev.filter(s => s.id !== id));
+      await refreshShopsScoped();
+    }
+    setLoading(false);
+  };
+
   const handleViewHistory = (shop: any) => {
     setHistoryShop(shop);
     setIsHistoryModalOpen(true);
@@ -348,7 +364,7 @@ export default function ShopsPage() {
           </div>
         </div>
 
-        {userRole !== 'member' && !showArchived && (
+        {!showArchived && (
           <div className={styles.newButton}>
             <Button onClick={openCreateModal} fullWidth>
               + New Shop
@@ -363,7 +379,7 @@ export default function ShopsPage() {
         <Card className={cards.emptyCard}>
           <div className={cards.emptyCardContent}>
             <p className={cards.emptyCardText}>{showArchived ? 'No archived shops found.' : 'No shops found.'}</p>
-            {userRole !== 'member' && !showArchived && (
+            {!showArchived && (
               <Button variant="secondary" onClick={openCreateModal}>
                 Create your first shop
               </Button>
@@ -380,6 +396,7 @@ export default function ShopsPage() {
           // I didn't implement restore. I'll just hide Archive button if showArchived is true.
           // Or pass a flag to ShopsTable? Or handled by ShopsTable based on status?
           // I'll update ShopsTable to hide Archive button if status is archived.
+          onDelete={handleDeleteShop}
           onHistory={handleViewHistory}
         />
       )}
