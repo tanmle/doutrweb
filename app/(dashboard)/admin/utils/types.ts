@@ -69,6 +69,7 @@ export interface MonthlyFee {
   note?: string;
   owner_profile?: {
     full_name: string;
+    role?: string;
   };
 }
 

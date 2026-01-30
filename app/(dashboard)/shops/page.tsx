@@ -362,6 +362,10 @@ export default function ShopsPage() {
               Show Archived Shop
             </label>
           </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', marginLeft: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+            Total: {shops.length}
+          </div>
         </div>
 
         {!showArchived && (

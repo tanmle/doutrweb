@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { RoleBadge } from '@/components/ui/RoleBadge';
 import type { UserRole } from '@/components/ui/RoleBadge';
@@ -52,21 +52,70 @@ export function ShopsTable({ shops, userRole, onEdit, onArchive, onDelete, onHis
         }
     };
 
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const sortedShops = useMemo(() => {
+        let sortableShops = [...shops];
+        if (sortConfig !== null) {
+            sortableShops.sort((a, b) => {
+                let aValue: any = a[sortConfig.key as keyof Shop];
+                let bValue: any = b[sortConfig.key as keyof Shop];
+
+                if (sortConfig.key === 'owner') {
+                    aValue = a.owner?.full_name || a.owner?.email || '';
+                    bValue = b.owner?.full_name || b.owner?.email || '';
+                }
+
+                if (typeof aValue === 'string') {
+                    aValue = aValue.toLowerCase();
+                    bValue = (bValue as string)?.toLowerCase() || '';
+                }
+
+                if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        return sortableShops;
+    }, [shops, sortConfig]);
+
     return (
         <div className={styles.tableContainer}>
             <table className={styles.shopsTable}>
                 <thead>
                     <tr>
-                        <th>Shop Name</th>
+                        <th onClick={() => handleSort('name')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                Shop Name
+                                {sortConfig?.key === 'name' && (
+                                    <span>{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                                )}
+                            </div>
+                        </th>
                         <th>Platform</th>
                         <th>Status</th>
-                        <th>Owner</th>
+                        <th onClick={() => handleSort('owner')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                Owner
+                                {sortConfig?.key === 'owner' && (
+                                    <span>{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                                )}
+                            </div>
+                        </th>
                         <th>Note</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {shops.map(shop => (
+                    {sortedShops.map(shop => (
                         <tr key={shop.id}>
                             <td data-label="Shop Name">
                                 <span className={styles.shopName}>{shop.name}</span>

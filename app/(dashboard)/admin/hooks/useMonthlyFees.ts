@@ -20,7 +20,7 @@ export function useMonthlyFees({
   const [loading, setLoading] = useState(false);
   const [monthlyFees, setMonthlyFees] = useState<MonthlyFee[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  
+
   const supabase = createClient();
   const today = new Date().toISOString().split('T')[0];
 
@@ -30,11 +30,11 @@ export function useMonthlyFees({
       try {
         let query = supabase
           .from('monthly_fees')
-          .select('*, owner_profile:profiles!owner_id(full_name)')
+          .select('*, owner_profile:profiles!owner_id(full_name, role)')
           .order('date', { ascending: false });
-        
+
         const now = new Date();
-        
+
         if (feeFilter === 'today') {
           query = query.eq('date', today);
         } else if (feeFilter === 'this_month') {
@@ -58,7 +58,7 @@ export function useMonthlyFees({
         const { data, error } = await query;
         if (error) console.error('Monthly Fee fetch error:', error);
         if (data) setMonthlyFees(data);
-        
+
         const { data: profileData } = await supabase
           .from('profiles')
           .select('id, full_name, email, role');
@@ -67,7 +67,7 @@ export function useMonthlyFees({
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, [supabase, feeFilter, ownerFilter, dateRange, refresh, today]);
 

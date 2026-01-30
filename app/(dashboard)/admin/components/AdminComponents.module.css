@@ -908,6 +908,7 @@
         gap: 1.5rem;
     }
 }
+
 /* Salary Periods Editor */
 .salaryPeriodsEditor {
     margin-top: 1rem;
@@ -1057,4 +1058,14 @@
 
 .salaryQuickButton:active {
     transform: scale(0.95);
+}
+
+/* Note Cell Truncation */
+.noteCell {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
 }
