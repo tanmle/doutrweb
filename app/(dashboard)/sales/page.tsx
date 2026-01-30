@@ -57,11 +57,19 @@ const parseCSVLine = (text: string) => {
   return result;
 };
 
+const ITEMS_PER_PAGE = 10;
+
 export default function SalesEntryPage() {
   const [loading, setLoading] = useState(true);
 
   const [records, setRecords] = useState<SalesRecordWithRelations[]>([]);
+  const [filteredTotals, setFilteredTotals] = useState({ quantity: 0, revenue: 0 }); // New state for totals
   const [shops, setShops] = useState<Shop[]>([]);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
 
   // Filters State
   const [dateFilter, setDateFilter] = useState<DateFilterType>('today');
@@ -139,55 +147,97 @@ export default function SalesEntryPage() {
   // Update date range when filter type changes
   useEffect(() => {
     if (dateFilter !== 'range') {
-      setDateRange(getDateRange(dateFilter));
+      const newRange = getDateRange(dateFilter);
+      setDateRange(newRange);
+      // Reset page when date filter type creates a new range
+      if (newRange.start !== dateRange.start || newRange.end !== dateRange.end) {
+        setCurrentPage(1);
+      }
     }
   }, [dateFilter]);
 
   // Fetch records when filters change
   useEffect(() => {
     if (userRole) fetchRecords();
-  }, [dateRange, ownerFilter, shopFilter, orderStatusFilter, userRole, dateFilter]);
+  }, [dateRange, ownerFilter, shopFilter, orderStatusFilter, userRole, currentPage]);
 
   const fetchRecords = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // 1. Data Query (for table & pagination)
     let query = supabase
       .from('sales_records')
       .select(`
         *,
         shop:shops!inner(id, name, owner_id, profiles:owner_id(full_name, email)),
         product:products(id, name, sku)
-      `)
+      `, { count: 'exact' })
       .order('created_at', { ascending: false });
 
-    // Apply Filters
-    if (dateRange.start) query.gte('created_at', dateRange.start);
-    if (dateRange.end) query.lte('created_at', dateRange.end + 'T23:59:59');
+    // 2. Totals Query (for stats cards - specific columns only)
+    let totalsQuery = supabase
+      .from('sales_records')
+      .select(`
+        items_sold,
+        revenue,
+        shop:shops!inner(owner_id)
+      `);
 
-    // Filter by Shop Owner
-    if (['admin', 'leader'].includes(userRole)) {
-      if (ownerFilter) {
-        query = query.eq('shop.owner_id', ownerFilter);
+    // Helper to apply filters to any query object
+    const applyFilters = (q: any) => {
+      if (dateRange.start) q = q.gte('created_at', dateRange.start);
+      if (dateRange.end) q = q.lte('created_at', dateRange.end + 'T23:59:59');
+
+      if (['admin', 'leader'].includes(userRole)) {
+        if (ownerFilter) {
+          q = q.eq('shop.owner_id', ownerFilter);
+        }
+      } else {
+        q = q.eq('shop.owner_id', user.id);
       }
-    } else {
-      // Members see only their own data
-      query = query.eq('shop.owner_id', user.id);
+
+      if (shopFilter !== 'all') {
+        q = q.eq('shop_id', shopFilter);
+      }
+      if (orderStatusFilter !== 'all') {
+        q = q.eq('order_status', orderStatusFilter);
+      }
+      return q;
+    };
+
+    // Apply filters to both queries
+    query = applyFilters(query);
+    totalsQuery = applyFilters(totalsQuery);
+
+    // Filter Logic Done, now Paginating MAIN query
+    const from = (currentPage - 1) * ITEMS_PER_PAGE;
+    const to = from + ITEMS_PER_PAGE - 1;
+
+    // Execute Parallel: Get Page Data AND Get Totals Data
+    const [pageRes, totalsRes] = await Promise.all([
+      query.range(from, to),
+      totalsQuery
+    ]);
+
+    const { data: pageData, count } = pageRes;
+    const { data: totalsData } = totalsRes;
+
+    // Update Table & Pagination
+    if (pageData) {
+      setRecords(pageData as any);
+      if (count !== null) {
+        setTotalRecords(count);
+        setTotalPages(Math.ceil(count / ITEMS_PER_PAGE));
+      }
     }
 
-    if (shopFilter !== 'all') {
-      query = query.eq('shop_id', shopFilter);
-    }
-
-    if (orderStatusFilter !== 'all') {
-      query = query.eq('order_status', orderStatusFilter);
-    }
-
-    const { data } = await query.limit(100);
-
-    if (data) {
-      setRecords(data as any);
+    // Update Totals Stats
+    if (totalsData) {
+      const qty = totalsData.reduce((sum: number, r: any) => sum + (r.items_sold || 0), 0);
+      const rev = totalsData.reduce((sum: number, r: any) => sum + (r.revenue || 0), 0);
+      setFilteredTotals({ quantity: qty, revenue: rev });
     }
     setLoading(false);
   };
@@ -480,8 +530,8 @@ export default function SalesEntryPage() {
     setLoading(false);
   };
 
-  const totalQty = records.reduce((sum, r) => sum + (r.items_sold || 0), 0);
-  const totalRevenue = records.reduce((sum, r) => sum + (r.revenue || 0), 0);
+  const totalQty = filteredTotals.quantity;
+  const totalRevenue = filteredTotals.revenue;
 
   if (loading) return <LoadingIndicator label="Loading sales records..." />;
 
@@ -506,21 +556,21 @@ export default function SalesEntryPage() {
           <div className={filters.filterButtons} style={{ marginBottom: 0 }}>
             <Button
               variant={dateFilter === 'today' ? 'primary' : 'secondary'}
-              onClick={() => setDateFilter('today')}
+              onClick={() => { setDateFilter('today'); setCurrentPage(1); }}
               className={filters.filterButton}
             >
               Today
             </Button>
             <Button
               variant={dateFilter === 'this_month' ? 'primary' : 'secondary'}
-              onClick={() => setDateFilter('this_month')}
+              onClick={() => { setDateFilter('this_month'); setCurrentPage(1); }}
               className={filters.filterButton}
             >
               This Month
             </Button>
             <Button
               variant={dateFilter === 'last_month' ? 'primary' : 'secondary'}
-              onClick={() => setDateFilter('last_month')}
+              onClick={() => { setDateFilter('last_month'); setCurrentPage(1); }}
               className={filters.filterButton}
             >
               Last Month
@@ -529,6 +579,7 @@ export default function SalesEntryPage() {
               variant={dateFilter === 'range' ? 'primary' : 'secondary'}
               onClick={() => {
                 setDateFilter('range');
+                setCurrentPage(1);
                 // Allow state update then focus first input
                 setTimeout(() => {
                   const inputs = document.querySelectorAll('input[type="date"]');
@@ -546,7 +597,7 @@ export default function SalesEntryPage() {
               <input
                 type="date"
                 value={dateRange.start}
-                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                onChange={(e) => { setDateRange({ ...dateRange, start: e.target.value }); setCurrentPage(1); }}
                 onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                 className={forms.formInput}
                 style={{ width: 'auto' }}
@@ -555,7 +606,7 @@ export default function SalesEntryPage() {
               <input
                 type="date"
                 value={dateRange.end}
-                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                onChange={(e) => { setDateRange({ ...dateRange, end: e.target.value }); setCurrentPage(1); }}
                 onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                 className={forms.formInput}
                 style={{ width: 'auto' }}
@@ -569,7 +620,7 @@ export default function SalesEntryPage() {
               <select
                 className={forms.formSelect}
                 value={ownerFilter}
-                onChange={(e) => setOwnerFilter(e.target.value)}
+                onChange={(e) => { setOwnerFilter(e.target.value); setCurrentPage(1); }}
               >
                 <option value="">All Owners</option>
                 {profiles.map(p => (
@@ -584,7 +635,7 @@ export default function SalesEntryPage() {
             <select
               className={forms.formSelect}
               value={shopFilter}
-              onChange={(e) => setShopFilter(e.target.value)}
+              onChange={(e) => { setShopFilter(e.target.value); setCurrentPage(1); }}
             >
               <option value="all">All Shops</option>
               {shops.map(s => (
@@ -598,7 +649,7 @@ export default function SalesEntryPage() {
             <select
               className={forms.formSelect}
               value={orderStatusFilter}
-              onChange={(e) => setOrderStatusFilter(e.target.value)}
+              onChange={(e) => { setOrderStatusFilter(e.target.value); setCurrentPage(1); }}
             >
               <option value="all">All Statuses</option>
               <option value="Completed">Completed</option>
@@ -621,6 +672,31 @@ export default function SalesEntryPage() {
         loading={loading}
         onDelete={handleDelete}
       />
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '1rem', gap: '1rem' }}>
+          <span className={layouts.textMuted} style={{ fontSize: '0.875rem' }}>
+            Page {currentPage} of {totalPages} ({totalRecords.toLocaleString()} items)
+          </span>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <Button
+              variant="secondary"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1 || loading}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages || loading}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Sales Record">
         <form onSubmit={handleUpdate} className={forms.form}>

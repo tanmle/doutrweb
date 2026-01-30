@@ -1,19 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSupabase } from '@/contexts/SupabaseContext';
 import type { Product, Profile } from '../utils/types';
 
 export function useProducts(refresh: number) {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const initialized = useRef(false);
 
   const supabase = useSupabase();
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
+      // Only set loading true if it's the first time
+      if (!initialized.current) {
+        setLoading(true);
+      }
+
       try {
         const { data } = await supabase
           .from('products')
@@ -44,6 +49,7 @@ export function useProducts(refresh: number) {
         if (profileData) setProfiles(profileData);
       } finally {
         setLoading(false);
+        initialized.current = true;
       }
     };
 

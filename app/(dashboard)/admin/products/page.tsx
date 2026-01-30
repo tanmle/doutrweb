@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card } from '@/components/ui/Card';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { useToast } from '@/components/ui/ToastProvider';
 import { createClient } from '@/utils/supabase/client';
@@ -16,7 +15,6 @@ import { useRealtime } from '@/hooks/useRealtime';
 import styles from '../components/AdminComponents.module.css';
 
 export default function AdminProductsPage() {
-    const [formData, setFormData] = useState<FormData>({});
     const [loading, setLoading] = useState(false);
     const [refresh, setRefresh] = useState(0);
 
@@ -24,9 +22,6 @@ export default function AdminProductsPage() {
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [isEditProductModalOpen, setIsEditProductModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-
-    // Variation states
-    const [variations, setVariations] = useState<any[]>([{ variation_name: '', sku: '', stock_quantity: 0 }]);
 
     const supabase = createClient();
     const toast = useToast();
@@ -42,20 +37,7 @@ export default function AdminProductsPage() {
         onData: () => setRefresh(prev => prev + 1)
     });
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value, type } = e.target;
-        const finalValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
-
-        if (['base_price', 'selling_price', 'stock_quantity'].includes(name)) {
-            const numericValue = (finalValue as string).replace(/\D/g, '');
-            setFormData({ ...formData, [name]: numericValue });
-        } else {
-            setFormData({ ...formData, [name]: finalValue });
-        }
-    };
-
-    const handleProductSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleProductSubmit = async (formData: FormData) => {
         setLoading(true);
 
         // 1. Insert Parent
@@ -77,8 +59,8 @@ export default function AdminProductsPage() {
         }
 
         // 2. Insert Variations if any
-        if (formData.hasVariations && variations.length > 0) {
-            const variationsToInsert = variations.map(v => ({
+        if (formData.hasVariations && formData.variations && formData.variations.length > 0) {
+            const variationsToInsert = formData.variations.map((v: any) => ({
                 name: parentProduct.name, // Inherit name? Or just use variation name in UI
                 variation_name: v.variation_name,
                 sku: v.sku,
@@ -98,34 +80,11 @@ export default function AdminProductsPage() {
         }
 
         setIsProductModalOpen(false);
-        setFormData({});
-        setVariations([{ variation_name: '', sku: '', stock_quantity: 0 }]);
         setRefresh(prev => prev + 1);
         setLoading(false);
     };
 
-    // Helper for variation changes
-    const handleVariationChange = (index: number, field: string, value: string) => {
-        const newVariations = [...variations];
-        newVariations[index] = { ...newVariations[index], [field]: value };
-        setVariations(newVariations);
-        setFormData({ ...formData, variations: newVariations });
-    };
-
-    const addVariation = () => {
-        const newVars = [...variations, { variation_name: '', sku: '', stock_quantity: 0 }];
-        setVariations(newVars);
-        setFormData({ ...formData, variations: newVars });
-    };
-
-    const removeVariation = (index: number) => {
-        const newVars = variations.filter((_, i) => i !== index);
-        setVariations(newVars);
-        setFormData({ ...formData, variations: newVars });
-    };
-
-    const handleUpdateProductSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleUpdateProductSubmit = async (formData: FormData) => {
         if (!selectedProduct) return;
         setLoading(true);
 
@@ -153,7 +112,8 @@ export default function AdminProductsPage() {
             // Original variations IDs
             const originalIds = selectedProduct.variations?.map(v => v.id) || [];
             // Current form variations IDs (filtering out new ones which don't have ID yet)
-            const currentIds = variations.filter(v => v.id).map(v => v.id);
+            const currentVariations = formData.variations || [];
+            const currentIds = currentVariations.filter((v: any) => v.id).map((v: any) => v.id);
             // Delete IDs present in original but not in current
             const idsToDelete = originalIds.filter(id => !currentIds.includes(id));
 
@@ -162,12 +122,7 @@ export default function AdminProductsPage() {
             }
 
             // B. Upsert variations (Update existing, Insert new)
-            // We can do this by mapping variations to upsert objects.
-            // Note: For 'upsert', we need to check if we can pass ID. 
-            // If we pass ID, it updates. If no ID, we must perform insert.
-            // Supabase upsert works if we provide primary key.
-
-            for (const v of variations) {
+            for (const v of currentVariations) {
                 const payload = {
                     name: formData.name, // Ensure child name matches parent
                     variation_name: v.variation_name,
@@ -199,8 +154,6 @@ export default function AdminProductsPage() {
         }
 
         setIsEditProductModalOpen(false);
-        setFormData({});
-        setVariations([]);
         setSelectedProduct(null);
         setRefresh(prev => prev + 1);
         setLoading(false);
@@ -208,29 +161,6 @@ export default function AdminProductsPage() {
 
     const openEditProductModal = (product: Product) => {
         setSelectedProduct(product);
-        setFormData({
-            name: product.name,
-            sku: product.sku || '',
-            base_price: product.base_price.toString(),
-            selling_price: product.selling_price.toString(),
-            type: product.type || 'company',
-            owner_id: product.owner_id || '',
-            in_stock: product.in_stock,
-            stock_quantity: product.stock_quantity ? product.stock_quantity.toString() : '0',
-        });
-        // Logic to fetch child variations if any could go here, for now edit is just basic parent/self edit
-        setVariations([]); // Reset or load if implementing full edit
-        // If has variations, load them? This requires extra fetch. For MVP step 1 we focus on Create.
-        // If editing a child directly? The table lists flattened or grouped?
-        // User said "in grid, still show one product but Variation shows list of Variation name"
-        // This implies we are editing the Parent.
-        // fetch children?
-        if (product.variations && product.variations.length > 0) {
-            setFormData(prev => ({ ...prev, hasVariations: true, variations: product.variations }));
-            setVariations(product.variations as any[]);
-        } else {
-            setFormData(prev => ({ ...prev, hasVariations: false }));
-        }
         setIsEditProductModalOpen(true);
     };
 
@@ -246,8 +176,6 @@ export default function AdminProductsPage() {
     const handleCloseModal = () => {
         setIsProductModalOpen(false);
         setIsEditProductModalOpen(false);
-        setFormData({});
-        setVariations([{ variation_name: '', sku: '', stock_quantity: 0 }]);
         setSelectedProduct(null);
     };
 
@@ -266,29 +194,20 @@ export default function AdminProductsPage() {
 
             <ProductModal
                 isOpen={isProductModalOpen}
-                formData={formData}
                 profiles={profiles}
                 loading={loading}
                 onClose={handleCloseModal}
                 onSubmit={handleProductSubmit}
-                onChange={handleInputChange}
-                onVariationChange={handleVariationChange}
-                onAddVariation={addVariation}
-                onRemoveVariation={removeVariation}
             />
 
             <ProductModal
                 isOpen={isEditProductModalOpen}
                 isEdit
-                formData={formData}
+                initialData={selectedProduct}
                 profiles={profiles}
                 loading={loading}
                 onClose={handleCloseModal}
                 onSubmit={handleUpdateProductSubmit}
-                onChange={handleInputChange}
-                onVariationChange={handleVariationChange}
-                onAddVariation={addVariation}
-                onRemoveVariation={removeVariation}
             />
 
             <AdminTableStyles />
