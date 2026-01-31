@@ -443,12 +443,13 @@ export default function PayoutReportsPage() {
                     variant="success"
                 />
 
-                <KPICard
+                {/* Monthly KPI Card - Disabled */}
+                {/* <KPICard
                     currentKPI={kpiStats.currentKPI}
                     targetKPI={kpiStats.targetKPI}
                     monthlyProfit={kpiStats.currentKPI}
                     currentLevel={kpiStats.currentLevel}
-                />
+                /> */}
             </div>
 
             <div className={layouts.spacingY}></div>

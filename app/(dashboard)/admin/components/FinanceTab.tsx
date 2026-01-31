@@ -52,6 +52,10 @@ export function FinanceTab({
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     });
 
+    // Pagination state for Income Records
+    const [incomeCurrentPage, setIncomeCurrentPage] = useState(1);
+    const incomeItemsPerPage = 10;
+
     // Calculate financial metrics
     const metrics = useMemo(() => {
         const totalCapital = capitalRecords.reduce((sum, r) => sum + r.amount, 0);
@@ -84,16 +88,10 @@ export function FinanceTab({
                 </div>
                 <div className={styles.financeActions}>
                     {onViewMonthlyBreakdown && (
-                        <Button variant="secondary" onClick={onViewMonthlyBreakdown}>
+                        <Button variant="primary" onClick={onViewMonthlyBreakdown}>
                             📊 Monthly Breakdown
                         </Button>
                     )}
-                    <Button variant="secondary" onClick={onAddCapital}>
-                        + Add Capital
-                    </Button>
-                    <Button variant="primary" onClick={onAddIncome}>
-                        + Add Income
-                    </Button>
                 </div>
             </div>
 
@@ -185,7 +183,7 @@ export function FinanceTab({
             <Card>
                 <div className={styles.tableHeader}>
                     <h3 className={styles.sectionTitle}>Capital Records</h3>
-                    <Button variant="ghost" onClick={onAddCapital}>+ Add</Button>
+                    <Button variant="primary" onClick={onAddCapital}>+ Add Capital</Button>
                 </div>
                 <div className={tables.tableWrapper}>
                     <table className={tables.table}>
@@ -214,11 +212,11 @@ export function FinanceTab({
                                         <td data-label="Note">{record.note || '-'}</td>
                                         <td data-label="Actions">
                                             <div className={tables.tableActionsSmall}>
-                                                <Button variant="ghost" onClick={() => onEditCapital(record)}>
-                                                    Edit
+                                                <Button variant="secondary" onClick={() => onEditCapital(record)}>
+                                                    ✏️ Edit
                                                 </Button>
-                                                <Button variant="ghost" onClick={() => onDeleteCapital(record.id)}>
-                                                    Delete
+                                                <Button variant="danger" onClick={() => onDeleteCapital(record.id)}>
+                                                    🗑️ Delete
                                                 </Button>
                                             </div>
                                         </td>
@@ -243,7 +241,7 @@ export function FinanceTab({
             <Card>
                 <div className={styles.tableHeader}>
                     <h3 className={styles.sectionTitle}>Income Records</h3>
-                    <Button variant="ghost" onClick={onAddIncome}>+ Add</Button>
+                    <Button variant="primary" onClick={onAddIncome}>+ Add Income</Button>
                 </div>
                 <div className={tables.tableWrapper}>
                     <table className={tables.table}>
@@ -264,26 +262,32 @@ export function FinanceTab({
                                     </td>
                                 </tr>
                             ) : (
-                                incomeRecords.map(record => (
-                                    <tr key={record.id}>
-                                        <td data-label="Date">{new Date(record.date).toLocaleDateString()}</td>
-                                        <td data-label="Source">{record.source}</td>
-                                        <td data-label="Amount">
-                                            <strong>{formatCurrency(record.amount)}</strong>
-                                        </td>
-                                        <td data-label="Note">{record.note || '-'}</td>
-                                        <td data-label="Actions">
-                                            <div className={tables.tableActionsSmall}>
-                                                <Button variant="ghost" onClick={() => onEditIncome(record)}>
-                                                    Edit
-                                                </Button>
-                                                <Button variant="ghost" onClick={() => onDeleteIncome(record.id)}>
-                                                    Delete
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
+                                (() => {
+                                    const startIndex = (incomeCurrentPage - 1) * incomeItemsPerPage;
+                                    const endIndex = startIndex + incomeItemsPerPage;
+                                    const paginatedRecords = incomeRecords.slice(startIndex, endIndex);
+
+                                    return paginatedRecords.map(record => (
+                                        <tr key={record.id}>
+                                            <td data-label="Date">{new Date(record.date).toLocaleDateString()}</td>
+                                            <td data-label="Source">{record.source}</td>
+                                            <td data-label="Amount">
+                                                <strong>{formatCurrency(record.amount)}</strong>
+                                            </td>
+                                            <td data-label="Note">{record.note || '-'}</td>
+                                            <td data-label="Actions">
+                                                <div className={tables.tableActionsSmall}>
+                                                    <Button variant="secondary" onClick={() => onEditIncome(record)}>
+                                                        ✏️ Edit
+                                                    </Button>
+                                                    <Button variant="danger" onClick={() => onDeleteIncome(record.id)}>
+                                                        🗑️ Delete
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ));
+                                })()
                             )}
                             {incomeRecords.length > 0 && (
                                 <tr className={styles.totalRow}>
@@ -297,6 +301,30 @@ export function FinanceTab({
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {incomeRecords.length > incomeItemsPerPage && (
+                    <div className={styles.paginationControls}>
+                        <Button
+                            variant="secondary"
+                            onClick={() => setIncomeCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={incomeCurrentPage === 1}
+                        >
+                            Previous
+                        </Button>
+                        <span className={styles.paginationInfo}>
+                            Page {incomeCurrentPage} of {Math.ceil(incomeRecords.length / incomeItemsPerPage)}
+                            {' '}({incomeRecords.length} total records)
+                        </span>
+                        <Button
+                            variant="secondary"
+                            onClick={() => setIncomeCurrentPage(prev => Math.min(Math.ceil(incomeRecords.length / incomeItemsPerPage), prev + 1))}
+                            disabled={incomeCurrentPage >= Math.ceil(incomeRecords.length / incomeItemsPerPage)}
+                        >
+                            Next
+                        </Button>
+                    </div>
+                )}
             </Card>
         </div>
     );

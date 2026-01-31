@@ -1227,3 +1227,17 @@
         justify-content: space-between;
     }
 }
+/* Pagination Controls */
+.paginationControls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.paginationInfo {
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+}
