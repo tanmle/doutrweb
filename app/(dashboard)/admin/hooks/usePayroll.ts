@@ -19,7 +19,8 @@ export function usePayroll(month: string, refresh: number) {
         const { data: userData } = await supabase
           .from('profiles')
           .select('id, full_name, email, role, base_salary, bank_name, bank_number')
-          .neq('role', 'admin');
+          .neq('role', 'admin')
+          .eq('status', 'active');
         if (userData) setUsers(userData as any);
 
         const startOfMonth = `${month}-01`;

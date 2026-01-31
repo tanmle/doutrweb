@@ -40,7 +40,14 @@ export function SalaryPeriodsEditor({
     };
 
     const totalDays = periods.reduce((sum, p) => sum + p.days, 0);
-    const totalSalary = periods.reduce((sum, p) => sum + (p.days * p.daily_rate), 0);
+    // Recalculate total salary ensuring we use the correct daily rates
+    const totalSalary = periods.reduce((sum, p) => {
+        // If monthly_salary is set, recalculate daily_rate to ensure consistency
+        const dailyRate = p.monthly_salary
+            ? Math.round(p.monthly_salary / standardDays)
+            : p.daily_rate;
+        return sum + (p.days * dailyRate);
+    }, 0);
 
     return (
         <div className={styles.salaryPeriodsEditor}>
@@ -119,13 +126,23 @@ export function SalaryPeriodsEditor({
                                     <div className={styles.salaryPeriodField}>
                                         <label className={styles.salaryPeriodLabel}>Daily Rate</label>
                                         <div className={styles.salaryPeriodSubtotal}>
-                                            {formatCurrency(period.daily_rate)}
+                                            {formatCurrency(
+                                                period.monthly_salary
+                                                    ? Math.round(period.monthly_salary / standardDays)
+                                                    : period.daily_rate
+                                            )}
                                         </div>
                                     </div>
                                     <div className={styles.salaryPeriodField}>
                                         <label className={styles.salaryPeriodLabel}>Subtotal</label>
                                         <div className={styles.salaryPeriodSubtotal}>
-                                            {formatCurrency(period.days * period.daily_rate)}
+                                            {(() => {
+                                                const dailyRate = period.monthly_salary
+                                                    ? Math.round(period.monthly_salary / standardDays)
+                                                    : period.daily_rate;
+                                                const subtotal = period.days * dailyRate;
+                                                return formatCurrency(subtotal);
+                                            })()}
                                         </div>
                                     </div>
                                 </div>

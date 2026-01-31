@@ -5,6 +5,7 @@ import { createAdminClient } from '@/utils/supabase/admin';
 interface SalaryPeriod {
     days: number;
     daily_rate: number;
+    monthly_salary?: number;
 }
 
 export async function generatePayroll(
@@ -15,12 +16,13 @@ export async function generatePayroll(
 ) {
     const supabase = createAdminClient();
 
-    // 1. Get all eligible users (e.g., active members/leaders)
+    // 1. Get all eligible users (active members/leaders with salary set)
     const { data: users, error: usersError } = await supabase
         .from('profiles')
         .select('id, base_salary')
         .neq('base_salary', 0)
-        .neq('role', 'admin'); // Only generate for those with salary set and not admin
+        .neq('role', 'admin')
+        .eq('status', 'active'); // Only generate for active users
 
     if (usersError) return { error: usersError.message };
     if (!users || users.length === 0) return { error: 'No users found eligible for payroll.' };
@@ -34,7 +36,11 @@ export async function generatePayroll(
         // If user has custom salary periods, calculate based on those
         if (salaryPeriods && salaryPeriods.length > 0) {
             totalSalary = salaryPeriods.reduce((sum, period) => {
-                return sum + (period.days * period.daily_rate);
+                // Recalculate daily_rate from monthly_salary if available to ensure consistency
+                const dailyRate = period.monthly_salary
+                    ? Math.round(period.monthly_salary / standardDays)
+                    : period.daily_rate;
+                return sum + (period.days * dailyRate);
             }, 0);
         } else {
             // Otherwise use standard calculation
