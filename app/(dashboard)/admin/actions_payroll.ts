@@ -36,11 +36,11 @@ export async function generatePayroll(
         // If user has custom salary periods, calculate based on those
         if (salaryPeriods && salaryPeriods.length > 0) {
             totalSalary = salaryPeriods.reduce((sum, period) => {
-                // Recalculate daily_rate from monthly_salary if available to ensure consistency
-                const dailyRate = period.monthly_salary
-                    ? Math.round(period.monthly_salary / standardDays)
-                    : period.daily_rate;
-                return sum + (period.days * dailyRate);
+                // Calculate with full precision to avoid rounding errors
+                const periodSalary = period.monthly_salary
+                    ? (period.monthly_salary / standardDays) * period.days
+                    : period.daily_rate * period.days;
+                return sum + periodSalary;
             }, 0);
         } else {
             // Otherwise use standard calculation

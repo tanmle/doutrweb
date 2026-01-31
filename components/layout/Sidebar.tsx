@@ -24,6 +24,7 @@ const navItems: NavItem[] = [
       { label: 'Selling Fee', href: '/admin/selling-fees' },
       { label: 'Monthly Fee', href: '/admin/monthly-fees' },
       { label: 'Payroll', href: '/admin/payroll' },
+      { label: 'Finance', href: '/admin/finance' },
       { label: 'User Management', href: '/admin/users' },
       { label: 'Configuration', href: '/admin/configuration' },
     ]

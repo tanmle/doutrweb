@@ -20,3 +20,8 @@ export { PayrollModal } from './PayrollModal';
 export { PayrollSummaryCard } from './PayrollSummaryCard';
 export { PayrollQRCode } from './PayrollQRCode';
 export { GeneratePayrollModal } from './GeneratePayrollModal';
+export { FinanceTab } from './FinanceTab';
+export { CapitalModal } from './CapitalModal';
+export { IncomeModal } from './IncomeModal';
+export { ExpenseBreakdownModal } from './ExpenseBreakdownModal';
+export { MonthlyFinancialBreakdown } from './MonthlyFinancialBreakdown';

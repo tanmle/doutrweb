@@ -40,14 +40,14 @@ export function SalaryPeriodsEditor({
     };
 
     const totalDays = periods.reduce((sum, p) => sum + p.days, 0);
-    // Recalculate total salary ensuring we use the correct daily rates
-    const totalSalary = periods.reduce((sum, p) => {
-        // If monthly_salary is set, recalculate daily_rate to ensure consistency
-        const dailyRate = p.monthly_salary
-            ? Math.round(p.monthly_salary / standardDays)
-            : p.daily_rate;
-        return sum + (p.days * dailyRate);
-    }, 0);
+    // Calculate total salary with full precision to avoid rounding errors
+    const totalSalary = Math.round(periods.reduce((sum, p) => {
+        // Calculate each period's salary with full precision
+        const periodSalary = p.monthly_salary
+            ? (p.monthly_salary / standardDays) * p.days
+            : p.daily_rate * p.days;
+        return sum + periodSalary;
+    }, 0));
 
     return (
         <div className={styles.salaryPeriodsEditor}>
@@ -137,10 +137,10 @@ export function SalaryPeriodsEditor({
                                         <label className={styles.salaryPeriodLabel}>Subtotal</label>
                                         <div className={styles.salaryPeriodSubtotal}>
                                             {(() => {
-                                                const dailyRate = period.monthly_salary
-                                                    ? Math.round(period.monthly_salary / standardDays)
-                                                    : period.daily_rate;
-                                                const subtotal = period.days * dailyRate;
+                                                // Calculate subtotal with full precision to avoid rounding errors
+                                                const subtotal = period.monthly_salary
+                                                    ? Math.round((period.monthly_salary / standardDays) * period.days)
+                                                    : Math.round(period.daily_rate * period.days);
                                                 return formatCurrency(subtotal);
                                             })()}
                                         </div>

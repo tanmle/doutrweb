@@ -46,6 +46,11 @@ export function PayrollTab({
         }
     };
 
+    // Sort payroll records by total salary (highest to lowest)
+    const sortedPayrollRecords = [...payrollRecords].sort((a, b) => {
+        return (b.total_salary || 0) - (a.total_salary || 0);
+    });
+
     return (
         <div className={layouts.flexColumn}>
             {/* Summary Cards */}
@@ -99,7 +104,7 @@ export function PayrollTab({
                         </tr>
                     </thead>
                     <tbody>
-                        {payrollRecords.length === 0 ? (
+                        {sortedPayrollRecords.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className={`${layouts.textCenter} ${styles.emptyStatePadding}`}>
                                     <div className={`${layouts.flexColumn} ${styles.centeredFlexColumn}`}>
@@ -111,7 +116,7 @@ export function PayrollTab({
                                 </td>
                             </tr>
                         ) : (
-                            payrollRecords.map(record => (
+                            sortedPayrollRecords.map(record => (
                                 <tr key={record.id}>
                                     <td data-label="User">
                                         <div className={tables.userCell}>

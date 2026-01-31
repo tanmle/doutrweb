@@ -43,6 +43,12 @@ export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
             >
                 Payroll
             </Button>
+            <Button
+                variant={activeTab === 'finance' ? 'primary' : 'ghost'}
+                onClick={() => onTabChange('finance')}
+            >
+                Finance
+            </Button>
         </div>
     );
 }

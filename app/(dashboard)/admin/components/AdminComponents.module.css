@@ -1069,3 +1069,161 @@
     font-size: 0.875rem;
     color: var(--muted-foreground);
 }
+
+/* ============================================
+   Finance Page Styles
+   ============================================ */
+
+/* Finance Header */
+.financeHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+.financeTitle {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+    background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.financeSubtitle {
+    font-size: 0.95rem;
+    color: var(--muted-foreground);
+    margin: 0.5rem 0 0 0;
+}
+
+.financeActions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+/* Expense Breakdown */
+.sectionTitle {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 1.5rem 0;
+    color: var(--foreground);
+}
+
+.expenseBreakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.expenseItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    transition: all 0.2s ease;
+}
+
+.expenseItem:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(4px);
+}
+
+.expenseLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.expenseDot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    box-shadow: 0 0 8px currentColor;
+}
+
+.expenseValue {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.expenseValue strong {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.expenseCount {
+    font-size: 0.8rem;
+    color: var(--muted-foreground);
+}
+
+/* Table Header with Actions */
+.tableHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+/* Form Textarea */
+.formTextarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--foreground);
+    font-family: inherit;
+    font-size: 0.875rem;
+    resize: vertical;
+    transition: all 0.2s ease;
+}
+
+.formTextarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.formTextarea::placeholder {
+    color: var(--muted-foreground);
+}
+
+/* Responsive Finance Layout */
+@media (max-width: 768px) {
+    .financeHeader {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .financeActions {
+        width: 100%;
+    }
+
+    .financeActions button {
+        flex: 1;
+    }
+
+    .expenseItem {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .expenseValue {
+        width: 100%;
+        justify-content: space-between;
+    }
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/Card';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -24,7 +24,29 @@ export default function AdminSellingFeesPage() {
     // Filter states
     const [feeFilter, setFeeFilter] = useState<FeeFilter>('this_month');
     const [ownerFilter, setOwnerFilter] = useState<string>('all');
-    const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
+
+    // Local date range for immediate UI update
+    const [localDateRange, setLocalDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
+    // Debounced date range for API calls
+    const [debouncedDateRange, setDebouncedDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
+    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Debounce date range changes
+    useEffect(() => {
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+        }
+
+        debounceTimerRef.current = setTimeout(() => {
+            setDebouncedDateRange(localDateRange);
+        }, 500); // 500ms debounce
+
+        return () => {
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+        };
+    }, [localDateRange]);
 
     // Modal states
     const [isFeeModalOpen, setIsFeeModalOpen] = useState(false);
@@ -43,7 +65,7 @@ export default function AdminSellingFeesPage() {
     } = useSellingFees({
         feeFilter,
         ownerFilter,
-        dateRange,
+        dateRange: debouncedDateRange, // Use debounced for API calls
         refresh
     });
 
@@ -145,14 +167,14 @@ export default function AdminSellingFeesPage() {
                 profiles={profiles}
                 feeFilter={feeFilter}
                 ownerFilter={ownerFilter}
-                dateRange={dateRange}
+                dateRange={localDateRange} // Use local for UI display
                 totalFeePrice={totalFeePrice}
                 onAddFee={openFeeModal}
                 onEditFee={openEditFeeModal}
                 onDeleteFee={handleDeleteFee}
                 onFeeFilterChange={setFeeFilter}
                 onOwnerFilterChange={setOwnerFilter}
-                onDateRangeChange={setDateRange}
+                onDateRangeChange={setLocalDateRange} // Update local immediately
                 title="Selling Fees"
             />
 

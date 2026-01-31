@@ -65,11 +65,11 @@ export function PayrollModal({
         if (salaryPeriods.length > 0) {
             const standard = Number(formData.standard_work_days) || 26;
             const periodsSalary = salaryPeriods.reduce((sum, period) => {
-                // Recalculate daily_rate from monthly_salary if available to ensure consistency
-                const dailyRate = period.monthly_salary
-                    ? Math.round(period.monthly_salary / standard)
-                    : period.daily_rate;
-                return sum + (period.days * dailyRate);
+                // Calculate with full precision to avoid rounding errors
+                const periodSalary = period.monthly_salary
+                    ? (period.monthly_salary / standard) * period.days
+                    : period.daily_rate * period.days;
+                return sum + periodSalary;
             }, 0);
             return Math.floor(periodsSalary + bonus);
         }

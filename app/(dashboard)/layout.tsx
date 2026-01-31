@@ -298,6 +298,7 @@ export default function DashboardLayout({
                 if (pathname?.includes('/admin/products')) return 'Products';
                 if (pathname?.includes('/admin/users')) return 'Users';
                 if (pathname?.includes('/admin/payroll')) return 'Payroll';
+                if (pathname?.includes('/admin/finance')) return 'Finance';
                 if (pathname?.includes('/admin/monthly-fees')) return 'Monthly Fees';
                 if (pathname?.includes('/admin/selling-fees')) return 'Selling Fees';
                 if (pathname?.includes('/admin/configuration')) return 'Configuration';

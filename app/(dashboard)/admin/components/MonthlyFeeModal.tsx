@@ -64,7 +64,7 @@ export function MonthlyFeeModal({
                         className={styles.formSelect}
                     >
                         <option value="">Select User</option>
-                        {profiles.map(p => (
+                        {profiles.filter(p => p.role === 'admin').map(p => (
                             <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
                         ))}
                     </select>

@@ -2,7 +2,7 @@
  * Type definitions for the admin panel
  */
 
-export type Tab = 'products' | 'users' | 'fees' | 'monthly_fees' | 'configuration' | 'payroll';
+export type Tab = 'products' | 'users' | 'fees' | 'monthly_fees' | 'configuration' | 'payroll' | 'finance';
 export type FeeFilter = 'all' | 'today' | 'this_month' | 'last_month' | 'range';
 
 export interface Product {
@@ -125,4 +125,21 @@ export interface CommissionRate {
 
 export interface FormData {
   [key: string]: any;
+}
+
+export interface Capital {
+  id: string;
+  amount: number;
+  date: string;
+  note?: string;
+  created_at: string;
+}
+
+export interface Income {
+  id: string;
+  amount: number;
+  source: string;
+  date: string;
+  note?: string;
+  created_at: string;
 }

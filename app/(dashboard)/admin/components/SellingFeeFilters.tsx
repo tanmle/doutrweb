@@ -24,6 +24,68 @@ export function SellingFeeFilters({
     onOwnerFilterChange,
     onDateRangeChange,
 }: SellingFeeFiltersProps) {
+    const handlePreviousMonth = () => {
+        // Determine the current month from the date range or use current date
+        let currentYear: number;
+        let currentMonthIndex: number;
+
+        if (dateRange.start && dateRange.end) {
+            // Parse the date string manually to avoid timezone issues
+            const [year, month] = dateRange.start.split('-').map(Number);
+            currentYear = year;
+            currentMonthIndex = month - 1; // JavaScript months are 0-indexed
+        } else {
+            const now = new Date();
+            currentYear = now.getFullYear();
+            currentMonthIndex = now.getMonth();
+        }
+
+        // Calculate previous month
+        const prevMonth = new Date(currentYear, currentMonthIndex - 1, 1);
+        const year = prevMonth.getFullYear();
+        const month = String(prevMonth.getMonth() + 1).padStart(2, '0');
+        const start = `${year}-${month}-01`;
+
+        // Calculate last day of previous month
+        const lastDay = new Date(year, prevMonth.getMonth() + 1, 0);
+        const endDay = String(lastDay.getDate()).padStart(2, '0');
+        const end = `${year}-${month}-${endDay}`;
+
+        onDateRangeChange({ start, end });
+        onFeeFilterChange('range');
+    };
+
+    const handleNextMonth = () => {
+        // Determine the current month from the date range or use current date
+        let currentYear: number;
+        let currentMonthIndex: number;
+
+        if (dateRange.start && dateRange.end) {
+            // Parse the date string manually to avoid timezone issues
+            const [year, month] = dateRange.start.split('-').map(Number);
+            currentYear = year;
+            currentMonthIndex = month - 1; // JavaScript months are 0-indexed
+        } else {
+            const now = new Date();
+            currentYear = now.getFullYear();
+            currentMonthIndex = now.getMonth();
+        }
+
+        // Calculate next month
+        const nextMonth = new Date(currentYear, currentMonthIndex + 1, 1);
+        const year = nextMonth.getFullYear();
+        const month = String(nextMonth.getMonth() + 1).padStart(2, '0');
+        const start = `${year}-${month}-01`;
+
+        // Calculate last day of next month
+        const lastDay = new Date(year, nextMonth.getMonth() + 1, 0);
+        const endDay = String(lastDay.getDate()).padStart(2, '0');
+        const end = `${year}-${month}-${endDay}`;
+
+        onDateRangeChange({ start, end });
+        onFeeFilterChange('range');
+    };
+
     return (
         <>
             <div className={styles.filterControls}>
@@ -76,6 +138,20 @@ export function SellingFeeFilters({
                             Last Month
                         </Button>
                         <Button
+                            variant="secondary"
+                            onClick={handlePreviousMonth}
+                            className={styles.buttonSmall}
+                        >
+                            ← Prev Month
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            onClick={handleNextMonth}
+                            className={styles.buttonSmall}
+                        >
+                            Next Month →
+                        </Button>
+                        <Button
                             variant={feeFilter === 'range' ? 'primary' : 'secondary'}
                             onClick={() => onFeeFilterChange('range')}
                             className={styles.buttonSmall}
@@ -97,7 +173,6 @@ export function SellingFeeFilters({
                                 type="date"
                                 value={dateRange.start}
                                 onChange={(e) => onDateRangeChange({ ...dateRange, start: e.target.value })}
-                                onClick={(e) => e.currentTarget.showPicker()}
                                 className={styles.filterDateInput}
                             />
                         </div>
@@ -110,7 +185,6 @@ export function SellingFeeFilters({
                                 type="date"
                                 value={dateRange.end}
                                 onChange={(e) => onDateRangeChange({ ...dateRange, end: e.target.value })}
-                                onClick={(e) => e.currentTarget.showPicker()}
                                 className={styles.filterDateInput}
                             />
                         </div>
