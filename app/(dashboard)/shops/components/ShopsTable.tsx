@@ -4,7 +4,9 @@ import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { RoleBadge } from '@/components/ui/RoleBadge';
 import type { UserRole } from '@/components/ui/RoleBadge';
+import { getUserColor } from '@/utils/userColors';
 import styles from './ShopsComponents.module.css';
+
 
 interface Shop {
     id: string;
@@ -133,9 +135,13 @@ export function ShopsTable({ shops, userRole, onEdit, onArchive, onDelete, onHis
                             <td data-label="Owner">
                                 {shop.owner ? (
                                     <div className={styles.ownerCell}>
-                                        <span className={styles.ownerName}>
+                                        <span
+                                            className={styles.ownerName}
+                                            style={{ color: getUserColor(shop.owner_id), fontWeight: 600 }}
+                                        >
                                             {shop.owner.full_name || shop.owner.email}
                                         </span>
+
                                         {shop.owner.role && (
                                             <RoleBadge role={shop.owner.role} />
                                         )}

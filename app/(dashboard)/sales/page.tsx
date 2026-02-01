@@ -153,7 +153,8 @@ export default function SalesEntryPage() {
       .from('sales_records')
       .select(`
         *,
-        shop:shops!inner(id, name, owner_id, profiles:owner_id(full_name, email)),
+        shop:shops!inner(id, name, owner_id, profiles:owner_id(id, full_name, email)),
+
         product:products(id, name, sku)
       `, { count: 'exact' })
       .order('created_at', { ascending: false });

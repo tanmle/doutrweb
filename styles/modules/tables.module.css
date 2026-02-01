@@ -170,10 +170,12 @@
         margin-top: 0.5rem;
     }
 
-    .tableActions>button,
-    .tableActionsSmall>button {
+    .tableActions > button,
+    .tableActionsSmall > button {
         width: 100%;
         justify-content: center;
-        padding: 0.5rem;
+        padding: 0.75rem; /* Increased padding for better touch target */
+        min-height: 44px; /* Ensure minimum touch target height */
+        font-size: 0.875rem; /* Slightly larger font for readability */
     }
 }

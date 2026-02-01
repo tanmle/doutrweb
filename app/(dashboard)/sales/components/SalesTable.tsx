@@ -8,6 +8,8 @@ import { getStatusBadgeStyle } from '@/utils/statusColors';
 import { TRUNCATE_ID_LENGTH, TRUNCATE_ID_DISPLAY_LENGTH } from '@/constants/sales';
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 import { tables, layouts, sales } from '@/styles/modules';
+import { getUserColor } from '@/utils/userColors';
+
 import type { SalesRecordWithRelations } from '../types';
 
 interface SalesTableProps {
@@ -122,10 +124,20 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
                                         const profile = Array.isArray(shopData?.profiles) ? shopData.profiles[0] : shopData?.profiles;
 
                                         if (profile) {
-                                            return profile.full_name || profile.email || 'No Name';
+                                            return (
+                                                <span
+                                                    style={{
+                                                        color: getUserColor(profile.id),
+                                                        fontWeight: 600
+                                                    }}
+                                                >
+                                                    {profile.full_name || profile.email || 'No Name'}
+                                                </span>
+                                            );
                                         }
                                         return 'N/A';
                                     })()}
+
                                 </td>
                                 <td data-label="Order Status">
                                     <span className={sales.statusBadge}>{r.order_status || '-'}</span>

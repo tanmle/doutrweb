@@ -57,7 +57,8 @@ export default function ShopsPage() {
   const refreshShopsScoped = async () => {
     let query = supabase
       .from('shops')
-      .select('*, owner:profiles!owner_id(full_name, email, role)');
+      .select('*, owner:profiles!owner_id(id, full_name, email, role)');
+
 
     // Filter by status
     if (statusFilter === 'archived') {

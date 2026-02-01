@@ -815,9 +815,35 @@
         font-weight: 600;
     }
 
-    .totalRow td:not(.totalLabel):not(.totalPrice) {
-        display: none;
+    .totalRow {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
     }
+
+    .totalRow td.totalLabel,
+    .totalRow td.totalPrice {
+        display: block !important;
+        width: auto !important;
+        border: none !important;
+        padding: 0.75rem 1rem !important;
+    }
+
+    .totalRow td:not(.totalLabel):not(.totalPrice) {
+        display: none !important;
+    }
+
+    /* Increase touch targets for buttons */
+    .buttonExtraSmall {
+        min-height: 44px;
+        min-width: 44px;
+        font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
 
     .filterField {
         width: 100%;
@@ -1227,6 +1253,7 @@
         justify-content: space-between;
     }
 }
+
 /* Pagination Controls */
 .paginationControls {
     display: flex;

@@ -235,5 +235,18 @@
 
     .tableActions {
         flex-wrap: wrap;
+        width: 100%;
+        gap: 0.75rem;
+    }
+
+    .buttonExtraSmall {
+        min-height: 44px;
+        min-width: 44px;
+        font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        /* Full width buttons on mobile */
     }
 }
