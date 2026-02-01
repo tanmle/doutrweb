@@ -33,6 +33,8 @@
     flex-direction: column;
     position: relative;
     z-index: 10;
+    overflow-x: hidden;
+    width: 100%;
 }
 
 .header {
@@ -188,6 +190,7 @@
 .content {
     padding: 1.5rem;
     flex: 1;
+    min-width: 0;
 }
 
 /* Mobile Responsiveness */

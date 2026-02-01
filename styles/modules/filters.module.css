@@ -172,8 +172,41 @@
     pointer-events: none;
 }
 
+/* Enhanced Responsive Grid Wrappers (Desktop Defaults) */
+.responsiveFilterContainer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.responsiveFilterControls {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    flex: 1;
+}
+
+.scrollableButtonGroup {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.responsiveControlItem {
+    min-width: 150px;
+    flex: 1;
+    /* Allow growing */
+    max-width: 250px;
+    /* Sensible max width on desktop */
+}
+
 /* Responsive */
 @media (max-width: 640px) {
+
     .filterButtons {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -215,6 +248,50 @@
     }
 
     .searchContainer {
+        width: 100%;
+    }
+}
+
+/* Enhanced Responsive Grid (Added for Sales/Payouts) */
+@media (max-width: 768px) {
+    .responsiveFilterContainer {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    .responsiveFilterControls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .scrollableButtonGroup {
+        display: flex;
+        gap: 0.5rem;
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 0.25rem;
+        flex-wrap: nowrap;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+        /* Span full width if inside grid */
+        grid-column: 1 / -1;
+    }
+
+    .scrollableButtonGroup::-webkit-scrollbar {
+        display: none;
+    }
+
+    .responsiveControlItem {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .responsiveControlFull {
+        grid-column: 1 / -1;
         width: 100%;
     }
 }

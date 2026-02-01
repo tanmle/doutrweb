@@ -454,9 +454,9 @@ export default function PayoutReportsPage() {
 
             <div className={layouts.spacingY}></div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                    <div className={filters.filterButtons} style={{ marginBottom: 0 }}>
+            <div className={filters.responsiveFilterContainer}>
+                <div className={filters.responsiveFilterControls}>
+                    <div className={`${filters.filterButtons} ${filters.scrollableButtonGroup}`} style={{ marginBottom: 0 }}>
                         <Button
                             variant={filter === 'this_month' ? 'primary' : 'secondary'}
                             onClick={() => setFilter('this_month')}
@@ -487,29 +487,27 @@ export default function PayoutReportsPage() {
                     </div>
 
                     {filter === 'range' && (
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', animation: 'fadeIn 0.2s ease-in-out' }}>
+                        <div className={filters.dateRangeContainer} style={{ animation: 'fadeIn 0.2s ease-in-out' }}>
                             <input
                                 type="date"
                                 value={dateRange.start}
                                 onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
                                 onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                                 className={forms.formInput}
-                                style={{ width: 'auto' }}
                             />
-                            <span className={layouts.textMuted}>-</span>
+                            <span className={layouts.textMuted} style={{ alignSelf: 'center' }}>-</span>
                             <input
                                 type="date"
                                 value={dateRange.end}
                                 onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
                                 onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                                 className={forms.formInput}
-                                style={{ width: 'auto' }}
                             />
                         </div>
                     )}
 
                     {['admin', 'leader'].includes(userRole) && (
-                        <div style={{ minWidth: '200px' }}>
+                        <div className={filters.responsiveControlItem}>
                             <label className={forms.formLabel} style={{ marginBottom: '0.5rem', display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Filter by Owner</label>
                             <select
                                 value={userFilter}
@@ -524,7 +522,7 @@ export default function PayoutReportsPage() {
                         </div>
                     )}
 
-                    <div style={{ minWidth: '200px' }}>
+                    <div className={filters.responsiveControlItem}>
                         <label className={forms.formLabel} style={{ marginBottom: '0.5rem', display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Filter by Shop</label>
                         <select
                             value={shopFilter}
@@ -538,7 +536,7 @@ export default function PayoutReportsPage() {
                         </select>
                     </div>
 
-                    <div style={{ minWidth: '150px' }}>
+                    <div className={filters.responsiveControlItem}>
                         <label className={forms.formLabel} style={{ marginBottom: '0.5rem', display: 'block', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Filter by Status</label>
                         <select
                             value={statusFilter}
@@ -548,15 +546,15 @@ export default function PayoutReportsPage() {
                             <option value="all">All Statuses</option>
                             <option value="paid">Paid</option>
                             <option value="pending">Pending</option>
-                            {/* Add more statuses as found in data if needed */}
                         </select>
                     </div>
                 </div>
 
-                <div>
-                    <Button onClick={() => setIsImportModalOpen(true)}>Import XLSX</Button>
+                <div style={{ minWidth: '150px' }}>
+                    <Button onClick={() => setIsImportModalOpen(true)} className={filters.responsiveControlFull}>Import XLSX</Button>
                 </div>
             </div>
+
 
             <div className={layouts.spacingY}></div>
 
