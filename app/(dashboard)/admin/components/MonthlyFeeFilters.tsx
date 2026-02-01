@@ -100,7 +100,7 @@ export function MonthlyFeeFilters({
                         className={styles.filterSelect}
                     >
                         <option value="all">All Owners</option>
-                        {profiles.map(p => (
+                        {profiles.filter(p => p.role === 'admin').map(p => (
                             <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
                         ))}
                     </select>
