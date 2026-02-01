@@ -17,7 +17,10 @@ export default function ShopsPage() {
   const [loading, setLoading] = useState(false);
   const [ownerFilter, setOwnerFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [showArchived, setShowArchived] = useState(false);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedShop, setSelectedShop] = useState<any>(null);
@@ -54,16 +57,16 @@ export default function ShopsPage() {
   const refreshShopsScoped = async () => {
     let query = supabase
       .from('shops')
-      .select('*, owner:profiles!owner_id(full_name, email, role)')
-      .order('name');
+      .select('*, owner:profiles!owner_id(full_name, email, role)');
 
-    if (showArchived) {
+    // Filter by status
+    if (statusFilter === 'archived') {
       query = query.eq('status', 'archived');
+    } else if (statusFilter !== 'all') {
+      query = query.eq('status', statusFilter);
     } else {
+      // When showing "all", exclude archived shops
       query = query.neq('status', 'archived');
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
-      }
     }
 
     if (userRole === 'admin') {
@@ -91,12 +94,34 @@ export default function ShopsPage() {
     }
 
     const { data } = await query;
-    if (data) setShops(data);
+
+    if (data) {
+      // Sort by status (active first), then by owner name, then by shop name
+      const sortedData = data.sort((a, b) => {
+        // First, sort by status (active before inactive)
+        if (a.status === 'active' && b.status !== 'active') return -1;
+        if (a.status !== 'active' && b.status === 'active') return 1;
+
+        // Second, sort by owner name alphabetically
+        const ownerA = (a.owner?.full_name || a.owner?.email || '').toLowerCase();
+        const ownerB = (b.owner?.full_name || b.owner?.email || '').toLowerCase();
+        const ownerCompare = ownerA.localeCompare(ownerB);
+        if (ownerCompare !== 0) return ownerCompare;
+
+        // Third, sort by shop name alphabetically
+        const nameA = (a.name || '').toLowerCase();
+        const nameB = (b.name || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+
+      setShops(sortedData);
+    }
   };
 
   useEffect(() => {
     refreshShopsScoped();
-  }, [supabase, ownerFilter, statusFilter, showArchived]); // Add showArchived depending on if refreshShopsScoped is stable? 
+    setCurrentPage(1); // Reset to page 1 when filters change
+  }, [supabase, ownerFilter, statusFilter]); // Add showArchived depending on if refreshShopsScoped is stable? 
   // refreshShopsScoped inside component depends on state, so better to just use effect to call it.
   // Actually, I should probably rewrite useEffect to call refreshShopsScoped directly or move it.
   // The original code duplicated logic inside useEffect. I'll just use the function.
@@ -119,7 +144,9 @@ export default function ShopsPage() {
       if (currentRole === 'admin') {
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('id, full_name, email')
+          .select('id, full_name, email, role')
+          .neq('role', 'admin')  // Exclude admin users
+          .eq('status', 'active')  // Only active users
           .order('full_name');
         if (profileData) setProfiles(profileData);
       } else if (currentRole === 'leader') {
@@ -150,7 +177,7 @@ export default function ShopsPage() {
     if (!initialLoading) {
       refreshShopsScoped();
     }
-  }, [ownerFilter, statusFilter, showArchived, initialLoading]);
+  }, [ownerFilter, statusFilter, initialLoading]);
 
   // Real-time subscription for shops
   useRealtime({
@@ -272,7 +299,7 @@ export default function ShopsPage() {
       await logHistory(id, 'archived');
       toast.success('Shop archived successfully');
       // If showing archived, it stays (maybe updates status locally). If not, it disappears.
-      if (!showArchived) {
+      if (statusFilter !== 'archived') {
         setShops(prev => prev.filter(s => s.id !== id));
       } else {
         await refreshShopsScoped();
@@ -342,25 +369,12 @@ export default function ShopsPage() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className={styles.filterSelect}
-              disabled={showArchived} // Disable status filter if showing archived
             >
               <option value="all">All Statuses</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
+              <option value="archived">Archived</option>
             </select>
-          </div>
-
-          <div className={styles.checkboxContainer}>
-            <input
-              id="showArchived"
-              type="checkbox"
-              className={styles.checkboxInput}
-              checked={showArchived}
-              onChange={(e) => setShowArchived(e.target.checked)}
-            />
-            <label htmlFor="showArchived" className={styles.checkboxLabel}>
-              Show Archived Shop
-            </label>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', marginLeft: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>
@@ -368,7 +382,7 @@ export default function ShopsPage() {
           </div>
         </div>
 
-        {!showArchived && (
+        {statusFilter !== 'archived' && (
           <div className={styles.newButton}>
             <Button onClick={openCreateModal} fullWidth>
               + New Shop
@@ -382,8 +396,8 @@ export default function ShopsPage() {
       ) : shops.length === 0 ? (
         <Card className={cards.emptyCard}>
           <div className={cards.emptyCardContent}>
-            <p className={cards.emptyCardText}>{showArchived ? 'No archived shops found.' : 'No shops found.'}</p>
-            {!showArchived && (
+            <p className={cards.emptyCardText}>{statusFilter === 'archived' ? 'No archived shops found.' : 'No shops found.'}</p>
+            {statusFilter !== 'archived' && (
               <Button variant="secondary" onClick={openCreateModal}>
                 Create your first shop
               </Button>
@@ -391,18 +405,41 @@ export default function ShopsPage() {
           </div>
         </Card>
       ) : (
-        <ShopsTable
-          shops={shops}
-          userRole={userRole}
-          onEdit={handleEditClick}
-          onArchive={handleArchiveShop} // Logic for Archive button might need to check if shop is already archived?
-          // If viewing archived shops, "Archive" button should probably be hidden or "Restore"?
-          // I didn't implement restore. I'll just hide Archive button if showArchived is true.
-          // Or pass a flag to ShopsTable? Or handled by ShopsTable based on status?
-          // I'll update ShopsTable to hide Archive button if status is archived.
-          onDelete={handleDeleteShop}
-          onHistory={handleViewHistory}
-        />
+        <>
+          <ShopsTable
+            shops={shops.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)}
+            userRole={userRole}
+            onEdit={handleEditClick}
+            onArchive={handleArchiveShop}
+            onDelete={handleDeleteShop}
+            onHistory={handleViewHistory}
+          />
+
+          {/* Pagination Controls */}
+          {shops.length > ITEMS_PER_PAGE && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '1rem', gap: '1rem' }}>
+              <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                Page {currentPage} of {Math.ceil(shops.length / ITEMS_PER_PAGE)} ({shops.length} shops)
+              </span>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <Button
+                  variant="secondary"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => setCurrentPage(prev => Math.min(Math.ceil(shops.length / ITEMS_PER_PAGE), prev + 1))}
+                  disabled={currentPage === Math.ceil(shops.length / ITEMS_PER_PAGE)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Create Shop Modal */}

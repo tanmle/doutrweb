@@ -103,7 +103,7 @@ export default function SalesEntryPage() {
       // Only fetch profiles for admin/leader
       if (['admin', 'leader'].includes(role)) {
         promises.push(
-          supabase.from('profiles').select('id, full_name, email, role').order('full_name')
+          supabase.from('profiles').select('id, full_name, email, role').neq('role', 'admin').eq('status', 'active').order('full_name')
         );
       }
 
