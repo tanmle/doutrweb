@@ -59,6 +59,7 @@ export default function SalesEntryPage() {
   const [ownerFilter, setOwnerFilter] = useState('');
   const [shopFilter, setShopFilter] = useState('all');
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState(''); // Search state
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [userRole, setUserRole] = useState<string>('member'); // Default to member for security
 
@@ -192,6 +193,12 @@ export default function SalesEntryPage() {
       if (orderStatusFilter !== 'all') {
         q = q.eq('order_status', orderStatusFilter);
       }
+
+      if (searchQuery.trim()) {
+        const qStr = searchQuery.trim();
+        q = q.or(`order_id.ilike.%${qStr}%,sku_id.ilike.%${qStr}%,seller_sku.ilike.%${qStr}%,tracking_id.ilike.%${qStr}%`);
+      }
+
       return q;
     };
 
@@ -228,7 +235,8 @@ export default function SalesEntryPage() {
       setFilteredTotals({ quantity: qty, revenue: rev });
     }
     setLoading(false);
-  }, [supabase, dateRange, ownerFilter, shopFilter, orderStatusFilter, userRole, currentPage, pageSize]);
+    setLoading(false);
+  }, [supabase, dateRange, ownerFilter, shopFilter, orderStatusFilter, userRole, currentPage, pageSize, searchQuery]);
 
   useEffect(() => {
     if (userRole) fetchRecords();
@@ -545,6 +553,18 @@ export default function SalesEntryPage() {
 
       <div className={filters.responsiveFilterContainer}>
         <div className={filters.responsiveFilterControls}>
+          {/* Search Input */}
+          <div className={filters.responsiveControlItem} style={{ flexGrow: 1, minWidth: '200px' }}>
+            <input
+              type="text"
+              placeholder="Search Order ID, SKU, Tracking..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              className={forms.formInput}
+              style={{ width: '100%' }}
+            />
+          </div>
+
           <div className={`${filters.filterButtons} ${filters.scrollableButtonGroup}`} style={{ marginBottom: 0 }}>
             <Button
               variant={dateFilter === 'today' ? 'primary' : 'secondary'}

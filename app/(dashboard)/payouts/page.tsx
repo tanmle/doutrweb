@@ -78,7 +78,7 @@ export default function PayoutReportsPage() {
     const [selectedShopId, setSelectedShopId] = useState<string>('');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [shops, setShops] = useState<any[]>([]);
-    const [importResult, setImportResult] = useState<{ imported: number, total: number, errors: string[] } | null>(null);
+    const [importResult, setImportResult] = useState<{ imported: number, total: number, errors: string[], duplicates: string[] } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const supabase = useSupabase();
@@ -371,8 +371,30 @@ export default function PayoutReportsPage() {
                     return row[idx];
                 }
 
+                // Helper to get raw cell object for precision (Large Order IDs)
+                const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+                const startRow = range.s.r;
+                const startCol = range.s.c;
+
                 // First pass: Process all rows for fill-down and parsing
                 const processedRows = rawDataRows.map((row, index) => {
+                    // Calculate absolute row index in the sheet
+                    const absoluteRowIndex = startRow + headerRowIndex + 1 + index;
+
+                    // Helper to safely get string value for IDs (avoiding number precision loss)
+                    const getSafeString = (colIndex: number): string => {
+                        if (colIndex === -1) return '';
+                        const address = XLSX.utils.encode_cell({ r: absoluteRowIndex, c: startCol + colIndex });
+                        const cell = ws[address];
+                        if (!cell) return '';
+                        // Prefer formatted text 'w' if available to avoid scientific notation or rounding of large "numbers"
+                        // But verify it's not empty text masking a value
+                        if (cell.t === 'n' && cell.w) return cell.w;
+                        return String(cell.v || '').trim();
+                    };
+
+                    const getColIndex = (name: string) => headers.indexOf(name.toLowerCase());
+
                     // Optimized Date Parser
                     const parseDateClean = (val: any) => {
                         if (val === undefined || val === null) return null;
@@ -399,12 +421,17 @@ export default function PayoutReportsPage() {
                         } catch { return new Date().toISOString(); }
                     };
 
-                    // Get Raw Values
-                    let orderIdRaw = getValue(row, 'order/adjustment id') || getValue(row, 'order id');
+                    // Get Values using Safe Method for IDs
+                    const orderIdIdx = getColIndex('order/adjustment id') > -1 ? getColIndex('order/adjustment id') : getColIndex('order id');
+                    const skuIdx = getColIndex('sku id') > -1 ? getColIndex('sku id') : getColIndex('sku');
+
+                    let orderIdRaw = orderIdIdx > -1 ? getSafeString(orderIdIdx) : getValue(row, 'order/adjustment id') || getValue(row, 'order id');
+                    let skuRaw = skuIdx > -1 ? getSafeString(skuIdx) : getValue(row, 'sku id') || getValue(row, 'sku');
+
+                    // Regular values
                     let statementDateRaw = getValue(row, 'statement date');
                     let settlementAmountRaw = getValue(row, 'total settlement amount');
                     let quantityRaw = getValue(row, 'quantity');
-                    let skuRaw = getValue(row, 'sku id') || getValue(row, 'sku');
                     let statusRaw = getValue(row, 'status');
                     let createdRaw = getValue(row, 'created time') || getValue(row, 'created date');
                     let orderCreatedRaw = getValue(row, 'order created date') || getValue(row, 'order created time');
@@ -524,8 +551,22 @@ export default function PayoutReportsPage() {
                     throw new Error("No valid records to insert.");
                 }
 
+                // Deduplicate validPayouts to avoid "ON CONFLICT DO UPDATE command cannot affect row a second time"
+                // This ensures we don't try to update the same row multiple times in a single batch
+                const uniquePayoutsMap = new Map();
+                const duplicatesFound: string[] = [];
+
+                validPayouts.forEach(p => {
+                    const key = `${p.order_id}_${p.sku_id}`;
+                    if (uniquePayoutsMap.has(key)) {
+                        duplicatesFound.push(`Order: ${p.order_id}, SKU: ${p.sku_id}`);
+                    }
+                    uniquePayoutsMap.set(key, p);
+                });
+                const uniquePayouts = Array.from(uniquePayoutsMap.values());
+
                 // Upsert
-                const { error: insertError } = await supabase.from('payout_records').upsert(validPayouts, { onConflict: 'order_id, sku_id' });
+                const { error: insertError } = await supabase.from('payout_records').upsert(uniquePayouts, { onConflict: 'order_id, sku_id' });
                 if (insertError) throw insertError;
 
                 // Update Sales Status
@@ -537,12 +578,13 @@ export default function PayoutReportsPage() {
                 const totalRaw = rawDataRows.length;
                 const totalFound = processedRows.length;
 
-                if (errors.length > 0) {
-                    console.error('Import Errors:', errors);
+                if (errors.length > 0 || duplicatesFound.length > 0) {
+                    console.error('Import Errors/Warnings:', { errors, duplicatesFound });
                     setImportResult({
                         imported: validPayouts.length,
                         total: totalFound,
-                        errors
+                        errors,
+                        duplicates: duplicatesFound
                     });
                 } else {
                     toast.success(`Success! Found ${totalFound} records. Imported ${validPayouts.length} entries.`);
@@ -799,36 +841,35 @@ export default function PayoutReportsPage() {
                             <span className={layouts.textMuted}>Failed / Skipped:</span>
                             <span style={{ fontWeight: 600, color: 'var(--danger-color, #ef4444)' }}>{importResult?.errors.length}</span>
                         </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span className={layouts.textMuted}>Duplicates Ignored:</span>
+                            <span style={{ fontWeight: 600, color: '#f59e0b' }}>{importResult?.duplicates?.length || 0}</span>
+                        </div>
                     </div>
 
-                    {importResult && importResult.errors.length > 0 && (
-                        <div>
-                            <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', fontWeight: 600 }}>Error Details:</h4>
-                            <div style={{
-                                maxHeight: '300px',
-                                overflowY: 'auto',
-                                background: 'var(--background-secondary, #f4f4f5)',
-                                padding: '0.75rem',
-                                borderRadius: '6px',
-                                border: '1px solid var(--border)',
-                                fontSize: '0.85rem',
-                                color: 'var(--danger-color, #ef4444)',
-                                fontFamily: 'monospace'
-                            }}>
-                                {importResult.errors.map((err, i) => (
-                                    <div key={i} style={{ marginBottom: '0.5rem', borderBottom: '1px solid var(--border-light, #e4e4e7)', paddingBottom: '0.25rem' }}>
-                                        • {err}
-                                    </div>
-                                ))}
-                            </div>
+                    {importResult?.errors && importResult.errors.length > 0 && (
+                        <div style={{ marginTop: '1rem', maxHeight: '150px', overflowY: 'auto', background: 'var(--muted)', padding: '0.5rem', borderRadius: '4px' }}>
+                            <p style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.5rem' }}>Errors:</p>
+                            <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
+                                {importResult.errors.map((err, i) => <li key={i}>{err}</li>)}
+                            </ul>
                         </div>
                     )}
 
-                    <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+                    {importResult?.duplicates && importResult.duplicates.length > 0 && (
+                        <div style={{ marginTop: '1rem', maxHeight: '150px', overflowY: 'auto', background: 'var(--muted)', padding: '0.5rem', borderRadius: '4px' }}>
+                            <p style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.5rem' }}>Duplicates (Automatically handled):</p>
+                            <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
+                                {importResult.duplicates.map((dup, i) => <li key={i}>{dup}</li>)}
+                            </ul>
+                        </div>
+                    )}
+
+                    <div style={{ marginTop: '1.5rem', textAlign: 'right' }}>
                         <Button onClick={() => setImportResult(null)}>Close</Button>
                     </div>
                 </div>
             </Modal>
-        </div >
+        </div>
     );
 }
