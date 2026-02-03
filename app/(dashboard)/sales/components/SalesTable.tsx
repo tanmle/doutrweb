@@ -143,9 +143,14 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
                                     <span className={sales.statusBadge}>{r.order_status || '-'}</span>
                                 </td>
                                 <td data-label="Payout Status">
-                                    <span style={getStatusBadgeStyle(r.status)}>
-                                        {r.status || 'pending'}
-                                    </span>
+                                    {(() => {
+                                        const displayStatus = r.status || 'Pending';
+                                        return (
+                                            <span style={getStatusBadgeStyle(displayStatus)}>
+                                                {displayStatus}
+                                            </span>
+                                        );
+                                    })()}
                                 </td>
                                 <td data-label="Order Substatus">{r.order_substatus || '-'}</td>
                                 <td data-label="Seller SKU" title={r.product?.name || 'No Product Linked'}>

@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/Button'; // If needed for actions later,
 import { formatCurrency } from '@/utils/formatters';
 import { tables, layouts, sales } from '@/styles/modules';
 import { getUserColor } from '@/utils/userColors';
+import { getStatusBadgeStyle } from '@/utils/statusColors';
+import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
+import { TRUNCATE_ID_LENGTH, TRUNCATE_ID_DISPLAY_LENGTH } from '@/constants/sales'; // Reuse constants
 
 interface PayoutRecord {
     id: string;
@@ -33,7 +36,51 @@ interface PayoutsTableProps {
     loading: boolean;
 }
 
+/**
+ * Renders a truncated ID with copy button (Reused from SalesTable logic)
+ */
+const IdCell = React.memo(({ id, onCopy }: { id: string | null | undefined; onCopy: (id: string) => void }) => {
+    if (!id) return <>-</>;
+
+    const displayId = id.length > TRUNCATE_ID_LENGTH
+        ? id.substring(0, TRUNCATE_ID_DISPLAY_LENGTH) + '...'
+        : id;
+
+    return (
+        <div className={sales.idCell} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <span title={id}>{displayId}</span>
+            <button
+                onClick={() => onCopy(id)}
+                className={sales.copyButton}
+                title="Copy to clipboard"
+                aria-label={`Copy ${id} to clipboard`}
+                style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    opacity: 1,
+                    color: 'white',
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center'
+                }}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+            </button>
+        </div>
+    );
+});
+IdCell.displayName = 'IdCell';
+
 export function PayoutsTable({ records, loading }: PayoutsTableProps) {
+    const { copyToClipboard } = useCopyToClipboard();
+
+    const handleCopy = React.useCallback((text: string) => {
+        copyToClipboard(text);
+    }, [copyToClipboard]);
     if (loading) {
         return (
             <Card>
@@ -94,10 +141,16 @@ export function PayoutsTable({ records, loading }: PayoutsTableProps) {
                                     {r.order_created_date ? new Date(r.order_created_date).toLocaleDateString('vi-VN') : '-'}
                                 </td>
                                 <td data-label="Status">
-                                    <span className={sales.statusBadge}>{r.status}</span>
+                                    <span style={getStatusBadgeStyle(r.status)}>
+                                        {r.status === 'pending' ? 'Pending' : r.status}
+                                    </span>
                                 </td>
-                                <td data-label="Order/Adj ID">{r.order_id}</td>
-                                <td data-label="SKU ID">{r.sku_id}</td>
+                                <td data-label="Order/Adj ID">
+                                    <IdCell id={r.order_id} onCopy={handleCopy} />
+                                </td>
+                                <td data-label="SKU ID">
+                                    <IdCell id={r.sku_id} onCopy={handleCopy} />
+                                </td>
                                 <td data-label="Quantity">{r.quantity}</td>
                                 <td data-label="Settlement Amount" style={{ color: r.settlement_amount > 0 ? '#10b981' : (r.settlement_amount < 0 ? '#f87171' : 'inherit') }}>
                                     {formatCurrency(r.settlement_amount)}

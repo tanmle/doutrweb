@@ -51,6 +51,7 @@ interface PayoutRecord {
 
 export default function PayoutReportsPage() {
     const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
+    const [filteredTotalSettlement, setFilteredTotalSettlement] = useState(0); // New state for total
     const [filter, setFilter] = useState<FilterType>('this_month');
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
     const [kpiStats, setKpiStats] = useState({
@@ -236,12 +237,42 @@ export default function PayoutReportsPage() {
                 .lte('statement_date', dateRange.end);
         }
 
+        // Create explicit totals query
+        let totalsQuery = supabase
+            .from('payout_records')
+            .select('settlement_amount, shop:shops!inner(owner_id)');
+
+        // Apply same filters to totalsQuery
+        if (shopFilter !== 'all') totalsQuery = totalsQuery.eq('shop_id', shopFilter);
+        if (statusFilter !== 'all') totalsQuery = totalsQuery.ilike('status', statusFilter);
+        if (userFilter !== 'all') totalsQuery = totalsQuery.eq('shop.owner_id', userFilter);
+
+        if (filter === 'this_month') {
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            totalsQuery = totalsQuery.gte('statement_date', formatDateKey(startOfMonth));
+        } else if (filter === 'last_month') {
+            const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+            totalsQuery = totalsQuery
+                .gte('statement_date', formatDateKey(startOfLastMonth))
+                .lte('statement_date', formatDateKey(endOfLastMonth));
+        } else if (filter === 'range' && dateRange.start && dateRange.end) {
+            totalsQuery = totalsQuery
+                .gte('statement_date', dateRange.start)
+                .lte('statement_date', dateRange.end);
+        }
+
         const from = (currentPage - 1) * ITEMS_PER_PAGE;
         const to = from + ITEMS_PER_PAGE - 1;
 
-        const { data, error, count } = await query
-            .range(from, to)
-            .limit(ITEMS_PER_PAGE); // Safety limit
+        // Execute in parallel
+        const [pageRes, totalsRes] = await Promise.all([
+            query.range(from, to).limit(ITEMS_PER_PAGE),
+            totalsQuery
+        ]);
+
+        const { data, error, count } = pageRes;
+        const { data: totalsData } = totalsRes;
 
         if (error) {
             console.error('Error fetching payouts', error);
@@ -250,6 +281,12 @@ export default function PayoutReportsPage() {
             if (count !== null) {
                 setTotalRecords(count);
                 setTotalPages(Math.ceil(count / ITEMS_PER_PAGE));
+            }
+
+            // Calculate total from all filtered records
+            if (totalsData) {
+                const total = totalsData.reduce((acc: number, curr: any) => acc + (curr.settlement_amount || 0), 0);
+                setFilteredTotalSettlement(total);
             }
         }
         setLoading(false);
@@ -527,7 +564,7 @@ export default function PayoutReportsPage() {
         reader.readAsArrayBuffer(selectedFile);
     };
 
-    const totalSettlement = payouts.reduce((acc, curr) => acc + (curr.settlement_amount || 0), 0);
+    const totalSettlement = filteredTotalSettlement;
 
     if (loading) return <LoadingIndicator label="Loading payouts..." />;
 
@@ -536,8 +573,8 @@ export default function PayoutReportsPage() {
             <div className={cards.cardGridTwoCol}>
                 <StatCard
                     label="Total Settlement"
-                    value={formatCurrency(payouts.reduce((acc, curr) => acc + (curr.settlement_amount || 0), 0))}
-                    subtext={`${payouts.length} records`}
+                    value={formatCurrency(filteredTotalSettlement)}
+                    subtext={`${totalRecords} records`}
                     variant="success"
                 />
 
