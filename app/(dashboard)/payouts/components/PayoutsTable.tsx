@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button'; // If needed for actions later, or just clean table
 import { formatCurrency } from '@/utils/formatters';
 import { tables, layouts, sales } from '@/styles/modules';
+import { getUserColor } from '@/utils/userColors';
 
 interface PayoutRecord {
     id: string;
@@ -20,6 +21,7 @@ interface PayoutRecord {
     shop?: {
         name: string;
         owner?: {
+            id: string;
             full_name: string | null;
             email: string;
         }
@@ -72,7 +74,14 @@ export function PayoutsTable({ records, loading }: PayoutsTableProps) {
                         records.map((r) => (
                             <tr key={r.id || Math.random()}>
                                 <td data-label="Owner">
-                                    {r.shop?.owner?.full_name || r.shop?.owner?.email || '-'}
+                                    <span
+                                        style={{
+                                            color: getUserColor(r.shop?.owner?.['id'] || ''), // Assuming owner object might not have ID directly exposed in type yet, checking usage
+                                            fontWeight: 600
+                                        }}
+                                    >
+                                        {r.shop?.owner?.full_name || r.shop?.owner?.email || '-'}
+                                    </span>
                                 </td>
                                 <td data-label="Shop">
                                     {r.shop?.name || '-'}

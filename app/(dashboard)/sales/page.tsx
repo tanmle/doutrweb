@@ -626,9 +626,11 @@ export default function SalesEntryPage() {
               onChange={(e) => { setShopFilter(e.target.value); setCurrentPage(1); }}
             >
               <option value="all">All Shops</option>
-              {shops.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
+              {shops
+                .filter(s => !ownerFilter || s.owner_id === ownerFilter)
+                .map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
             </select>
           </div>
 
