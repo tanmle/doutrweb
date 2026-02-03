@@ -66,6 +66,7 @@ export default function PayoutReportsPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalRecords, setTotalRecords] = useState(0);
+    const [pageSize, setPageSize] = useState<number>(ITEMS_PER_PAGE);
 
     const [loading, setLoading] = useState(true);
     const [importing, setImporting] = useState(false);
@@ -262,12 +263,12 @@ export default function PayoutReportsPage() {
                 .lte('statement_date', dateRange.end);
         }
 
-        const from = (currentPage - 1) * ITEMS_PER_PAGE;
-        const to = from + ITEMS_PER_PAGE - 1;
+        const from = (currentPage - 1) * pageSize;
+        const to = from + pageSize - 1;
 
         // Execute in parallel
         const [pageRes, totalsRes] = await Promise.all([
-            query.range(from, to).limit(ITEMS_PER_PAGE),
+            query.range(from, to).limit(pageSize),
             totalsQuery
         ]);
 
@@ -280,7 +281,7 @@ export default function PayoutReportsPage() {
             setPayouts(data as PayoutRecord[]);
             if (count !== null) {
                 setTotalRecords(count);
-                setTotalPages(Math.ceil(count / ITEMS_PER_PAGE));
+                setTotalPages(Math.ceil(count / pageSize));
             }
 
             // Calculate total from all filtered records
@@ -295,7 +296,7 @@ export default function PayoutReportsPage() {
     useEffect(() => {
         fetchPayouts();
         fetchKPI();
-    }, [filter, dateRange, userFilter, shopFilter, statusFilter, userRole, currentPage]);
+    }, [filter, dateRange, userFilter, shopFilter, statusFilter, userRole, currentPage, pageSize]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -699,29 +700,47 @@ export default function PayoutReportsPage() {
             <PayoutsTable records={payouts} loading={loading} />
 
             {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '1rem', gap: '1rem' }}>
-                    <span className={layouts.textMuted} style={{ fontSize: '0.875rem' }}>
-                        Page {currentPage} of {totalPages} ({totalRecords.toLocaleString()} items)
-                    </span>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <Button
-                            variant="secondary"
-                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1 || loading}
-                        >
-                            Previous
-                        </Button>
-                        <Button
-                            variant="secondary"
-                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages || loading}
-                        >
-                            Next
-                        </Button>
-                    </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '1rem', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span className={layouts.textMuted} style={{ fontSize: '0.875rem' }}>Rows per page:</span>
+                    <select
+                        className={forms.formSelect}
+                        style={{ width: 'auto', padding: '0.25rem 2rem 0.25rem 0.5rem', fontSize: '0.875rem' }}
+                        value={pageSize}
+                        onChange={(e) => {
+                            setPageSize(Number(e.target.value));
+                            setCurrentPage(1);
+                        }}
+                    >
+                        <option value={ITEMS_PER_PAGE}>20</option>
+                        <option value={10000}>All</option>
+                    </select>
                 </div>
-            )}
+
+                {totalPages > 1 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <span className={layouts.textMuted} style={{ fontSize: '0.875rem' }}>
+                            Page {currentPage} of {totalPages} ({totalRecords.toLocaleString()} items)
+                        </span>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <Button
+                                variant="secondary"
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1 || loading}
+                            >
+                                Previous
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages || loading}
+                            >
+                                Next
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </div>
 
             <Modal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} title="Import Payouts XLSX">
                 <form onSubmit={handleImportSubmit} className={forms.form}>

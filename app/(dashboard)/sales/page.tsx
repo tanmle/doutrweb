@@ -47,9 +47,11 @@ export default function SalesEntryPage() {
   const [shops, setShops] = useState<Shop[]>([]);
 
   // Pagination State
+  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
+  const [pageSize, setPageSize] = useState<number>(ITEMS_PER_PAGE);
 
   // Filters State
   const [dateFilter, setDateFilter] = useState<DateFilterType>('today');
@@ -198,8 +200,8 @@ export default function SalesEntryPage() {
     totalsQuery = applyFilters(totalsQuery);
 
     // Filter Logic Done, now Paginating MAIN query
-    const from = (currentPage - 1) * ITEMS_PER_PAGE;
-    const to = from + ITEMS_PER_PAGE - 1;
+    const from = (currentPage - 1) * pageSize;
+    const to = from + pageSize - 1;
 
     // Execute Parallel: Get Page Data AND Get Totals Data
     const [pageRes, totalsRes] = await Promise.all([
@@ -215,7 +217,7 @@ export default function SalesEntryPage() {
       setRecords(pageData as any);
       if (count !== null) {
         setTotalRecords(count);
-        setTotalPages(Math.ceil(count / ITEMS_PER_PAGE));
+        setTotalPages(Math.ceil(count / pageSize));
       }
     }
 
@@ -226,7 +228,7 @@ export default function SalesEntryPage() {
       setFilteredTotals({ quantity: qty, revenue: rev });
     }
     setLoading(false);
-  }, [supabase, dateRange, ownerFilter, shopFilter, orderStatusFilter, userRole, currentPage]);
+  }, [supabase, dateRange, ownerFilter, shopFilter, orderStatusFilter, userRole, currentPage, pageSize]);
 
   useEffect(() => {
     if (userRole) fetchRecords();
@@ -666,29 +668,47 @@ export default function SalesEntryPage() {
       />
 
       {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '1rem', gap: '1rem' }}>
-          <span className={layouts.textMuted} style={{ fontSize: '0.875rem' }}>
-            Page {currentPage} of {totalPages} ({totalRecords.toLocaleString()} items)
-          </span>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <Button
-              variant="secondary"
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1 || loading}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages || loading}
-            >
-              Next
-            </Button>
-          </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '1rem', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span className={layouts.textMuted} style={{ fontSize: '0.875rem' }}>Rows per page:</span>
+          <select
+            className={forms.formSelect}
+            style={{ width: 'auto', padding: '0.25rem 2rem 0.25rem 0.5rem', fontSize: '0.875rem' }}
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+          >
+            <option value={ITEMS_PER_PAGE}>20</option>
+            <option value={10000}>All</option>
+          </select>
         </div>
-      )}
+
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span className={layouts.textMuted} style={{ fontSize: '0.875rem' }}>
+              Page {currentPage} of {totalPages} ({totalRecords.toLocaleString()} items)
+            </span>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <Button
+                variant="secondary"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1 || loading}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages || loading}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
 
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Sales Record">
         <form onSubmit={handleUpdate} className={forms.form}>
