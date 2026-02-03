@@ -554,15 +554,43 @@ export default function SalesEntryPage() {
       <div className={filters.responsiveFilterContainer}>
         <div className={filters.responsiveFilterControls}>
           {/* Search Input */}
-          <div className={filters.responsiveControlItem} style={{ flexGrow: 1, minWidth: '200px' }}>
+          <div className={filters.responsiveControlItem} style={{ flexGrow: 1, minWidth: '200px', position: 'relative' }}>
             <input
               type="text"
               placeholder="Search Order ID, SKU, Tracking..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
               className={forms.formInput}
-              style={{ width: '100%' }}
+              style={{ width: '100%', paddingRight: '2rem' }}
             />
+            {searchQuery && (
+              <button
+                onClick={() => { setSearchQuery(''); setCurrentPage(1); }}
+                style={{
+                  position: 'absolute',
+                  right: '0.5rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--muted-foreground)',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  lineHeight: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '1.5rem',
+                  height: '1.5rem',
+                  borderRadius: '50%',
+                }}
+                title="Clear search"
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                ×
+              </button>
+            )}
           </div>
 
           <div className={`${filters.filterButtons} ${filters.scrollableButtonGroup}`} style={{ marginBottom: 0 }}>
