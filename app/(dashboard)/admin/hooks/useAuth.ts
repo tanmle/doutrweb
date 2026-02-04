@@ -15,14 +15,14 @@ export function useAuth() {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
-      
+
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .single();
-        
+
         if (profile) {
           setCurrentUserRole(profile.role);
           if (profile.role !== 'admin') {
@@ -32,16 +32,16 @@ export function useAuth() {
       } else {
         router.push('/login');
       }
-      
+
       setIsLoading(false);
     };
-    
+
     getUser();
   }, [supabase, router]);
 
   const canEditUser = (targetRole: string) => {
     if (currentUserRole === 'admin') {
-      return targetRole === 'leader' || targetRole === 'member';
+      return true;
     }
     if (currentUserRole === 'leader') {
       return targetRole === 'member';
