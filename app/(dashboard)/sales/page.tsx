@@ -10,7 +10,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useSupabase } from '@/contexts/SupabaseContext';
 import { formatCurrency } from '@/utils/formatters';
-import { getDateRange } from '@/utils/dateHelpers';
+import { getDateRange, getLocalYYYYMMDD } from '@/utils/dateHelpers';
 import { ITEMS_PER_PAGE, CSV_COLUMNS, ERROR_MESSAGES } from '@/constants/sales';
 import { SalesTable } from './components';
 import { forms, layouts, filters, cards } from '@/styles/modules';
@@ -55,7 +55,8 @@ export default function SalesEntryPage() {
 
   // Filters State
   const [dateFilter, setDateFilter] = useState<DateFilterType>('today');
-  const [dateRange, setDateRange] = useState<DateRange>(getDateRange('this_month'));
+  const [dateRange, setDateRange] = useState<DateRange>(getDateRange('today')); // Initialize with correct initial state if possible, though useEffect will override
+  // Note: We might want to init with yesterday if 'today' is default, but useEffect will run on mount/change.
   const [ownerFilter, setOwnerFilter] = useState('');
   const [shopFilter, setShopFilter] = useState('all');
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
@@ -138,7 +139,17 @@ export default function SalesEntryPage() {
   // Update date range when filter type changes
   useEffect(() => {
     if (dateFilter !== 'range') {
-      const newRange = getDateRange(dateFilter);
+      let newRange: DateRange;
+
+      if (dateFilter === 'today') {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yStr = getLocalYYYYMMDD(yesterday);
+        newRange = { start: yStr, end: yStr };
+      } else {
+        newRange = getDateRange(dateFilter);
+      }
+
       setDateRange(newRange);
       // Reset page when date filter type creates a new range
       if (newRange.start !== dateRange.start || newRange.end !== dateRange.end) {
