@@ -3,7 +3,8 @@
 import React from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button'; // If needed for actions later, or just clean table
-import { formatCurrency } from '@/utils/formatters';
+import { formatCurrency } from '@/utils/currency';
+import { formatDate } from '@/utils/dateHelpers';
 import { tables, layouts, sales } from '@/styles/modules';
 import { getUserColor } from '@/utils/userColors';
 import { getStatusBadgeStyle } from '@/utils/statusColors';
@@ -135,10 +136,10 @@ export function PayoutsTable({ records, loading }: PayoutsTableProps) {
                                 </td>
                                 <td data-label="Statement Date">{r.statement_date}</td>
                                 <td data-label="Created Date">
-                                    {r.created_at ? new Date(r.created_at).toLocaleDateString('vi-VN') : '-'}
+                                    {formatDate(r.created_at)}
                                 </td>
                                 <td data-label="Order Date">
-                                    {r.order_created_date ? new Date(r.order_created_date).toLocaleDateString('vi-VN') : '-'}
+                                    {formatDate(r.order_created_date)}
                                 </td>
                                 <td data-label="Status">
                                     <span style={getStatusBadgeStyle(r.status)}>

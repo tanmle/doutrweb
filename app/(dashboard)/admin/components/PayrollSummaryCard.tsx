@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatCurrency } from '@/utils/currency';
+import { formatVND } from '../utils/formatters';
 import styles from './AdminComponents.module.css';
 
 interface PayrollSummaryCardProps {
@@ -13,11 +13,11 @@ export function PayrollSummaryCard({ baseSalary, totalSalary, status }: PayrollS
         <div className={styles.payrollSummary}>
             <div className={styles.payrollSummaryRow}>
                 <span className={styles.payrollSummaryLabel}>Base Salary:</span>
-                <span className={styles.payrollSummaryValue}>{formatCurrency(baseSalary)}</span>
+                <span className={styles.payrollSummaryValue}>{formatVND(baseSalary)}</span>
             </div>
             <div className={styles.payrollSummaryRowSpaced}>
                 <span className={styles.payrollSummaryTotalLabel}>Total Salary:</span>
-                <span className={styles.payrollSummaryTotalValue}>{formatCurrency(totalSalary)}</span>
+                <span className={styles.payrollSummaryTotalValue}>{formatVND(totalSalary)}</span>
             </div>
             <div className={styles.payrollSummaryRowBordered}>
                 <span className={styles.payrollSummaryLabel}>Status:</span>

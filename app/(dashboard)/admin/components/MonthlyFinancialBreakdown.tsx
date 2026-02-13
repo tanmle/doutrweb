@@ -3,6 +3,8 @@
 import React from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { formatCurrency } from '@/utils/currency';
+import { formatVND } from '../utils/formatters';
+import { formatDate } from '@/utils/dateHelpers';
 import { tables } from '@/styles/modules';
 import styles from './AdminComponents.module.css';
 
@@ -83,7 +85,7 @@ export function MonthlyFinancialBreakdown({
                             <div>
                                 <strong>Net Cash Flow:</strong>{' '}
                                 <span style={{ color: totals.netCashFlow >= 0 ? '#10b981' : '#ef4444' }}>
-                                    {formatCurrency(totals.netCashFlow)}
+                                    {formatVND(totals.netCashFlow)}
                                 </span>
                             </div>
                         </div>
@@ -106,7 +108,7 @@ export function MonthlyFinancialBreakdown({
                                     {data.map((item) => {
                                         const [year, month] = item.month.split('-');
                                         const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-                                        const monthName = date.toLocaleDateString('en-US', {
+                                        const monthName = formatDate(date, {
                                             year: 'numeric',
                                             month: 'short'
                                         });
@@ -115,22 +117,22 @@ export function MonthlyFinancialBreakdown({
                                             <tr key={item.month}>
                                                 <td data-label="Month"><strong>{monthName}</strong></td>
                                                 <td data-label="Capital" style={{ color: '#3b82f6' }}>
-                                                    {formatCurrency(item.capital)}
+                                                    {formatVND(item.capital)}
                                                 </td>
                                                 <td data-label="Income" style={{ color: '#10b981' }}>
-                                                    {formatCurrency(item.income)}
+                                                    {formatVND(item.income)}
                                                 </td>
                                                 <td data-label="Monthly Fees" style={{ color: '#6366f1' }}>
-                                                    {formatCurrency(item.monthlyFees)}
+                                                    {formatVND(item.monthlyFees)}
                                                 </td>
                                                 <td data-label="Selling Fees" style={{ color: '#8b5cf6' }}>
-                                                    {formatCurrency(item.sellingFees)}
+                                                    {formatVND(item.sellingFees)}
                                                 </td>
                                                 <td data-label="Payroll" style={{ color: '#f59e0b' }}>
-                                                    {formatCurrency(item.payroll)}
+                                                    {formatVND(item.payroll)}
                                                 </td>
                                                 <td data-label="Total Expenses">
-                                                    <strong>{formatCurrency(item.totalExpenses)}</strong>
+                                                    <strong>{formatVND(item.totalExpenses)}</strong>
                                                 </td>
                                                 <td
                                                     data-label="Net Cash Flow"
@@ -139,7 +141,7 @@ export function MonthlyFinancialBreakdown({
                                                         fontWeight: 'bold'
                                                     }}
                                                 >
-                                                    {formatCurrency(item.netCashFlow)}
+                                                    {formatVND(item.netCashFlow)}
                                                 </td>
                                             </tr>
                                         );
@@ -147,22 +149,22 @@ export function MonthlyFinancialBreakdown({
                                     <tr className={styles.totalRow}>
                                         <td className={styles.totalLabel}><strong>Total</strong></td>
                                         <td className={styles.totalPrice} style={{ color: '#3b82f6' }}>
-                                            <strong>{formatCurrency(totals.capital)}</strong>
+                                            <strong>{formatVND(totals.capital)}</strong>
                                         </td>
                                         <td className={styles.totalPrice} style={{ color: '#10b981' }}>
-                                            <strong>{formatCurrency(totals.income)}</strong>
+                                            <strong>{formatVND(totals.income)}</strong>
                                         </td>
                                         <td className={styles.totalPrice} style={{ color: '#6366f1' }}>
-                                            <strong>{formatCurrency(totals.monthlyFees)}</strong>
+                                            <strong>{formatVND(totals.monthlyFees)}</strong>
                                         </td>
                                         <td className={styles.totalPrice} style={{ color: '#8b5cf6' }}>
-                                            <strong>{formatCurrency(totals.sellingFees)}</strong>
+                                            <strong>{formatVND(totals.sellingFees)}</strong>
                                         </td>
                                         <td className={styles.totalPrice} style={{ color: '#f59e0b' }}>
-                                            <strong>{formatCurrency(totals.payroll)}</strong>
+                                            <strong>{formatVND(totals.payroll)}</strong>
                                         </td>
                                         <td className={styles.totalPrice}>
-                                            <strong>{formatCurrency(totals.totalExpenses)}</strong>
+                                            <strong>{formatVND(totals.totalExpenses)}</strong>
                                         </td>
                                         <td
                                             className={styles.totalPrice}
@@ -170,7 +172,7 @@ export function MonthlyFinancialBreakdown({
                                                 color: totals.netCashFlow >= 0 ? '#10b981' : '#ef4444'
                                             }}
                                         >
-                                            <strong>{formatCurrency(totals.netCashFlow)}</strong>
+                                            <strong>{formatVND(totals.netCashFlow)}</strong>
                                         </td>
                                     </tr>
                                 </tbody>

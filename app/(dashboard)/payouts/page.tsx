@@ -6,7 +6,8 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { StatCard } from '@/components/ui/StatCard';
 import { useSupabase } from '@/contexts/SupabaseContext';
-import { formatCurrency, formatDateKey } from '@/utils/formatters';
+import { formatCurrency } from '@/utils/currency';
+import { formatDateKey } from '@/utils/dateHelpers';
 import { layouts, cards, tables, filters, forms } from '@/styles/modules';
 import { useToast } from '@/components/ui/ToastProvider';
 

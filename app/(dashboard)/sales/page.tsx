@@ -9,7 +9,7 @@ import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { StatCard } from '@/components/ui/StatCard';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useSupabase } from '@/contexts/SupabaseContext';
-import { formatCurrency } from '@/utils/formatters';
+import { formatCurrency } from '@/utils/currency';
 import { getDateRange, getLocalYYYYMMDD } from '@/utils/dateHelpers';
 import { ITEMS_PER_PAGE, CSV_COLUMNS, ERROR_MESSAGES } from '@/constants/sales';
 import { SalesTable } from './components';

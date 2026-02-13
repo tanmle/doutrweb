@@ -10,7 +10,7 @@ export const APP_CONSTANTS = {
     MAX_RECORDS_PER_PAGE: 50,
 
     // Formatting
-    DATE_FORMAT: 'vi-VN',
+    DATE_FORMAT: 'en-US',
     CURRENCY: 'USD',
 
     // API

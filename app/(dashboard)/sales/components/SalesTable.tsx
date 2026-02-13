@@ -3,7 +3,8 @@
 import React, { useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { formatCurrency } from '@/utils/formatters';
+import { formatCurrency } from '@/utils/currency';
+import { formatDate } from '@/utils/dateHelpers';
 import { getStatusBadgeStyle } from '@/utils/statusColors';
 import { TRUNCATE_ID_LENGTH, TRUNCATE_ID_DISPLAY_LENGTH } from '@/constants/sales';
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
@@ -158,7 +159,7 @@ export function SalesTable({ records, loading, onDelete }: Omit<SalesTableProps,
                                 </td>
                                 <td data-label="Quantity">{r.items_sold}</td>
                                 <td data-label="Amount">{formatCurrency(r.revenue)}</td>
-                                <td data-label="Order Date">{new Date(r.date).toLocaleDateString('vi-VN')}</td>
+                                <td data-label="Order Date">{formatDate(r.date)}</td>
                                 <td data-label="Action">
                                     <Button
                                         variant="secondary"

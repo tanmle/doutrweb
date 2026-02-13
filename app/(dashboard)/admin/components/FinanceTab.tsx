@@ -8,6 +8,8 @@ import type { Capital, Income } from '../utils/types';
 import { cards, tables, filters, layouts } from '@/styles/modules';
 import styles from './AdminComponents.module.css';
 import { formatCurrency } from '@/utils/currency';
+import { formatVND } from '../utils/formatters';
+import { formatDate } from '@/utils/dateHelpers';
 
 interface FinanceTabProps {
     loading: boolean;
@@ -99,32 +101,32 @@ export function FinanceTab({
             <div className={cards.cardGridFourCol}>
                 <Card className={cards.statCardPrimary}>
                     <div className={cards.statLabel}>Total Capital</div>
-                    <div className={cards.statValue}>{formatCurrency(metrics.totalCapital)}</div>
+                    <div className={cards.statValue}>{formatVND(metrics.totalCapital)}</div>
                     <div className={cards.statSubtext}>{capitalRecords.length} entries</div>
                 </Card>
                 <Card className={cards.statCardSuccess}>
                     <div className={cards.statLabel}>Total Income</div>
-                    <div className={cards.statValue}>{formatCurrency(metrics.totalIncome)}</div>
+                    <div className={cards.statValue}>{formatVND(metrics.totalIncome)}</div>
                     <div className={cards.statSubtext}>{incomeRecords.length} sources</div>
                 </Card>
                 <Card className={cards.statCardWarning}>
                     <div className={cards.statLabel}>Total Expenses</div>
-                    <div className={cards.statValue}>{formatCurrency(metrics.totalExpenses)}</div>
+                    <div className={cards.statValue}>{formatVND(metrics.totalExpenses)}</div>
                     <div className={cards.statSubtext}>
-                        Fees: {formatCurrency(monthlyFees.total + sellingFees.total)} |
-                        Payroll: {formatCurrency(payrollTotal)}
+                        Fees: {formatVND(monthlyFees.total + sellingFees.total)} |
+                        Payroll: {formatVND(payrollTotal)}
                     </div>
                 </Card>
                 <Card className={metrics.netProfit >= 0 ? cards.statCardSuccess : cards.statCardDanger}>
                     <div className={cards.statLabel}>Net Profit</div>
-                    <div className={cards.statValue}>{formatCurrency(metrics.netProfit)}</div>
+                    <div className={cards.statValue}>{formatVND(metrics.netProfit)}</div>
                     <div className={cards.statSubtext}>
                         ROI: {metrics.roi.toFixed(2)}%
                     </div>
                 </Card>
                 <Card className={metrics.cashFlow >= 0 ? cards.statCardSuccess : cards.statCardDanger}>
                     <div className={cards.statLabel}>Cash Balance</div>
-                    <div className={cards.statValue}>{formatCurrency(metrics.cashFlow)}</div>
+                    <div className={cards.statValue}>{formatVND(metrics.cashFlow)}</div>
                     <div className={cards.statSubtext}>
                         Capital + Income - Expenses
                     </div>
@@ -145,7 +147,7 @@ export function FinanceTab({
                             Monthly Fees
                         </div>
                         <div className={styles.expenseValue}>
-                            <strong>{formatCurrency(monthlyFees.total)}</strong>
+                            <strong>{formatVND(monthlyFees.total)}</strong>
                             <span className={styles.expenseCount}>({monthlyFees.count} items)</span>
                         </div>
                     </div>
@@ -159,7 +161,7 @@ export function FinanceTab({
                             Selling Fees
                         </div>
                         <div className={styles.expenseValue}>
-                            <strong>{formatCurrency(sellingFees.total)}</strong>
+                            <strong>{formatVND(sellingFees.total)}</strong>
                             <span className={styles.expenseCount}>({sellingFees.count} items)</span>
                         </div>
                     </div>
@@ -173,7 +175,7 @@ export function FinanceTab({
                             Payroll
                         </div>
                         <div className={styles.expenseValue}>
-                            <strong>{formatCurrency(payrollTotal)}</strong>
+                            <strong>{formatVND(payrollTotal)}</strong>
                         </div>
                     </div>
                 </div>
@@ -205,9 +207,9 @@ export function FinanceTab({
                             ) : (
                                 capitalRecords.map(record => (
                                     <tr key={record.id}>
-                                        <td data-label="Date">{new Date(record.date).toLocaleDateString()}</td>
+                                        <td data-label="Date">{formatDate(record.date)}</td>
                                         <td data-label="Amount">
-                                            <strong>{formatCurrency(record.amount)}</strong>
+                                            <strong>{formatVND(record.amount)}</strong>
                                         </td>
                                         <td data-label="Note">{record.note || '-'}</td>
                                         <td data-label="Actions">
@@ -227,7 +229,7 @@ export function FinanceTab({
                                 <tr className={styles.totalRow}>
                                     <td className={styles.totalLabel}><strong>Total</strong></td>
                                     <td className={styles.totalPrice}>
-                                        <strong>{formatCurrency(metrics.totalCapital)}</strong>
+                                        <strong>{formatVND(metrics.totalCapital)}</strong>
                                     </td>
                                     <td colSpan={2}></td>
                                 </tr>
@@ -269,10 +271,10 @@ export function FinanceTab({
 
                                     return paginatedRecords.map(record => (
                                         <tr key={record.id}>
-                                            <td data-label="Date">{new Date(record.date).toLocaleDateString()}</td>
+                                            <td data-label="Date">{formatDate(record.date)}</td>
                                             <td data-label="Source">{record.source}</td>
                                             <td data-label="Amount">
-                                                <strong>{formatCurrency(record.amount)}</strong>
+                                                <strong>{formatVND(record.amount)}</strong>
                                             </td>
                                             <td data-label="Note">{record.note || '-'}</td>
                                             <td data-label="Actions">
@@ -293,7 +295,7 @@ export function FinanceTab({
                                 <tr className={styles.totalRow}>
                                     <td colSpan={2} className={styles.totalLabel}><strong>Total</strong></td>
                                     <td className={styles.totalPrice}>
-                                        <strong>{formatCurrency(metrics.totalIncome)}</strong>
+                                        <strong>{formatVND(metrics.totalIncome)}</strong>
                                     </td>
                                     <td colSpan={2}></td>
                                 </tr>

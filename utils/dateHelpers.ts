@@ -114,19 +114,43 @@ export const getDashboardStartDate = (): string => {
     return getLocalYYYYMMDD(startDate);
 };
 
+export const formatDate = (
+    date: string | Date | null | undefined,
+    options?: Intl.DateTimeFormatOptions
+): string => {
+    if (!date) return '-';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return '-';
+
+    return d.toLocaleDateString('en-US', options);
+};
+
+export const formatDateTime = (date: string | Date) => {
+    return formatDate(date, {
+        dateStyle: 'short',
+        timeStyle: 'short'
+    });
+};
+
+export const formatDateKey = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+export const parseDateKey = (dateKey: string): Date => {
+    const [year, month, day] = dateKey.split('-').map(Number);
+    return new Date(year, (month ?? 1) - 1, day ?? 1);
+};
+
 /**
- * Formats a date string for display in the user's locale.
- * 
- * @param dateStr - Date string (YYYY-MM-DD or ISO format)
- * @param locale - Locale string (defaults to 'vi-VN')
- * @param options - Intl.DateTimeFormat options
- * @returns Formatted date string
+ * @deprecated Use formatDate instead
  */
 export const formatDateForDisplay = (
     dateStr: string,
-    locale: string = 'vi-VN',
+    locale: string = 'en-US',
     options?: Intl.DateTimeFormatOptions
 ): string => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString(locale, options);
+    return formatDate(dateStr, options);
 };

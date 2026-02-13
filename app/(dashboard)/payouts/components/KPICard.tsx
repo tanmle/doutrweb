@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/Card';
 import styles from './KPICard.module.css';
-import { formatCurrency } from '@/utils/formatters';
+import { formatCurrency } from '@/utils/currency';
 
 export interface KPICardProps {
     currentKPI: number;

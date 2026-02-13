@@ -7,8 +7,8 @@ import { StatCard } from '@/components/ui/StatCard';
 import { RoleBadge } from '@/components/ui/RoleBadge';
 import type { UserRole } from '@/components/ui/RoleBadge';
 import { useSupabase } from '@/contexts/SupabaseContext';
-import { formatCurrency } from '@/utils/formatters';
-import { getLocalYYYYMMDD, getDashboardStartDate, isDateInRange, getStartOfWeek } from '@/utils/dateHelpers';
+import { formatCurrency } from '@/utils/currency';
+import { getLocalYYYYMMDD, getDashboardStartDate, isDateInRange, getStartOfWeek, formatDate } from '@/utils/dateHelpers';
 import { AREA_COLORS } from '@/constants/app';
 import { cards, layouts, filters, dashboard } from '@/styles/modules';
 import {
@@ -374,8 +374,7 @@ export default function DashboardPage() {
                     tickLine={false}
                     axisLine={false}
                     tickFormatter={(str) => {
-                      const date = new Date(str);
-                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      return formatDate(str, { month: 'short', day: 'numeric' });
                     }}
                   />
                   <YAxis

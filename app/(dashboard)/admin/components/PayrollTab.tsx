@@ -7,7 +7,7 @@ import type { UserRole } from '@/components/ui/RoleBadge';
 import { PayrollRecord, User } from '../utils/types';
 import { forms, cards, tables, filters, layouts } from '@/styles/modules';
 import styles from './AdminComponents.module.css';
-import { formatCurrency } from '@/utils/currency';
+import { formatVND } from '../utils/formatters';
 
 interface PayrollTabProps {
     payrollRecords: PayrollRecord[];
@@ -57,11 +57,11 @@ export function PayrollTab({
             <div className={cards.cardGridThreeCol}>
                 <Card className={cards.statCard}>
                     <div className={cards.statLabel}>Total Payroll</div>
-                    <div className={cards.statValue}>{formatCurrency(totalSalary)}</div>
+                    <div className={cards.statValue}>{formatVND(totalSalary)}</div>
                 </Card>
                 <Card className={cards.statCardSuccess}>
                     <div className={cards.statLabel}>Total Paid</div>
-                    <div className={cards.statValue}>{formatCurrency(totalPaid)}</div>
+                    <div className={cards.statValue}>{formatVND(totalPaid)}</div>
                 </Card>
                 <Card className={cards.statCardWarning}>
                     <div className={cards.statLabel}>Pending Users</div>
@@ -129,16 +129,16 @@ export function PayrollTab({
                                         </div>
                                     </td>
                                     <td data-label="Base Salary">
-                                        {formatCurrency(record.user?.base_salary || 0)}
+                                        {formatVND(record.user?.base_salary || 0)}
                                     </td>
                                     <td data-label="Work Days">
                                         <span>{record.standard_work_days} / <strong>{record.actual_work_days}</strong></span>
                                     </td>
                                     <td data-label="Bonus">
-                                        {formatCurrency(record.bonus || 0)}
+                                        {formatVND(record.bonus || 0)}
                                     </td>
                                     <td data-label="Total Salary">
-                                        <strong>{formatCurrency(record.total_salary || 0)}</strong>
+                                        <strong>{formatVND(record.total_salary || 0)}</strong>
                                     </td>
                                     <td data-label="Status">
                                         <span className={`${tables.tableBadge} ${getStatusClass(record.status)}`}>

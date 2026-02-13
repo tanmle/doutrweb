@@ -3,6 +3,8 @@
 import React from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { formatCurrency } from '@/utils/currency';
+import { formatVND } from '../utils/formatters';
+import { formatDate } from '@/utils/dateHelpers';
 import { tables } from '@/styles/modules';
 import styles from './AdminComponents.module.css';
 
@@ -45,7 +47,7 @@ export function ExpenseBreakdownModal({
                     <>
                         <div className={styles.summaryInfo}>
                             <div>
-                                <strong>Total:</strong> {formatCurrency(grandTotal)}
+                                <strong>Total:</strong> {formatVND(grandTotal)}
                             </div>
                             <div>
                                 <strong>Items:</strong> {totalCount}
@@ -66,7 +68,7 @@ export function ExpenseBreakdownModal({
                                         // Parse YYYY-MM format
                                         const [year, month] = item.month.split('-');
                                         const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-                                        const monthName = date.toLocaleDateString('en-US', {
+                                        const monthName = formatDate(date, {
                                             year: 'numeric',
                                             month: 'long'
                                         });
@@ -75,7 +77,7 @@ export function ExpenseBreakdownModal({
                                             <tr key={item.month}>
                                                 <td data-label="Month">{monthName}</td>
                                                 <td data-label="Total Amount">
-                                                    <strong>{formatCurrency(item.total)}</strong>
+                                                    <strong>{formatVND(item.total)}</strong>
                                                 </td>
                                                 <td data-label="Count">{item.count} items</td>
                                             </tr>
@@ -84,7 +86,7 @@ export function ExpenseBreakdownModal({
                                     <tr className={styles.totalRow}>
                                         <td className={styles.totalLabel}><strong>Total</strong></td>
                                         <td className={styles.totalPrice}>
-                                            <strong>{formatCurrency(grandTotal)}</strong>
+                                            <strong>{formatVND(grandTotal)}</strong>
                                         </td>
                                         <td><strong>{totalCount} items</strong></td>
                                     </tr>

@@ -3,7 +3,8 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { PayrollRecord, SalaryPeriod } from '../utils/types';
-import { formatCurrency, parseCurrency } from '@/utils/currency';
+import { parseCurrency } from '@/utils/currency';
+import { formatInputVND } from '../utils/formatters';
 import { PayrollSummaryCard } from './PayrollSummaryCard';
 import { PayrollQRCode } from './PayrollQRCode';
 import { SalaryPeriodsEditor } from './SalaryPeriodsEditor';
@@ -147,7 +148,7 @@ export function PayrollModal({
                 <Input
                     label="Bonus (VND)"
                     name="bonus"
-                    value={formatCurrency(formData.bonus)}
+                    value={formatInputVND(String(formData.bonus || ''))}
                     onChange={(e) => {
                         const numericValue = parseCurrency(e.target.value);
                         setFormData({ ...formData, bonus: numericValue });
