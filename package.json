@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "backup:db": "sh scripts/backup-db.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
